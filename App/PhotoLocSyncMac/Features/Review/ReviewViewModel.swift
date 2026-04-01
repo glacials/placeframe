@@ -25,6 +25,12 @@ struct ReviewMapSelectionTarget: Identifiable, Equatable {
     let label: String
 }
 
+enum ReviewPhotoSelectionMode {
+    case replace
+    case toggle
+    case range(extendExisting: Bool)
+}
+
 private struct CopiedLocation {
     let sourceAssetID: String
     let coordinate: GeoCoordinate
@@ -50,6 +56,7 @@ final class ReviewViewModel: ObservableObject {
     private let calendar = Calendar.autoupdatingCurrent
     private let errorPresenter = ErrorPresenter()
     private var deletingAssetIDs: Set<String> = []
+    private var selectionAnchorID: String?
 
     init(
         summary: ReviewSummary,
@@ -153,19 +160,23 @@ final class ReviewViewModel: ObservableObject {
         selections[index].isSelected.toggle()
     }
 
-    func selectPhoto(_ assetID: String, extendingSelection: Bool) {
+    func selectPhoto(_ assetID: String, mode: ReviewPhotoSelectionMode) {
         guard selections.contains(where: { $0.id == assetID }) else { return }
 
-        if extendingSelection {
+        switch mode {
+        case .replace:
+            selectedPhotoIDs = [assetID]
+            selectionAnchorID = assetID
+        case .toggle:
             if selectedPhotoIDs.contains(assetID) {
                 selectedPhotoIDs.remove(assetID)
             } else {
                 selectedPhotoIDs.insert(assetID)
             }
-            return
+            selectionAnchorID = assetID
+        case .range(let extendExisting):
+            selectPhotoRange(to: assetID, extendExisting: extendExisting)
         }
-
-        selectedPhotoIDs = [assetID]
     }
 
     func copyLocation(for assetID: String) {
@@ -200,18 +211,21 @@ final class ReviewViewModel: ObservableObject {
     func showOnMap(_ item: ReviewItem) {
         guard item.proposedCoordinate != nil else { return }
         selectedPhotoIDs = [item.id]
+        selectionAnchorID = item.id
     }
 
     func goToPreviousDay() {
         guard canGoToPreviousDay else { return }
         currentDayIndex -= 1
         selectedPhotoIDs.removeAll()
+        selectionAnchorID = nil
     }
 
     func goToNextDay() {
         guard canGoToNextDay else { return }
         currentDayIndex += 1
         selectedPhotoIDs.removeAll()
+        selectionAnchorID = nil
     }
 
     func formattedCaptureDate(for item: ReviewItem) -> String {
@@ -293,9 +307,38 @@ final class ReviewViewModel: ObservableObject {
         )
     }
 
+    private func selectPhotoRange(to assetID: String, extendExisting: Bool) {
+        let orderedAssetIDs = currentDaySection?.entries.map(\.id) ?? selections.map(\.id)
+        guard let targetIndex = orderedAssetIDs.firstIndex(of: assetID) else { return }
+
+        let anchorID = selectionAnchorID ?? assetID
+        guard let anchorIndex = orderedAssetIDs.firstIndex(of: anchorID) else {
+            if extendExisting {
+                selectedPhotoIDs.insert(assetID)
+            } else {
+                selectedPhotoIDs = [assetID]
+            }
+            selectionAnchorID = assetID
+            return
+        }
+
+        let lowerBound = min(anchorIndex, targetIndex)
+        let upperBound = max(anchorIndex, targetIndex)
+        let rangeSelection = Set(orderedAssetIDs[lowerBound...upperBound])
+
+        if extendExisting {
+            selectedPhotoIDs.formUnion(rangeSelection)
+        } else {
+            selectedPhotoIDs = rangeSelection
+        }
+    }
+
     private func removeSelection(withID assetID: String) {
         selections.removeAll { $0.id == assetID }
         selectedPhotoIDs.remove(assetID)
+        if selectionAnchorID == assetID {
+            selectionAnchorID = nil
+        }
         if copiedLocation?.sourceAssetID == assetID {
             copiedLocation = nil
         }

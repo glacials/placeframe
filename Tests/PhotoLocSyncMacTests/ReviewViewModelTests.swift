@@ -93,8 +93,8 @@ final class ReviewViewModelTests: XCTestCase {
         )
         let viewModel = makeViewModel(items: [sourceItem, targetItem])
 
-        viewModel.selectPhoto(sourceItem.id, extendingSelection: false)
-        viewModel.selectPhoto(targetItem.id, extendingSelection: true)
+        viewModel.selectPhoto(sourceItem.id, mode: .replace)
+        viewModel.selectPhoto(targetItem.id, mode: .toggle)
 
         XCTAssertEqual(viewModel.selectedPhotoIDs, Set([sourceItem.id, targetItem.id]))
         XCTAssertEqual(
@@ -104,6 +104,51 @@ final class ReviewViewModelTests: XCTestCase {
                 ReviewMapSelectionTarget(id: targetItem.id, coordinate: targetItem.proposedCoordinate!, label: "Osaka")
             ]
         )
+    }
+
+    func testShiftSelectingPhotosSelectsFullRangeBetweenAnchorAndClickedPhoto() {
+        let firstItem = makeReviewItem(
+            assetID: "first-photo",
+            coordinate: GeoCoordinate(latitude: 35.6895, longitude: 139.6917),
+            label: "Tokyo",
+            confidence: .excellent,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_000)
+        )
+        let secondItem = makeReviewItem(
+            assetID: "second-photo",
+            coordinate: GeoCoordinate(latitude: 34.6937, longitude: 135.5023),
+            label: "Osaka",
+            confidence: .acceptable,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_060)
+        )
+        let thirdItem = makeReviewItem(
+            assetID: "third-photo",
+            coordinate: GeoCoordinate(latitude: 43.0642, longitude: 141.3469),
+            label: "Sapporo",
+            confidence: .maybe,
+            disposition: .ambiguous,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_120)
+        )
+        let fourthItem = makeReviewItem(
+            assetID: "fourth-photo",
+            coordinate: GeoCoordinate(latitude: 33.5904, longitude: 130.4017),
+            label: "Fukuoka",
+            confidence: .acceptable,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_180)
+        )
+        let viewModel = makeViewModel(items: [thirdItem, firstItem, fourthItem, secondItem])
+
+        viewModel.selectPhoto(firstItem.id, mode: .replace)
+        viewModel.selectPhoto(fourthItem.id, mode: .range(extendExisting: false))
+
+        XCTAssertEqual(
+            viewModel.selectedPhotoIDs,
+            Set([firstItem.id, secondItem.id, thirdItem.id, fourthItem.id])
+        )
+        XCTAssertEqual(Set(viewModel.mapSelectionTargets.map(\.id)), Set([firstItem.id, secondItem.id, thirdItem.id, fourthItem.id]))
     }
 
     func testDeletePhotoRemovesSelectionAndUpdatesSummary() async {
@@ -207,11 +252,12 @@ final class ReviewViewModelTests: XCTestCase {
         coordinate: GeoCoordinate,
         label: String,
         confidence: MatchConfidence,
-        disposition: MatchDisposition
+        disposition: MatchDisposition,
+        creationDate: Date = Date(timeIntervalSince1970: 1_700_300_000)
     ) -> ReviewItem {
         let asset = PhotoAsset(
             id: assetID,
-            creationDate: Date(timeIntervalSince1970: 1_700_300_000),
+            creationDate: creationDate,
             hasLocation: false
         )
         let decision = MatchDecision(

@@ -54,7 +54,7 @@ private struct ReviewPreviewSourceBridge: NSViewRepresentable {
 private struct ReviewGridItemView: View {
     let entry: ReviewSelection
     let isPhotoSelected: Bool
-    let selectPhoto: (String, Bool) -> Void
+    let selectPhoto: (String, ReviewPhotoSelectionMode) -> Void
     let toggleSelection: (String) -> Void
     let copyLocation: (String) -> Void
     let pasteLocation: (String) -> Void
@@ -73,7 +73,7 @@ private struct ReviewGridItemView: View {
         entry: ReviewSelection,
         isPhotoSelected: Bool,
         thumbnailProvider: PhotoThumbnailProvider,
-        selectPhoto: @escaping (String, Bool) -> Void,
+        selectPhoto: @escaping (String, ReviewPhotoSelectionMode) -> Void,
         toggleSelection: @escaping (String) -> Void,
         copyLocation: @escaping (String) -> Void,
         pasteLocation: @escaping (String) -> Void,
@@ -203,7 +203,7 @@ private struct ReviewGridItemView: View {
         }
         .contentShape(RoundedRectangle(cornerRadius: 16))
         .onTapGesture {
-            selectPhoto(entry.id, shouldExtendSelection)
+            selectPhoto(entry.id, selectionMode)
         }
         .contextMenu {
             Button("Quick Look") {
@@ -250,9 +250,20 @@ private struct ReviewGridItemView: View {
         isPhotoSelected ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.08)
     }
 
-    private var shouldExtendSelection: Bool {
-        guard let currentEvent = NSApp.currentEvent else { return false }
-        return currentEvent.modifierFlags.contains(.command) || currentEvent.modifierFlags.contains(.shift)
+    private var selectionMode: ReviewPhotoSelectionMode {
+        guard let modifierFlags = NSApp.currentEvent?.modifierFlags else {
+            return .replace
+        }
+
+        if modifierFlags.contains(.shift) {
+            return .range(extendExisting: modifierFlags.contains(.command))
+        }
+
+        if modifierFlags.contains(.command) {
+            return .toggle
+        }
+
+        return .replace
     }
 
     private func triggerQuickLook() {
@@ -289,7 +300,7 @@ struct ReviewGridView: View {
     let entries: [ReviewSelection]
     let selectedPhotoIDs: Set<String>
     let thumbnailProvider: PhotoThumbnailProvider
-    let selectPhoto: (String, Bool) -> Void
+    let selectPhoto: (String, ReviewPhotoSelectionMode) -> Void
     let toggleSelection: (String) -> Void
     let copyLocation: (String) -> Void
     let pasteLocation: (String) -> Void
@@ -307,7 +318,7 @@ struct ReviewGridView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
-                Text("Click a photo to focus the map. Command-click to compare multiple photos.")
+                Text("Click a photo to focus the map. Command-click toggles photos. Shift-click selects the range between photos.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
 

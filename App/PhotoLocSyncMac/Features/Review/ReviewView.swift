@@ -15,7 +15,7 @@ struct ReviewView: View {
                         entries: currentDaySection.entries,
                         selectedPhotoIDs: viewModel.selectedPhotoIDs,
                         thumbnailProvider: viewModel.thumbnailProvider,
-                        selectPhoto: viewModel.selectPhoto(_:extendingSelection:),
+                        selectPhoto: viewModel.selectPhoto(_:mode:),
                         toggleSelection: viewModel.toggleSelection(for:),
                         copyLocation: viewModel.copyLocation(for:),
                         pasteLocation: viewModel.pasteLocation(into:),
