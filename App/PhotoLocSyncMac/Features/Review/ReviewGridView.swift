@@ -54,10 +54,15 @@ private struct ReviewPreviewSourceBridge: NSViewRepresentable {
 private struct ReviewGridItemView: View {
     let entry: ReviewSelection
     let isPhotoSelected: Bool
+    let contextMenuTargetIDs: [String]
+    let canApplyContextMenuTargets: Bool
     let selectPhoto: (String, ReviewPhotoSelectionMode) -> Void
     let applyChange: (String) async -> Void
+    let applyChanges: ([String]) async -> Void
     let skipForNow: (String) -> Void
+    let skipPhotosForNow: ([String]) -> Void
     let dismissPermanently: (String) async -> Void
+    let dismissPhotosPermanently: ([String]) async -> Void
     let copyLocation: (String) -> Void
     let pasteLocation: (String) -> Void
     let canPasteLocation: (String) -> Bool
@@ -72,11 +77,16 @@ private struct ReviewGridItemView: View {
     init(
         entry: ReviewSelection,
         isPhotoSelected: Bool,
+        contextMenuTargetIDs: [String],
+        canApplyContextMenuTargets: Bool,
         thumbnailProvider: PhotoThumbnailProvider,
         selectPhoto: @escaping (String, ReviewPhotoSelectionMode) -> Void,
         applyChange: @escaping (String) async -> Void,
+        applyChanges: @escaping ([String]) async -> Void,
         skipForNow: @escaping (String) -> Void,
+        skipPhotosForNow: @escaping ([String]) -> Void,
         dismissPermanently: @escaping (String) async -> Void,
+        dismissPhotosPermanently: @escaping ([String]) async -> Void,
         copyLocation: @escaping (String) -> Void,
         pasteLocation: @escaping (String) -> Void,
         canPasteLocation: @escaping (String) -> Bool,
@@ -88,10 +98,15 @@ private struct ReviewGridItemView: View {
     ) {
         self.entry = entry
         self.isPhotoSelected = isPhotoSelected
+        self.contextMenuTargetIDs = contextMenuTargetIDs
+        self.canApplyContextMenuTargets = canApplyContextMenuTargets
         self.selectPhoto = selectPhoto
         self.applyChange = applyChange
+        self.applyChanges = applyChanges
         self.skipForNow = skipForNow
+        self.skipPhotosForNow = skipPhotosForNow
         self.dismissPermanently = dismissPermanently
+        self.dismissPhotosPermanently = dismissPhotosPermanently
         self.copyLocation = copyLocation
         self.pasteLocation = pasteLocation
         self.canPasteLocation = canPasteLocation
@@ -233,6 +248,24 @@ private struct ReviewGridItemView: View {
                 triggerQuickLook()
             }
 
+            Divider()
+            Button(applyContextMenuTitle) {
+                Task {
+                    await applyChanges(contextMenuTargetIDs)
+                }
+            }
+            .disabled(!canApplyContextMenuTargets)
+
+            Button(skipContextMenuTitle) {
+                skipPhotosForNow(contextMenuTargetIDs)
+            }
+
+            Button(dismissContextMenuTitle) {
+                Task {
+                    await dismissPhotosPermanently(contextMenuTargetIDs)
+                }
+            }
+
             if hasLocation || canPasteCopiedLocation {
                 Divider()
                 Button("Copy Location") {
@@ -263,6 +296,22 @@ private struct ReviewGridItemView: View {
 
     private var cardBackgroundColor: Color {
         isPhotoSelected ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.08)
+    }
+
+    private var appliesToMultiplePhotos: Bool {
+        contextMenuTargetIDs.count > 1
+    }
+
+    private var applyContextMenuTitle: String {
+        appliesToMultiplePhotos ? "Apply Selected (\(contextMenuTargetIDs.count))" : "Apply"
+    }
+
+    private var skipContextMenuTitle: String {
+        appliesToMultiplePhotos ? "Skip Selected for Now (\(contextMenuTargetIDs.count))" : "Skip for Now"
+    }
+
+    private var dismissContextMenuTitle: String {
+        appliesToMultiplePhotos ? "Never Show Selected Again (\(contextMenuTargetIDs.count))" : "Never Show Again"
     }
 
     private var selectionMode: ReviewPhotoSelectionMode {
@@ -317,8 +366,11 @@ struct ReviewGridView: View {
     let thumbnailProvider: PhotoThumbnailProvider
     let selectPhoto: (String, ReviewPhotoSelectionMode) -> Void
     let applyChange: (String) async -> Void
+    let applyChanges: ([String]) async -> Void
     let skipForNow: (String) -> Void
+    let skipPhotosForNow: ([String]) -> Void
     let dismissPermanently: (String) async -> Void
+    let dismissPhotosPermanently: ([String]) async -> Void
     let copyLocation: (String) -> Void
     let pasteLocation: (String) -> Void
     let canPasteLocation: (String) -> Bool
@@ -341,20 +393,26 @@ struct ReviewGridView: View {
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Use the action buttons to work through the queue. Click a photo to focus the map. Command-click toggles photos. Shift-click selects the range between photos. Command-A selects every photo on the current day.")
+                    Text("Use the action buttons to work through the queue. Click a photo to focus the map. Command-click toggles photos. Shift-click selects the range between photos. Command-A selects every photo on the current day. Right-click a selected group to apply, skip, or hide multiple photos at once.")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
 
                     LazyVGrid(columns: columns, alignment: .leading, spacing: 16) {
                         ForEach(entries) { entry in
+                            let contextMenuTargetIDs = contextMenuTargetIDs(for: entry)
                             ReviewGridItemView(
                                 entry: entry,
                                 isPhotoSelected: selectedPhotoIDs.contains(entry.id),
+                                contextMenuTargetIDs: contextMenuTargetIDs,
+                                canApplyContextMenuTargets: canApply(to: contextMenuTargetIDs),
                                 thumbnailProvider: thumbnailProvider,
                                 selectPhoto: selectPhoto,
                                 applyChange: applyChange,
+                                applyChanges: applyChanges,
                                 skipForNow: skipForNow,
+                                skipPhotosForNow: skipPhotosForNow,
                                 dismissPermanently: dismissPermanently,
+                                dismissPhotosPermanently: dismissPhotosPermanently,
                                 copyLocation: copyLocation,
                                 pasteLocation: pasteLocation,
                                 canPasteLocation: canPasteLocation,
@@ -391,5 +449,24 @@ struct ReviewGridView: View {
                 proxy.scrollTo(focusedPhotoID, anchor: .top)
             }
         }
+    }
+
+    private func contextMenuTargetIDs(for entry: ReviewSelection) -> [String] {
+        guard selectedPhotoIDs.count > 1, selectedPhotoIDs.contains(entry.id) else {
+            return [entry.id]
+        }
+
+        return entries.compactMap { candidate in
+            selectedPhotoIDs.contains(candidate.id) ? candidate.id : nil
+        }
+    }
+
+    private func canApply(to assetIDs: [String]) -> Bool {
+        let targetAssetIDs = Set(assetIDs)
+        guard !targetAssetIDs.isEmpty else { return false }
+
+        return entries
+            .filter { targetAssetIDs.contains($0.id) }
+            .allSatisfy { $0.item.suggestedDecision != nil }
     }
 }

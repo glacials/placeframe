@@ -315,6 +315,47 @@ final class ReviewViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.summary.autoSuggested, 1)
     }
 
+    func testApplyChangesProcessesBatchInReviewOrderAndAdvancesSelection() async {
+        let recorder = ApplyRecorder()
+        let firstItem = makeReviewItem(
+            assetID: "first-photo",
+            coordinate: GeoCoordinate(latitude: 35.6895, longitude: 139.6917),
+            label: "Tokyo",
+            confidence: .excellent,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_000)
+        )
+        let secondItem = makeReviewItem(
+            assetID: "second-photo",
+            coordinate: GeoCoordinate(latitude: 34.6937, longitude: 135.5023),
+            label: "Osaka",
+            confidence: .acceptable,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_060)
+        )
+        let thirdItem = makeReviewItem(
+            assetID: "third-photo",
+            coordinate: GeoCoordinate(latitude: 43.0642, longitude: 141.3469),
+            label: "Sapporo",
+            confidence: .maybe,
+            disposition: .ambiguous,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_120)
+        )
+        let viewModel = makeViewModel(items: [secondItem, thirdItem, firstItem]) { decision in
+            await recorder.record(decision)
+        }
+
+        await viewModel.applyChanges(for: [secondItem.id, firstItem.id])
+        let appliedAssetIDs = await recorder.appliedAssetIDs()
+
+        XCTAssertEqual(appliedAssetIDs, [firstItem.id, secondItem.id])
+        XCTAssertEqual(viewModel.selections.map(\.id), [thirdItem.id])
+        XCTAssertEqual(viewModel.selectedPhotoIDs, [thirdItem.id])
+        XCTAssertEqual(viewModel.summary.totalAssets, 1)
+        XCTAssertEqual(viewModel.summary.autoSuggested, 0)
+        XCTAssertEqual(viewModel.summary.ambiguous, 1)
+    }
+
     func testSkipForNowOnLastPhotoOfDayAdvancesToFirstPhotoOfNextDay() {
         let firstDayItem = makeReviewItem(
             assetID: "first-day-photo",
@@ -349,6 +390,50 @@ final class ReviewViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.selectedPhotoIDs, [secondDayFirstItem.id])
     }
 
+    func testSkipPhotosForNowRemovesMultipleSelectionsAndFocusesNextRemainingPhoto() {
+        let firstItem = makeReviewItem(
+            assetID: "first-photo",
+            coordinate: GeoCoordinate(latitude: 35.6895, longitude: 139.6917),
+            label: "Tokyo",
+            confidence: .excellent,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_000)
+        )
+        let secondItem = makeReviewItem(
+            assetID: "second-photo",
+            coordinate: GeoCoordinate(latitude: 34.6937, longitude: 135.5023),
+            label: "Osaka",
+            confidence: .acceptable,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_060)
+        )
+        let thirdItem = makeReviewItem(
+            assetID: "third-photo",
+            coordinate: GeoCoordinate(latitude: 43.0642, longitude: 141.3469),
+            label: "Sapporo",
+            confidence: .maybe,
+            disposition: .ambiguous,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_120)
+        )
+        let fourthItem = makeReviewItem(
+            assetID: "fourth-photo",
+            coordinate: GeoCoordinate(latitude: 33.5904, longitude: 130.4017),
+            label: "Fukuoka",
+            confidence: .acceptable,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_180)
+        )
+        let viewModel = makeViewModel(items: [thirdItem, firstItem, fourthItem, secondItem])
+
+        viewModel.skipPhotosForNow([thirdItem.id, firstItem.id])
+
+        XCTAssertEqual(viewModel.currentDaySection?.entries.map(\.id), [secondItem.id, fourthItem.id])
+        XCTAssertEqual(viewModel.selectedPhotoIDs, [secondItem.id])
+        XCTAssertEqual(viewModel.summary.totalAssets, 2)
+        XCTAssertEqual(viewModel.summary.autoSuggested, 2)
+        XCTAssertEqual(viewModel.summary.ambiguous, 0)
+    }
+
     func testDismissPermanentlyRecordsSuppressedPhotoAndAdvancesSelection() async {
         let recorder = SuppressionRecorder()
         let firstItem = makeReviewItem(
@@ -378,6 +463,47 @@ final class ReviewViewModelTests: XCTestCase {
         XCTAssertEqual(suppressedAssetIDs, [firstItem.id])
         XCTAssertEqual(viewModel.selections.map { $0.id }, [secondItem.id])
         XCTAssertEqual(viewModel.selectedPhotoIDs, [secondItem.id])
+    }
+
+    func testDismissPhotosPermanentlySuppressesBatchInReviewOrderAndAdvancesSelection() async {
+        let recorder = SuppressionRecorder()
+        let firstItem = makeReviewItem(
+            assetID: "first-photo",
+            coordinate: GeoCoordinate(latitude: 35.6895, longitude: 139.6917),
+            label: "Tokyo",
+            confidence: .excellent,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_000)
+        )
+        let secondItem = makeReviewItem(
+            assetID: "second-photo",
+            coordinate: GeoCoordinate(latitude: 34.6937, longitude: 135.5023),
+            label: "Osaka",
+            confidence: .acceptable,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_060)
+        )
+        let thirdItem = makeReviewItem(
+            assetID: "third-photo",
+            coordinate: GeoCoordinate(latitude: 43.0642, longitude: 141.3469),
+            label: "Sapporo",
+            confidence: .maybe,
+            disposition: .ambiguous,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_120)
+        )
+        let viewModel = makeViewModel(
+            items: [secondItem, thirdItem, firstItem],
+            onDismissPermanently: { assetID in
+                await recorder.record(assetID)
+            }
+        )
+
+        await viewModel.dismissPhotosPermanently([secondItem.id, firstItem.id])
+        let suppressedAssetIDs = await recorder.snapshot()
+
+        XCTAssertEqual(suppressedAssetIDs, [firstItem.id, secondItem.id])
+        XCTAssertEqual(viewModel.selections.map(\.id), [thirdItem.id])
+        XCTAssertEqual(viewModel.selectedPhotoIDs, [thirdItem.id])
     }
 
     func testDeletePhotoRemovesSelectionAndUpdatesSummary() async {

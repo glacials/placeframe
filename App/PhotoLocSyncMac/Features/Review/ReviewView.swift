@@ -18,8 +18,11 @@ struct ReviewView: View {
                         thumbnailProvider: viewModel.thumbnailProvider,
                         selectPhoto: viewModel.selectPhoto(_:mode:),
                         applyChange: viewModel.applyChange(for:),
+                        applyChanges: viewModel.applyChanges(for:),
                         skipForNow: viewModel.skipForNow(_:),
+                        skipPhotosForNow: viewModel.skipPhotosForNow(_:),
                         dismissPermanently: viewModel.dismissPermanently(_:),
+                        dismissPhotosPermanently: viewModel.dismissPhotosPermanently(_:),
                         copyLocation: viewModel.copyLocation(for:),
                         pasteLocation: viewModel.pasteLocation(into:),
                         canPasteLocation: viewModel.canPasteLocation(into:),
@@ -137,7 +140,7 @@ struct ReviewView: View {
 
             Spacer()
 
-            Text("Use each photo's buttons to apply it, skip it for this session, or hide it from future reviews.")
+            Text("Use each photo's buttons for one-off actions, or right-click selected photos to apply, skip, or hide them together.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
