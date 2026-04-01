@@ -69,7 +69,6 @@ private struct ReviewGridItemView: View {
 
     @StateObject private var thumbnailLoader: ReviewThumbnailLoader
     @StateObject private var previewSourceAnchor = ReviewPreviewSourceAnchor()
-    @State private var isShowingDeleteConfirmation = false
     init(
         entry: ReviewSelection,
         isPhotoSelected: Bool,
