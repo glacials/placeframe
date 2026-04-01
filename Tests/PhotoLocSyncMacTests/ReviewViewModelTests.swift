@@ -41,9 +41,6 @@ final class ReviewViewModelTests: XCTestCase {
         XCTAssertEqual(updatedTarget.item.suggestedDecision?.assetID, targetItem.id)
         XCTAssertEqual(updatedTarget.item.suggestedDecision?.coordinate, sourceCoordinate)
         XCTAssertEqual(updatedTarget.copiedFromAssetID, sourceItem.id)
-        XCTAssertTrue(updatedTarget.isSelected)
-
-        XCTAssertTrue(viewModel.selectedDecisions.contains { $0.assetID == targetItem.id && $0.coordinate == sourceCoordinate })
     }
 
     func testPasteLocationUpdatesFocusedMapPin() {
@@ -151,6 +148,103 @@ final class ReviewViewModelTests: XCTestCase {
         XCTAssertEqual(Set(viewModel.mapSelectionTargets.map(\.id)), Set([firstItem.id, secondItem.id, thirdItem.id, fourthItem.id]))
     }
 
+    func testApplyChangeRemovesPhotoFromSessionAndAdvancesSelection() async {
+        let recorder = ApplyRecorder()
+        let firstItem = makeReviewItem(
+            assetID: "first-photo",
+            coordinate: GeoCoordinate(latitude: 35.6895, longitude: 139.6917),
+            label: "Tokyo",
+            confidence: .excellent,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_000)
+        )
+        let secondItem = makeReviewItem(
+            assetID: "second-photo",
+            coordinate: GeoCoordinate(latitude: 34.6937, longitude: 135.5023),
+            label: "Osaka",
+            confidence: .acceptable,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_060)
+        )
+        let viewModel = makeViewModel(items: [firstItem, secondItem]) { decision in
+            await recorder.record(decision)
+        }
+
+        await viewModel.applyChange(for: firstItem.id)
+        let appliedAssetIDs = await recorder.appliedAssetIDs()
+
+        XCTAssertEqual(appliedAssetIDs, [firstItem.id])
+        XCTAssertEqual(viewModel.selections.map { $0.id }, [secondItem.id])
+        XCTAssertEqual(viewModel.selectedPhotoIDs, [secondItem.id])
+        XCTAssertEqual(viewModel.summary.totalAssets, 1)
+        XCTAssertEqual(viewModel.summary.autoSuggested, 1)
+    }
+
+    func testSkipForNowOnLastPhotoOfDayAdvancesToFirstPhotoOfNextDay() {
+        let firstDayItem = makeReviewItem(
+            assetID: "first-day-photo",
+            coordinate: GeoCoordinate(latitude: 35.6895, longitude: 139.6917),
+            label: "Tokyo",
+            confidence: .excellent,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_000)
+        )
+        let secondDayFirstItem = makeReviewItem(
+            assetID: "second-day-first-photo",
+            coordinate: GeoCoordinate(latitude: 34.6937, longitude: 135.5023),
+            label: "Osaka",
+            confidence: .acceptable,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_386_400)
+        )
+        let secondDaySecondItem = makeReviewItem(
+            assetID: "second-day-second-photo",
+            coordinate: GeoCoordinate(latitude: 43.0642, longitude: 141.3469),
+            label: "Sapporo",
+            confidence: .maybe,
+            disposition: .ambiguous,
+            creationDate: Date(timeIntervalSince1970: 1_700_386_460)
+        )
+        let viewModel = makeViewModel(items: [secondDaySecondItem, firstDayItem, secondDayFirstItem])
+
+        viewModel.skipForNow(firstDayItem.id)
+
+        XCTAssertEqual(viewModel.currentDaySection?.entries.map(\.id), [secondDayFirstItem.id, secondDaySecondItem.id])
+        XCTAssertEqual(viewModel.currentDayIndex, 0)
+        XCTAssertEqual(viewModel.selectedPhotoIDs, [secondDayFirstItem.id])
+    }
+
+    func testDismissPermanentlyRecordsSuppressedPhotoAndAdvancesSelection() async {
+        let recorder = SuppressionRecorder()
+        let firstItem = makeReviewItem(
+            assetID: "first-photo",
+            coordinate: GeoCoordinate(latitude: 35.6895, longitude: 139.6917),
+            label: "Tokyo",
+            confidence: .excellent,
+            disposition: .autoSuggested
+        )
+        let secondItem = makeReviewItem(
+            assetID: "second-photo",
+            coordinate: GeoCoordinate(latitude: 34.6937, longitude: 135.5023),
+            label: "Osaka",
+            confidence: .acceptable,
+            disposition: .autoSuggested
+        )
+        let viewModel = makeViewModel(
+            items: [firstItem, secondItem],
+            onDismissPermanently: { assetID in
+                await recorder.record(assetID)
+            }
+        )
+
+        await viewModel.dismissPermanently(firstItem.id)
+        let suppressedAssetIDs = await recorder.snapshot()
+
+        XCTAssertEqual(suppressedAssetIDs, [firstItem.id])
+        XCTAssertEqual(viewModel.selections.map { $0.id }, [secondItem.id])
+        XCTAssertEqual(viewModel.selectedPhotoIDs, [secondItem.id])
+    }
+
     func testDeletePhotoRemovesSelectionAndUpdatesSummary() async {
         let recorder = DeletionRecorder()
         let sourceItem = makeReviewItem(
@@ -167,19 +261,22 @@ final class ReviewViewModelTests: XCTestCase {
             confidence: .maybe,
             disposition: .ambiguous
         )
-        let viewModel = makeViewModel(items: [sourceItem, targetItem]) { assetID in
-            await recorder.record(assetID)
-        }
+        let viewModel = makeViewModel(
+            items: [sourceItem, targetItem],
+            onDeletePhoto: { assetID in
+                await recorder.record(assetID)
+            }
+        )
 
         await viewModel.deletePhoto(sourceItem.id)
         let deletedAssetIDs = await recorder.snapshot()
 
         XCTAssertEqual(deletedAssetIDs, [sourceItem.id])
-        XCTAssertEqual(viewModel.selections.map(\.id), [targetItem.id])
+        XCTAssertEqual(viewModel.selections.map { $0.id }, [targetItem.id])
         XCTAssertEqual(viewModel.summary.totalAssets, 1)
         XCTAssertEqual(viewModel.summary.autoSuggested, 0)
         XCTAssertEqual(viewModel.summary.ambiguous, 1)
-        XCTAssertEqual(viewModel.selectedCount, 0)
+        XCTAssertTrue(viewModel.selectedPhotoIDs.isEmpty)
     }
 
     func testDeletePhotoClearsCopiedLocationAndPhotoSelectionForDeletedAsset() async {
@@ -217,19 +314,24 @@ final class ReviewViewModelTests: XCTestCase {
             confidence: .excellent,
             disposition: .autoSuggested
         )
-        let viewModel = makeViewModel(items: [sourceItem]) { _ in
-            throw UserPresentableError(title: "Delete Failed", message: "No permission.")
-        }
+        let viewModel = makeViewModel(
+            items: [sourceItem],
+            onDeletePhoto: { _ in
+                throw UserPresentableError(title: "Delete Failed", message: "No permission.")
+            }
+        )
 
         await viewModel.deletePhoto(sourceItem.id)
 
-        XCTAssertEqual(viewModel.selections.map(\.id), [sourceItem.id])
+        XCTAssertEqual(viewModel.selections.map { $0.id }, [sourceItem.id])
         XCTAssertEqual(viewModel.presentedError?.title, "Delete Failed")
         XCTAssertEqual(viewModel.presentedError?.message, "No permission.")
     }
 
     private func makeViewModel(
         items: [ReviewItem],
+        onApplyDecision: @escaping @Sendable (MatchDecision) async throws -> Void = { _ in },
+        onDismissPermanently: @escaping @Sendable (String) async -> Void = { _ in },
         onDeletePhoto: @escaping @Sendable (String) async throws -> Void = { _ in }
     ) -> ReviewViewModel {
         ReviewViewModel(
@@ -241,7 +343,12 @@ final class ReviewViewModelTests: XCTestCase {
             ),
             items: items,
             thumbnailProvider: PhotoThumbnailProvider(),
-            onApply: { _ in },
+            onApplyDecision: { decision in
+                try await onApplyDecision(decision)
+            },
+            onDismissPermanently: { assetID in
+                await onDismissPermanently(assetID)
+            },
             onDeletePhoto: onDeletePhoto,
             onCancel: {}
         )
@@ -281,6 +388,30 @@ final class ReviewViewModelTests: XCTestCase {
 }
 
 private actor DeletionRecorder {
+    private var assetIDs: [String] = []
+
+    func record(_ assetID: String) {
+        assetIDs.append(assetID)
+    }
+
+    func snapshot() -> [String] {
+        assetIDs
+    }
+}
+
+private actor ApplyRecorder {
+    private var decisions: [MatchDecision] = []
+
+    func record(_ decision: MatchDecision) {
+        decisions.append(decision)
+    }
+
+    func appliedAssetIDs() -> [String] {
+        decisions.map(\.assetID)
+    }
+}
+
+private actor SuppressionRecorder {
     private var assetIDs: [String] = []
 
     func record(_ assetID: String) {

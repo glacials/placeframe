@@ -16,12 +16,6 @@ struct AppView: View {
                 } else {
                     ContentUnavailableView("No Review Data", systemImage: "photo.on.rectangle.angled")
                 }
-            case .applying:
-                ProcessingView(viewModel: ProcessingViewModel(stage: .applyingChanges))
-            case .completed(let summary):
-                ApplyResultView(summary: summary) {
-                    appState.reset()
-                }
             case .failed(let error):
                 VStack(spacing: 16) {
                     ContentUnavailableView(error.title, systemImage: "exclamationmark.triangle", description: Text(error.message))

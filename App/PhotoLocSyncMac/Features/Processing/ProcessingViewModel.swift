@@ -16,8 +16,6 @@ struct ProcessingViewModel {
             "Resolving proposed coordinates into readable place labels for review."
         case .preparingReview:
             "Preparing thumbnails and review models before any write occurs."
-        case .applyingChanges:
-            "Writing confirmed GPS locations into Apple Photos."
         }
     }
 }

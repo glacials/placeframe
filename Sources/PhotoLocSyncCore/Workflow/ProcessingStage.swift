@@ -6,7 +6,6 @@ public enum ProcessingStage: String, CaseIterable, Sendable {
     case matchingLocations
     case reverseGeocodingPlaces
     case preparingReview
-    case applyingChanges
 
     public var title: String {
         switch self {
@@ -15,7 +14,6 @@ public enum ProcessingStage: String, CaseIterable, Sendable {
         case .matchingLocations: "Matching locations"
         case .reverseGeocodingPlaces: "Reverse-geocoding places"
         case .preparingReview: "Preparing review"
-        case .applyingChanges: "Applying changes"
         }
     }
 }

@@ -7,7 +7,6 @@ import SwiftUI
 struct ReviewSelection: Identifiable {
     let id: String
     var item: ReviewItem
-    var isSelected: Bool
     var copiedFromAssetID: String?
 }
 
@@ -48,13 +47,15 @@ final class ReviewViewModel: ObservableObject {
     @Published private var copiedLocation: CopiedLocation?
 
     let thumbnailProvider: PhotoThumbnailProvider
-    private let onApply: @Sendable ([MatchDecision]) async -> Void
+    private let onApplyDecision: @Sendable (MatchDecision) async throws -> Void
+    private let onDismissPermanently: @Sendable (String) async -> Void
     private let onDeletePhoto: @Sendable (String) async throws -> Void
     private let onCancel: @Sendable () -> Void
     private let timeFormatter: DateComponentsFormatter
     private let dayTitleFormatter: DateFormatter
     private let calendar = Calendar.autoupdatingCurrent
     private let errorPresenter = ErrorPresenter()
+    private var actionAssetIDs: Set<String> = []
     private var deletingAssetIDs: Set<String> = []
     private var selectionAnchorID: String?
 
@@ -62,7 +63,8 @@ final class ReviewViewModel: ObservableObject {
         summary: ReviewSummary,
         items: [ReviewItem],
         thumbnailProvider: PhotoThumbnailProvider,
-        onApply: @escaping @Sendable ([MatchDecision]) async -> Void,
+        onApplyDecision: @escaping @Sendable (MatchDecision) async throws -> Void,
+        onDismissPermanently: @escaping @Sendable (String) async -> Void,
         onDeletePhoto: @escaping @Sendable (String) async throws -> Void,
         onCancel: @escaping @Sendable () -> Void
     ) {
@@ -71,12 +73,12 @@ final class ReviewViewModel: ObservableObject {
             ReviewSelection(
                 id: $0.id,
                 item: $0,
-                isSelected: $0.disposition == .autoSuggested && $0.suggestedDecision != nil,
                 copiedFromAssetID: nil
             )
         }
         self.thumbnailProvider = thumbnailProvider
-        self.onApply = onApply
+        self.onApplyDecision = onApplyDecision
+        self.onDismissPermanently = onDismissPermanently
         self.onDeletePhoto = onDeletePhoto
         self.onCancel = onCancel
 
@@ -90,10 +92,6 @@ final class ReviewViewModel: ObservableObject {
         titleFormatter.dateStyle = .full
         titleFormatter.timeStyle = .none
         self.dayTitleFormatter = titleFormatter
-    }
-
-    var selectedCount: Int {
-        selections.filter(\.isSelected).count
     }
 
     var emptyStateDescription: String {
@@ -112,12 +110,11 @@ final class ReviewViewModel: ObservableObject {
         return grouped.keys.sorted().map { dayStart in
             let entries = grouped[dayStart, default: []]
                 .sorted { $0.item.asset.creationDate < $1.item.asset.creationDate }
-            let selectedCount = entries.filter(\.isSelected).count
             return ReviewDaySection(
                 id: dayStart.ISO8601Format(),
                 dayStart: dayStart,
                 title: dayTitleFormatter.string(from: dayStart),
-                subtitle: "\(entries.count) photos • \(selectedCount) selected",
+                subtitle: "\(entries.count) photos",
                 entries: entries
             )
         }
@@ -130,12 +127,6 @@ final class ReviewViewModel: ObservableObject {
 
     var canGoToPreviousDay: Bool { currentDayIndex > 0 }
     var canGoToNextDay: Bool { currentDayIndex + 1 < daySections.count }
-
-    var selectedDecisions: [MatchDecision] {
-        selections.compactMap { selection in
-            selection.isSelected ? selection.item.suggestedDecision : nil
-        }
-    }
 
     var mapSelectionTargets: [ReviewMapSelectionTarget] {
         selections.compactMap { selection in
@@ -150,14 +141,6 @@ final class ReviewViewModel: ObservableObject {
                 label: selection.item.locationLabel
             )
         }
-    }
-
-    func toggleSelection(for assetID: String) {
-        guard let index = selections.firstIndex(where: { $0.id == assetID }),
-              selections[index].item.suggestedDecision != nil else {
-            return
-        }
-        selections[index].isSelected.toggle()
     }
 
     func selectPhoto(_ assetID: String, mode: ReviewPhotoSelectionMode) {
@@ -204,7 +187,6 @@ final class ReviewViewModel: ObservableObject {
 
         let selection = selections[index]
         selections[index].item = reviewItem(for: selection, using: copiedLocation)
-        selections[index].isSelected = true
         selections[index].copiedFromAssetID = copiedLocation.sourceAssetID
     }
 
@@ -239,8 +221,50 @@ final class ReviewViewModel: ObservableObject {
         return prefix + magnitude
     }
 
-    func apply() {
-        Task { await onApply(selectedDecisions) }
+    func applyChange(for assetID: String) async {
+        guard let selection = selections.first(where: { $0.id == assetID }),
+              let decision = selection.item.suggestedDecision,
+              actionAssetIDs.insert(assetID).inserted else {
+            return
+        }
+
+        let nextAssetID = nextAssetID(after: assetID)
+
+        defer {
+            actionAssetIDs.remove(assetID)
+        }
+
+        do {
+            try await onApplyDecision(decision)
+            removeSelection(withID: assetID)
+            focusPhoto(withID: nextAssetID)
+        } catch {
+            presentedError = errorPresenter.userPresentableError(for: error)
+        }
+    }
+
+    func skipForNow(_ assetID: String) {
+        guard selections.contains(where: { $0.id == assetID }) else { return }
+        let nextAssetID = nextAssetID(after: assetID)
+        removeSelection(withID: assetID)
+        focusPhoto(withID: nextAssetID)
+    }
+
+    func dismissPermanently(_ assetID: String) async {
+        guard selections.contains(where: { $0.id == assetID }),
+              actionAssetIDs.insert(assetID).inserted else {
+            return
+        }
+
+        let nextAssetID = nextAssetID(after: assetID)
+
+        defer {
+            actionAssetIDs.remove(assetID)
+        }
+
+        await onDismissPermanently(assetID)
+        removeSelection(withID: assetID)
+        focusPhoto(withID: nextAssetID)
     }
 
     func deletePhoto(_ assetID: String) async {
@@ -331,6 +355,39 @@ final class ReviewViewModel: ObservableObject {
         } else {
             selectedPhotoIDs = rangeSelection
         }
+    }
+
+    private func nextAssetID(after assetID: String) -> String? {
+        let orderedAssetIDs = daySections.flatMap { section in
+            section.entries.map(\.id)
+        }
+        guard let index = orderedAssetIDs.firstIndex(of: assetID) else { return nil }
+
+        let nextIndex = orderedAssetIDs.index(after: index)
+        guard orderedAssetIDs.indices.contains(nextIndex) else { return nil }
+        return orderedAssetIDs[nextIndex]
+    }
+
+    private func focusPhoto(withID assetID: String?) {
+        guard let assetID else {
+            selectedPhotoIDs.removeAll()
+            selectionAnchorID = nil
+            clampCurrentDayIndex()
+            return
+        }
+
+        guard let dayIndex = daySections.firstIndex(where: { section in
+            section.entries.contains(where: { $0.id == assetID })
+        }) else {
+            selectedPhotoIDs.removeAll()
+            selectionAnchorID = nil
+            clampCurrentDayIndex()
+            return
+        }
+
+        currentDayIndex = dayIndex
+        selectedPhotoIDs = [assetID]
+        selectionAnchorID = assetID
     }
 
     private func removeSelection(withID assetID: String) {

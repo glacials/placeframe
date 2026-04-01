@@ -14,8 +14,6 @@ enum AppFlowState {
     case importing
     case processing(ProcessingStage)
     case review
-    case applying
-    case completed(ApplySummary)
     case failed(UserPresentableError)
 }
 
@@ -30,6 +28,7 @@ final class AppState: ObservableObject {
     private let fileReader: ImportedFileReading
     private let thumbnailProvider: PhotoThumbnailProvider
     private let reviewItemFilter: PhotoKitImportedReviewItemFilter
+    private let reviewSuppressionStore: ReviewSuppressionStoring
     private let errorPresenter: ErrorPresenter
 
     init(
@@ -37,12 +36,14 @@ final class AppState: ObservableObject {
         fileReader: ImportedFileReading,
         thumbnailProvider: PhotoThumbnailProvider,
         reviewItemFilter: PhotoKitImportedReviewItemFilter,
+        reviewSuppressionStore: ReviewSuppressionStoring,
         errorPresenter: ErrorPresenter = ErrorPresenter()
     ) {
         self.coordinator = coordinator
         self.fileReader = fileReader
         self.thumbnailProvider = thumbnailProvider
         self.reviewItemFilter = reviewItemFilter
+        self.reviewSuppressionStore = reviewSuppressionStore
         self.errorPresenter = errorPresenter
         self.importViewModel = ImportViewModel()
         self.importViewModel.bind(appState: self)
@@ -54,8 +55,6 @@ final class AppState: ObservableObject {
         case .importing: "importing"
         case .processing(let stage): "processing-\(stage.rawValue)"
         case .review: "review"
-        case .applying: "applying"
-        case .completed: "completed"
         case .failed: "failed"
         }
     }
@@ -79,7 +78,8 @@ final class AppState: ObservableObject {
                 self?.flowState = .processing(stage)
             }
         }
-        let filteredItems = await reviewItemFilter.filterToLikelyCameraItems(preparedReview.items)
+        let likelyCameraItems = await reviewItemFilter.filterToLikelyCameraItems(preparedReview.items)
+        let filteredItems = await reviewSuppressionStore.filterVisibleItems(likelyCameraItems)
         let filteredSummary = ReviewSummary(
             totalAssets: filteredItems.count,
             autoSuggested: filteredItems.filter { $0.disposition == .autoSuggested }.count,
@@ -91,8 +91,13 @@ final class AppState: ObservableObject {
             summary: filteredSummary,
             items: filteredItems,
             thumbnailProvider: thumbnailProvider,
-            onApply: { [weak self] decisions in
-                await self?.apply(decisions: decisions)
+            onApplyDecision: { [weak self] decision in
+                guard let self else { return }
+                try await self.apply(decision: decision)
+            },
+            onDismissPermanently: { [weak self] assetID in
+                guard let self else { return }
+                await self.reviewSuppressionStore.suppress(assetID)
             },
             onDeletePhoto: { [weak self] assetID in
                 guard let self else { return }
@@ -108,14 +113,8 @@ final class AppState: ObservableObject {
         self.flowState = .review
     }
 
-    func apply(decisions: [MatchDecision]) async {
-        flowState = .applying
-        do {
-            let summary = try await coordinator.apply(decisions)
-            flowState = .completed(summary)
-        } catch {
-            flowState = .failed(errorPresenter.userPresentableError(for: error))
-        }
+    func apply(decision: MatchDecision) async throws {
+        _ = try await coordinator.apply([decision])
     }
 
     func deletePhoto(assetID: String) async throws {

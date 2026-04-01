@@ -16,7 +16,9 @@ struct ReviewView: View {
                         selectedPhotoIDs: viewModel.selectedPhotoIDs,
                         thumbnailProvider: viewModel.thumbnailProvider,
                         selectPhoto: viewModel.selectPhoto(_:mode:),
-                        toggleSelection: viewModel.toggleSelection(for:),
+                        applyChange: viewModel.applyChange(for:),
+                        skipForNow: viewModel.skipForNow(_:),
+                        dismissPermanently: viewModel.dismissPermanently(_:),
                         copyLocation: viewModel.copyLocation(for:),
                         pasteLocation: viewModel.pasteLocation(into:),
                         canPasteLocation: viewModel.canPasteLocation(into:),
@@ -67,7 +69,7 @@ struct ReviewView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Review Proposed Locations")
                 .font(.largeTitle.bold())
-            Text("Review one day at a time. Nothing will be written to Apple Photos until you confirm.")
+            Text("Review one day at a time. Nothing is written to Apple Photos until you press Apply on a photo.")
                 .foregroundStyle(.secondary)
 
             HStack(spacing: 12) {
@@ -75,7 +77,6 @@ struct ReviewView: View {
                 summaryBadge(title: "Auto", value: "\(viewModel.summary.autoSuggested)")
                 summaryBadge(title: "Ambiguous", value: "\(viewModel.summary.ambiguous)")
                 summaryBadge(title: "No match", value: "\(viewModel.summary.unmatched)")
-                summaryBadge(title: "Selected", value: "\(viewModel.selectedCount)")
             }
         }
     }
@@ -121,11 +122,9 @@ struct ReviewView: View {
 
             Spacer()
 
-            Button("Apply to Photos") {
-                viewModel.apply()
-            }
-            .buttonStyle(.borderedProminent)
-            .disabled(viewModel.selectedCount == 0)
+            Text("Use each photo's buttons to apply it, skip it for this session, or hide it from future reviews.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
         }
     }
 

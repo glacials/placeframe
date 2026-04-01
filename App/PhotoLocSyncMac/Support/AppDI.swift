@@ -7,6 +7,7 @@ struct AppDI {
         let importer = TimelineJSONImporter()
         let reader = PhotoKitLibraryReader()
         let reviewItemFilter = PhotoKitImportedReviewItemFilter()
+        let reviewSuppressionStore = ReviewSuppressionStore()
         let geocoder = CLGeocoderAdapter()
         let writer = PhotoKitLibraryWriter()
         let pipeline = ProcessingPipeline(importer: importer, reader: reader, geocoder: geocoder)
@@ -17,7 +18,8 @@ struct AppDI {
             coordinator: coordinator,
             fileReader: fileReader,
             thumbnailProvider: thumbnailProvider,
-            reviewItemFilter: reviewItemFilter
+            reviewItemFilter: reviewItemFilter,
+            reviewSuppressionStore: reviewSuppressionStore
         )
     }
 }

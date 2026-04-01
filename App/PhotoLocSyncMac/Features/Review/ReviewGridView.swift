@@ -55,7 +55,9 @@ private struct ReviewGridItemView: View {
     let entry: ReviewSelection
     let isPhotoSelected: Bool
     let selectPhoto: (String, ReviewPhotoSelectionMode) -> Void
-    let toggleSelection: (String) -> Void
+    let applyChange: (String) async -> Void
+    let skipForNow: (String) -> Void
+    let dismissPermanently: (String) async -> Void
     let copyLocation: (String) -> Void
     let pasteLocation: (String) -> Void
     let canPasteLocation: (String) -> Bool
@@ -68,13 +70,14 @@ private struct ReviewGridItemView: View {
     @StateObject private var thumbnailLoader: ReviewThumbnailLoader
     @StateObject private var previewSourceAnchor = ReviewPreviewSourceAnchor()
     @State private var isShowingDeleteConfirmation = false
-
     init(
         entry: ReviewSelection,
         isPhotoSelected: Bool,
         thumbnailProvider: PhotoThumbnailProvider,
         selectPhoto: @escaping (String, ReviewPhotoSelectionMode) -> Void,
-        toggleSelection: @escaping (String) -> Void,
+        applyChange: @escaping (String) async -> Void,
+        skipForNow: @escaping (String) -> Void,
+        dismissPermanently: @escaping (String) async -> Void,
         copyLocation: @escaping (String) -> Void,
         pasteLocation: @escaping (String) -> Void,
         canPasteLocation: @escaping (String) -> Bool,
@@ -87,7 +90,9 @@ private struct ReviewGridItemView: View {
         self.entry = entry
         self.isPhotoSelected = isPhotoSelected
         self.selectPhoto = selectPhoto
-        self.toggleSelection = toggleSelection
+        self.applyChange = applyChange
+        self.skipForNow = skipForNow
+        self.dismissPermanently = dismissPermanently
         self.copyLocation = copyLocation
         self.pasteLocation = pasteLocation
         self.canPasteLocation = canPasteLocation
@@ -185,14 +190,33 @@ private struct ReviewGridItemView: View {
                 }
             }
 
-            Toggle(isOn: Binding(
-                get: { entry.isSelected },
-                set: { _ in toggleSelection(entry.id) }
-            )) {
-                Text(entry.item.suggestedDecision == nil ? "No suggested write" : "Apply to Photos")
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Review action")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+
+                Button("Apply") {
+                    Task {
+                        await applyChange(entry.id)
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(entry.item.suggestedDecision == nil)
+
+                HStack(spacing: 8) {
+                    Button("Skip for Now") {
+                        skipForNow(entry.id)
+                    }
+                    .buttonStyle(.bordered)
+
+                    Button("Never Show Again") {
+                        Task {
+                            await dismissPermanently(entry.id)
+                        }
+                    }
+                    .buttonStyle(.bordered)
+                }
             }
-            .toggleStyle(.switch)
-            .disabled(entry.item.suggestedDecision == nil)
         }
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -231,18 +255,10 @@ private struct ReviewGridItemView: View {
 
             Divider()
             Button("Delete Photo", role: .destructive) {
-                isShowingDeleteConfirmation = true
-            }
-        }
-        .alert("Delete Photo?", isPresented: $isShowingDeleteConfirmation) {
-            Button("Delete", role: .destructive) {
                 Task {
                     await deletePhoto(entry.id)
                 }
             }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("This removes the photo from Apple Photos.")
         }
     }
 
@@ -301,7 +317,9 @@ struct ReviewGridView: View {
     let selectedPhotoIDs: Set<String>
     let thumbnailProvider: PhotoThumbnailProvider
     let selectPhoto: (String, ReviewPhotoSelectionMode) -> Void
-    let toggleSelection: (String) -> Void
+    let applyChange: (String) async -> Void
+    let skipForNow: (String) -> Void
+    let dismissPermanently: (String) async -> Void
     let copyLocation: (String) -> Void
     let pasteLocation: (String) -> Void
     let canPasteLocation: (String) -> Bool
@@ -315,36 +333,64 @@ struct ReviewGridView: View {
         [GridItem(.adaptive(minimum: 240), spacing: 16)]
     }
 
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Click a photo to focus the map. Command-click toggles photos. Shift-click selects the range between photos.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+    private var focusedPhotoID: String? {
+        guard selectedPhotoIDs.count == 1 else { return nil }
+        return selectedPhotoIDs.first
+    }
 
-                LazyVGrid(columns: columns, alignment: .leading, spacing: 16) {
-                    ForEach(entries) { entry in
-                        ReviewGridItemView(
-                            entry: entry,
-                            isPhotoSelected: selectedPhotoIDs.contains(entry.id),
-                            thumbnailProvider: thumbnailProvider,
-                            selectPhoto: selectPhoto,
-                            toggleSelection: toggleSelection,
-                            copyLocation: copyLocation,
-                            pasteLocation: pasteLocation,
-                            canPasteLocation: canPasteLocation,
-                            deletePhoto: deletePhoto,
-                            showOnMap: showOnMap,
-                            quickLook: quickLook,
-                            captureDateText: captureDateText,
-                            timeDeltaText: timeDeltaText
-                        )
+    var body: some View {
+        ScrollViewReader { proxy in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Use the action buttons to work through the queue. Click a photo to focus the map. Command-click toggles photos. Shift-click selects the range between photos.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+
+                    LazyVGrid(columns: columns, alignment: .leading, spacing: 16) {
+                        ForEach(entries) { entry in
+                            ReviewGridItemView(
+                                entry: entry,
+                                isPhotoSelected: selectedPhotoIDs.contains(entry.id),
+                                thumbnailProvider: thumbnailProvider,
+                                selectPhoto: selectPhoto,
+                                applyChange: applyChange,
+                                skipForNow: skipForNow,
+                                dismissPermanently: dismissPermanently,
+                                copyLocation: copyLocation,
+                                pasteLocation: pasteLocation,
+                                canPasteLocation: canPasteLocation,
+                                deletePhoto: deletePhoto,
+                                showOnMap: showOnMap,
+                                quickLook: quickLook,
+                                captureDateText: captureDateText,
+                                timeDeltaText: timeDeltaText
+                            )
+                            .id(entry.id)
+                        }
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, 8)
             }
-            .padding(.vertical, 8)
+            .onAppear {
+                scrollToFocusedPhoto(using: proxy)
+            }
+            .onChange(of: focusedPhotoID) { _, _ in
+                scrollToFocusedPhoto(using: proxy)
+            }
+            .onChange(of: entries.map(\.id)) { _, _ in
+                scrollToFocusedPhoto(using: proxy)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    private func scrollToFocusedPhoto(using proxy: ScrollViewProxy) {
+        guard let focusedPhotoID else { return }
+        DispatchQueue.main.async {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                proxy.scrollTo(focusedPhotoID, anchor: .top)
+            }
+        }
     }
 }
