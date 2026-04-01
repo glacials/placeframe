@@ -5,8 +5,10 @@ This repository expects agents to leave a clean, reviewable git history.
 ## Commit Requirement
 
 - If you change any repository file, create a git commit for that change before you conclude your work unless the user explicitly says not to commit.
+- Do not perform task work directly on `main`; while an agent is actively working, that work must live on a dedicated branch checked out in a dedicated worktree unless the user explicitly says otherwise.
+- If a user asks an agent to resume or follow up on previously finished work, the agent must recreate a dedicated branch and worktree before making additional changes so the work still happens off `main`.
 - Once an agent has finished and verified its work, it must merge that work back into `main` before concluding unless the user explicitly says not to.
-- After merging verified work back into `main`, the agent must delete the task worktree before concluding unless the user explicitly says not to.
+- After merging verified work back into `main`, the agent must delete the task worktree and remove the task branch before concluding unless the user explicitly says not to.
 - Do not leave verified code or documentation edits unstaged or uncommitted.
 - Keep commits focused. Use one commit per logical change when practical.
 - `make lint` must pass before creating a commit. Do not commit while lint is failing or warnings remain.
