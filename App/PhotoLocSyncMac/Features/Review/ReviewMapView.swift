@@ -10,6 +10,37 @@ private struct ReviewMapCluster: Identifiable {
     let sampleLabel: String
 }
 
+struct ReviewMapViewportSnapshot: Equatable {
+    let centerLatitude: CLLocationDegrees
+    let centerLongitude: CLLocationDegrees
+    let latitudeDelta: CLLocationDegrees
+    let longitudeDelta: CLLocationDegrees
+
+    init(region: MKCoordinateRegion) {
+        centerLatitude = region.center.latitude
+        centerLongitude = region.center.longitude
+        latitudeDelta = region.span.latitudeDelta
+        longitudeDelta = region.span.longitudeDelta
+    }
+
+    func isMeaningfullyDifferent(from expected: Self) -> Bool {
+        let latitudeTolerance = max(expected.latitudeDelta * 0.12, 0.0005)
+        let longitudeTolerance = max(expected.longitudeDelta * 0.12, 0.0005)
+        let latitudeZoomDelta = Self.relativeDelta(from: expected.latitudeDelta, to: latitudeDelta)
+        let longitudeZoomDelta = Self.relativeDelta(from: expected.longitudeDelta, to: longitudeDelta)
+
+        return abs(centerLatitude - expected.centerLatitude) > latitudeTolerance
+            || abs(centerLongitude - expected.centerLongitude) > longitudeTolerance
+            || latitudeZoomDelta > 0.18
+            || longitudeZoomDelta > 0.18
+    }
+
+    private static func relativeDelta(from expected: CLLocationDegrees, to current: CLLocationDegrees) -> CLLocationDegrees {
+        guard expected != 0 else { return abs(current) }
+        return abs(current - expected) / abs(expected)
+    }
+}
+
 struct ReviewMapView: View {
     let entries: [ReviewSelection]
     let selectionTargets: [ReviewMapSelectionTarget]
@@ -97,6 +128,7 @@ private struct ReviewMapNativeView: NSViewRepresentable {
         mapView.pointOfInterestFilter = .excludingAll
         mapView.register(ReviewClusterAnnotationView.self, forAnnotationViewWithReuseIdentifier: Coordinator.clusterReuseIdentifier)
         mapView.register(MKMarkerAnnotationView.self, forAnnotationViewWithReuseIdentifier: Coordinator.selectionReuseIdentifier)
+        context.coordinator.installControls(on: mapView)
         return mapView
     }
 
@@ -110,8 +142,19 @@ private struct ReviewMapNativeView: NSViewRepresentable {
 
         private var annotationSignature = ""
         private var cameraSignature = ""
+        private var currentClusters: [ReviewMapCluster] = []
+        private var currentSelectionTargets: [ReviewMapSelectionTarget] = []
+        private var expectedViewport: ReviewMapViewportSnapshot?
+        private var pendingViewportChangeCount = 0
+        private var viewportUpdateGeneration: UInt = 0
+        private weak var mapView: MKMapView?
+        private weak var recenterButton: NSButton?
 
         func update(mapView: MKMapView, clusters: [ReviewMapCluster], selectionTargets: [ReviewMapSelectionTarget]) {
+            self.mapView = mapView
+            currentClusters = clusters
+            currentSelectionTargets = selectionTargets
+
             let nextAnnotationSignature = Self.makeAnnotationSignature(for: clusters, selectionTargets: selectionTargets)
             if nextAnnotationSignature != annotationSignature {
                 mapView.removeAnnotations(mapView.annotations)
@@ -121,9 +164,41 @@ private struct ReviewMapNativeView: NSViewRepresentable {
 
             let nextCameraSignature = Self.makeCameraSignature(for: clusters, selectionTargets: selectionTargets)
             if nextCameraSignature != cameraSignature {
-                Self.applyVisibleRegion(to: mapView, clusters: clusters, selectionTargets: selectionTargets)
+                applyVisibleRegion(to: mapView, clusters: clusters, selectionTargets: selectionTargets)
                 cameraSignature = nextCameraSignature
             }
+        }
+
+        func installControls(on mapView: MKMapView) {
+            guard recenterButton == nil else { return }
+
+            let button = NSButton()
+            button.translatesAutoresizingMaskIntoConstraints = false
+            button.image = NSImage(
+                systemSymbolName: "location.fill",
+                accessibilityDescription: "Recenter map"
+            )
+            button.imagePosition = .imageOnly
+            button.setButtonType(.momentaryPushIn)
+            button.controlSize = .large
+            button.bezelStyle = .texturedRounded
+            button.isBordered = true
+            button.toolTip = "Recenter map"
+            button.target = self
+            button.action = #selector(recenterMap)
+            button.isHidden = true
+            button.setAccessibilityLabel("Recenter map")
+
+            mapView.addSubview(button)
+            NSLayoutConstraint.activate([
+                button.topAnchor.constraint(equalTo: mapView.topAnchor, constant: 14),
+                button.trailingAnchor.constraint(equalTo: mapView.trailingAnchor, constant: -14),
+                button.widthAnchor.constraint(equalToConstant: 34),
+                button.heightAnchor.constraint(equalTo: button.widthAnchor)
+            ])
+
+            recenterButton = button
+            self.mapView = mapView
         }
 
         func mapView(_ mapView: MKMapView, viewFor annotation: any MKAnnotation) -> MKAnnotationView? {
@@ -153,6 +228,24 @@ private struct ReviewMapNativeView: NSViewRepresentable {
             }
 
             return nil
+        }
+
+        func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool) {
+            let snapshot = ReviewMapViewportSnapshot(region: mapView.region)
+
+            if pendingViewportChangeCount > 0 {
+                expectedViewport = snapshot
+                pendingViewportChangeCount -= 1
+                setRecenterButtonHidden(true)
+                return
+            }
+
+            guard let expectedViewport else {
+                setRecenterButtonHidden(true)
+                return
+            }
+
+            setRecenterButtonHidden(!snapshot.isMeaningfullyDifferent(from: expectedViewport))
         }
 
         private static func makeAnnotations(clusters: [ReviewMapCluster], selectionTargets: [ReviewMapSelectionTarget]) -> [MKAnnotation] {
@@ -220,6 +313,36 @@ private struct ReviewMapNativeView: NSViewRepresentable {
                 edgePadding: NSEdgeInsets(top: 40, left: 40, bottom: 40, right: 40),
                 animated: true
             )
+        }
+
+        private func applyVisibleRegion(to mapView: MKMapView, clusters: [ReviewMapCluster], selectionTargets: [ReviewMapSelectionTarget]) {
+            pendingViewportChangeCount += 1
+            viewportUpdateGeneration &+= 1
+            let generation = viewportUpdateGeneration
+            setRecenterButtonHidden(true)
+            Self.applyVisibleRegion(to: mapView, clusters: clusters, selectionTargets: selectionTargets)
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self, weak mapView] in
+                guard
+                    let self,
+                    let mapView,
+                    self.viewportUpdateGeneration == generation
+                else {
+                    return
+                }
+
+                self.expectedViewport = ReviewMapViewportSnapshot(region: mapView.region)
+                self.pendingViewportChangeCount = 0
+            }
+        }
+
+        private func setRecenterButtonHidden(_ hidden: Bool) {
+            recenterButton?.isHidden = hidden
+        }
+
+        @objc private func recenterMap() {
+            guard let mapView else { return }
+            applyVisibleRegion(to: mapView, clusters: currentClusters, selectionTargets: currentSelectionTargets)
         }
     }
 }
