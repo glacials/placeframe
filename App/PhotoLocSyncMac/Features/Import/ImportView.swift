@@ -26,7 +26,7 @@ struct ImportView: View {
             }
 
             VStack(alignment: .leading, spacing: 16) {
-                Button("Import Timeline Export") {
+                Button("Import location-history.json") {
                     viewModel.presentImporter()
                 }
                 .buttonStyle(.borderedProminent)

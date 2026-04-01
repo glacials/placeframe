@@ -2,7 +2,7 @@
 
 1. Open `PhotoLocSyncMac.xcodeproj` in Xcode.
 2. Confirm the app launches to the import instructions screen.
-3. Use **Import Timeline Export** to select `location-history.json` or the anonymized fixture.
+3. Use **Import location-history.json** to select `location-history.json` or the anonymized fixture.
 4. Drag the same file onto the window and confirm drag-and-drop import works.
 5. Approve the Photos access prompt.
 6. Confirm the processing screen advances through each stage.
