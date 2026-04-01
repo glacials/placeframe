@@ -3,6 +3,7 @@ import SwiftUI
 struct ReviewView: View {
     @ObservedObject var viewModel: ReviewViewModel
     @StateObject private var quickLookController = ReviewQuickLookController()
+    private let mapPaneLeadingInset: CGFloat = 16
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -41,6 +42,7 @@ struct ReviewView: View {
                         entries: currentDaySection.entries,
                         selectionTargets: viewModel.mapSelectionTargets
                     )
+                        .padding(.leading, mapPaneLeadingInset)
                         .frame(minWidth: 320, idealWidth: 420, maxHeight: .infinity, alignment: .topLeading)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
