@@ -9,6 +9,7 @@ public struct ReviewItem: Identifiable, Hashable, Sendable {
     public let timeDelta: TimeInterval?
     public let disposition: MatchDisposition
     public let suggestedDecision: MatchDecision?
+    public let availableLocationOptions: [LocationOption]
 
     public init(
         asset: PhotoAsset,
@@ -17,7 +18,8 @@ public struct ReviewItem: Identifiable, Hashable, Sendable {
         confidence: MatchConfidence,
         timeDelta: TimeInterval?,
         disposition: MatchDisposition,
-        suggestedDecision: MatchDecision?
+        suggestedDecision: MatchDecision?,
+        availableLocationOptions: [LocationOption] = []
     ) {
         self.id = asset.id
         self.asset = asset
@@ -27,5 +29,27 @@ public struct ReviewItem: Identifiable, Hashable, Sendable {
         self.timeDelta = timeDelta
         self.disposition = disposition
         self.suggestedDecision = suggestedDecision
+        if availableLocationOptions.isEmpty,
+           let proposedCoordinate {
+            self.availableLocationOptions = [
+                LocationOption(
+                    precision: suggestedDecision?.precision ?? .exact,
+                    coordinate: proposedCoordinate,
+                    label: locationLabel
+                )
+            ]
+        } else {
+            self.availableLocationOptions = availableLocationOptions.sorted {
+                $0.precision.rawValue < $1.precision.rawValue
+            }
+        }
+    }
+
+    public var selectedPrecision: LocationPrecision? {
+        suggestedDecision?.precision ?? availableLocationOptions.first?.precision
+    }
+
+    public func locationOption(for precision: LocationPrecision) -> LocationOption? {
+        availableLocationOptions.first { $0.precision == precision }
     }
 }

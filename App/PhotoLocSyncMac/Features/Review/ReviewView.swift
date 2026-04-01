@@ -17,6 +17,7 @@ struct ReviewView: View {
                         selectedPhotoIDs: viewModel.selectedPhotoIDs,
                         thumbnailProvider: viewModel.thumbnailProvider,
                         selectPhoto: viewModel.selectPhoto(_:mode:),
+                        setLocationPrecision: { viewModel.selectLocationPrecision($1, for: $0) },
                         applyChange: viewModel.applyChange(for:),
                         applyChanges: viewModel.applyChanges(for:),
                         skipForNow: viewModel.skipForNow(_:),
@@ -77,7 +78,7 @@ struct ReviewView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Review Proposed Locations")
                 .font(.largeTitle.bold())
-            Text("Review one day at a time. Nothing is written to Apple Photos until you press Apply on a photo or Apply Day.")
+            Text("Each card shows a timeline-based suggestion for a photo that currently has no saved location in Apple Photos. Review one day at a time and choose how precise the saved place should be before writing it.")
                 .foregroundStyle(.secondary)
 
             HStack(spacing: 12) {
@@ -117,7 +118,7 @@ struct ReviewView: View {
                     await viewModel.applyCurrentDay()
                 }
             } label: {
-                Label(viewModel.isApplyingCurrentDay ? "Applying..." : "Apply Day", systemImage: "checkmark.circle")
+                Label(viewModel.isApplyingCurrentDay ? "Writing..." : "Write Day", systemImage: "checkmark.circle")
             }
             .buttonStyle(.borderedProminent)
             .disabled(!viewModel.canApplyCurrentDay)
@@ -140,7 +141,7 @@ struct ReviewView: View {
 
             Spacer()
 
-            Text("Use each photo's buttons for one-off actions, or right-click selected photos to apply, skip, or hide them together.")
+            Text("Mark a suggestion correct to write it, or incorrect to skip or hide it. Right-click selected photos to change precision or act on them together.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }

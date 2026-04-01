@@ -32,8 +32,8 @@ enum ReviewPhotoSelectionMode {
 
 private struct CopiedLocation {
     let sourceAssetID: String
-    let coordinate: GeoCoordinate
-    let label: String
+    let locationOptions: [LocationOption]
+    let selectedPrecision: LocationPrecision
     let confidence: MatchConfidence
 }
 
@@ -213,6 +213,44 @@ final class ReviewViewModel: ObservableObject {
         }
     }
 
+    func availableLocationPrecisions(for assetID: String) -> [LocationPrecision] {
+        availableLocationPrecisions(for: [assetID])
+    }
+
+    func availableLocationPrecisions(for assetIDs: [String]) -> [LocationPrecision] {
+        let orderedSelections = orderedSelections(for: assetIDs)
+        guard let firstSelection = orderedSelections.first else {
+            return []
+        }
+
+        var sharedPrecisions = Set(firstSelection.item.availableLocationOptions.map(\.precision))
+        for selection in orderedSelections.dropFirst() {
+            sharedPrecisions.formIntersection(selection.item.availableLocationOptions.map(\.precision))
+        }
+
+        return LocationPrecision.allCases.filter { sharedPrecisions.contains($0) }
+    }
+
+    func selectLocationPrecision(_ precision: LocationPrecision, for assetID: String) {
+        selectLocationPrecision(precision, for: [assetID])
+    }
+
+    func selectLocationPrecision(_ precision: LocationPrecision, for assetIDs: [String]) {
+        for selection in orderedSelections(for: assetIDs) {
+            guard let index = selections.firstIndex(where: { $0.id == selection.id }),
+                  selection.item.locationOption(for: precision) != nil else {
+                continue
+            }
+
+            selections[index].item = reviewItem(
+                for: selection,
+                locationOptions: selection.item.availableLocationOptions,
+                selectedPrecision: precision,
+                confidence: selection.item.confidence
+            )
+        }
+    }
+
     func showOnMap(_ item: ReviewItem) {
         guard item.proposedCoordinate != nil else { return }
         selectedPhotoIDs = [item.id]
@@ -369,41 +407,63 @@ final class ReviewViewModel: ObservableObject {
         if let decision = selection.item.suggestedDecision {
             return CopiedLocation(
                 sourceAssetID: selection.id,
-                coordinate: decision.coordinate,
-                label: decision.label,
+                locationOptions: selection.item.availableLocationOptions,
+                selectedPrecision: decision.precision,
                 confidence: decision.confidence
             )
         }
 
-        guard let coordinate = selection.item.proposedCoordinate else {
+        guard selection.item.proposedCoordinate != nil else {
             return nil
         }
 
         return CopiedLocation(
             sourceAssetID: selection.id,
-            coordinate: coordinate,
-            label: selection.item.locationLabel,
+            locationOptions: selection.item.availableLocationOptions,
+            selectedPrecision: selection.item.selectedPrecision ?? .exact,
             confidence: selection.item.confidence
         )
     }
 
     private func reviewItem(for selection: ReviewSelection, using copiedLocation: CopiedLocation) -> ReviewItem {
+        reviewItem(
+            for: selection,
+            locationOptions: copiedLocation.locationOptions,
+            selectedPrecision: copiedLocation.selectedPrecision,
+            confidence: copiedLocation.confidence
+        )
+    }
+
+    private func reviewItem(
+        for selection: ReviewSelection,
+        locationOptions: [LocationOption],
+        selectedPrecision: LocationPrecision,
+        confidence: MatchConfidence
+    ) -> ReviewItem {
+        let resolvedLocationOptions = locationOptions.isEmpty ? selection.item.availableLocationOptions : locationOptions
+        guard let selectedOption = resolvedLocationOptions.first(where: { $0.precision == selectedPrecision })
+            ?? resolvedLocationOptions.first else {
+            return selection.item
+        }
+
         let decision = MatchDecision(
             assetID: selection.item.asset.id,
             captureDate: selection.item.asset.creationDate,
-            coordinate: copiedLocation.coordinate,
-            label: copiedLocation.label,
-            confidence: copiedLocation.confidence
+            coordinate: selectedOption.coordinate,
+            label: selectedOption.label,
+            confidence: confidence,
+            precision: selectedOption.precision
         )
 
         return ReviewItem(
             asset: selection.item.asset,
-            proposedCoordinate: copiedLocation.coordinate,
-            locationLabel: copiedLocation.label,
-            confidence: copiedLocation.confidence,
+            proposedCoordinate: selectedOption.coordinate,
+            locationLabel: selectedOption.label,
+            confidence: confidence,
             timeDelta: selection.item.timeDelta,
             disposition: selection.item.disposition,
-            suggestedDecision: decision
+            suggestedDecision: decision,
+            availableLocationOptions: resolvedLocationOptions
         )
     }
 

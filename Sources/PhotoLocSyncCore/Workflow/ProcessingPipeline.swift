@@ -61,24 +61,30 @@ public final class ProcessingPipeline: Sendable {
                 continue
             }
 
-            let label = await geocoder.label(for: point.coordinate)
-            let finalLabel = label.isEmpty ? labelFormatter.string(for: point.coordinate) : label
+            let resolvedLocation = await geocoder.resolveLocation(for: point.coordinate)
+            let defaultOption = resolvedLocation.defaultOption ?? LocationOption(
+                precision: .exact,
+                coordinate: point.coordinate,
+                label: labelFormatter.string(for: point.coordinate)
+            )
             let decision = MatchDecision(
                 assetID: match.asset.id,
                 captureDate: match.asset.creationDate,
-                coordinate: point.coordinate,
-                label: finalLabel,
-                confidence: match.confidence
+                coordinate: defaultOption.coordinate,
+                label: defaultOption.label,
+                confidence: match.confidence,
+                precision: defaultOption.precision
             )
             built.append(
                 ReviewItem(
                     asset: match.asset,
-                    proposedCoordinate: point.coordinate,
-                    locationLabel: finalLabel,
+                    proposedCoordinate: defaultOption.coordinate,
+                    locationLabel: defaultOption.label,
                     confidence: match.confidence,
                     timeDelta: match.timeDelta,
                     disposition: match.disposition,
-                    suggestedDecision: match.disposition == .unmatched ? nil : decision
+                    suggestedDecision: match.disposition == .unmatched ? nil : decision,
+                    availableLocationOptions: resolvedLocation.options
                 )
             )
         }

@@ -56,7 +56,10 @@ private struct ReviewGridItemView: View {
     let isPhotoSelected: Bool
     let contextMenuTargetIDs: [String]
     let canApplyContextMenuTargets: Bool
+    let contextMenuPrecisions: [LocationPrecision]
+    let selectedContextMenuPrecision: LocationPrecision?
     let selectPhoto: (String, ReviewPhotoSelectionMode) -> Void
+    let setLocationPrecision: ([String], LocationPrecision) -> Void
     let applyChange: (String) async -> Void
     let applyChanges: ([String]) async -> Void
     let skipForNow: (String) -> Void
@@ -79,8 +82,11 @@ private struct ReviewGridItemView: View {
         isPhotoSelected: Bool,
         contextMenuTargetIDs: [String],
         canApplyContextMenuTargets: Bool,
+        contextMenuPrecisions: [LocationPrecision],
+        selectedContextMenuPrecision: LocationPrecision?,
         thumbnailProvider: PhotoThumbnailProvider,
         selectPhoto: @escaping (String, ReviewPhotoSelectionMode) -> Void,
+        setLocationPrecision: @escaping ([String], LocationPrecision) -> Void,
         applyChange: @escaping (String) async -> Void,
         applyChanges: @escaping ([String]) async -> Void,
         skipForNow: @escaping (String) -> Void,
@@ -100,7 +106,10 @@ private struct ReviewGridItemView: View {
         self.isPhotoSelected = isPhotoSelected
         self.contextMenuTargetIDs = contextMenuTargetIDs
         self.canApplyContextMenuTargets = canApplyContextMenuTargets
+        self.contextMenuPrecisions = contextMenuPrecisions
+        self.selectedContextMenuPrecision = selectedContextMenuPrecision
         self.selectPhoto = selectPhoto
+        self.setLocationPrecision = setLocationPrecision
         self.applyChange = applyChange
         self.applyChanges = applyChanges
         self.skipForNow = skipForNow
@@ -121,6 +130,7 @@ private struct ReviewGridItemView: View {
     var body: some View {
         let hasLocation = entry.item.proposedCoordinate != nil
         let canPasteCopiedLocation = canPasteLocation(contextMenuTargetIDs)
+        let selectedPrecisionTitle = entry.item.selectedPrecision?.title ?? LocationPrecision.exact.title
 
         VStack(alignment: .leading, spacing: 12) {
             ZStack {
@@ -156,12 +166,20 @@ private struct ReviewGridItemView: View {
             }
 
             VStack(alignment: .leading, spacing: 6) {
+                Text("Timeline suggestion")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+
                 Text(entry.item.locationLabel)
                     .font(.headline)
                     .lineLimit(3)
                     .truncationMode(.tail)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
+
+                Text(entry.item.asset.hasLocation ? "Apple Photos already has saved location metadata." : "Apple Photos currently has no saved location metadata.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
 
                 Label(captureDateText(entry.item), systemImage: "calendar")
                     .foregroundStyle(.secondary)
@@ -180,8 +198,11 @@ private struct ReviewGridItemView: View {
 
                 if let coordinate = entry.item.proposedCoordinate {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(entry.copiedFromAssetID == nil ? "Raw match" : "Pasted location")
+                        Text("What will be written")
                             .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                        Text(selectedPrecisionTitle)
+                            .font(.caption)
                             .foregroundStyle(.secondary)
                         Text(String(format: "%.6f, %.6f", coordinate.latitude, coordinate.longitude))
                             .font(.caption.monospaced())
@@ -192,12 +213,10 @@ private struct ReviewGridItemView: View {
                                 .foregroundStyle(.tertiary)
                                 .lineLimit(1)
                                 .truncationMode(.middle)
-                        } else if let decision = entry.item.suggestedDecision {
-                            Text("Asset: \(decision.assetID)")
-                                .font(.caption2.monospaced())
+                        } else {
+                            Text("Source: this photo's timeline match")
+                                .font(.caption2)
                                 .foregroundStyle(.tertiary)
-                                .lineLimit(1)
-                                .truncationMode(.middle)
                         }
                     }
                     .padding(.top, 2)
@@ -205,11 +224,28 @@ private struct ReviewGridItemView: View {
             }
 
             VStack(alignment: .leading, spacing: 8) {
-                Text("Review action")
+                Text("Does this suggested location look right?")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
 
-                Button("Apply") {
+                Menu {
+                    ForEach(entry.item.availableLocationOptions) { option in
+                        Button {
+                            setLocationPrecision([entry.id], option.precision)
+                        } label: {
+                            if entry.item.selectedPrecision == option.precision {
+                                Label(option.precision.title, systemImage: "checkmark")
+                            } else {
+                                Text(option.precision.title)
+                            }
+                        }
+                    }
+                } label: {
+                    Label("Precision: \(selectedPrecisionTitle)", systemImage: "slider.horizontal.3")
+                }
+                .buttonStyle(.bordered)
+
+                Button("This Looks Correct") {
                     Task {
                         await applyChange(entry.id)
                     }
@@ -217,19 +253,18 @@ private struct ReviewGridItemView: View {
                 .buttonStyle(.borderedProminent)
                 .disabled(entry.item.suggestedDecision == nil)
 
-                HStack(spacing: 8) {
+                Menu("This Looks Wrong") {
                     Button("Skip for Now") {
                         skipForNow(entry.id)
                     }
-                    .buttonStyle(.bordered)
 
                     Button("Never Show Again") {
                         Task {
                             await dismissPermanently(entry.id)
                         }
                     }
-                    .buttonStyle(.bordered)
                 }
+                .buttonStyle(.bordered)
             }
         }
         .padding()
@@ -249,6 +284,22 @@ private struct ReviewGridItemView: View {
             }
 
             Divider()
+            if !contextMenuPrecisions.isEmpty {
+                Menu(precisionContextMenuTitle) {
+                    ForEach(contextMenuPrecisions) { precision in
+                        Button {
+                            setLocationPrecision(contextMenuTargetIDs, precision)
+                        } label: {
+                            if selectedContextMenuPrecision == precision {
+                                Label(precision.title, systemImage: "checkmark")
+                            } else {
+                                Text(precision.title)
+                            }
+                        }
+                    }
+                }
+            }
+
             Button(applyContextMenuTitle) {
                 Task {
                     await applyChanges(contextMenuTargetIDs)
@@ -256,13 +307,15 @@ private struct ReviewGridItemView: View {
             }
             .disabled(!canApplyContextMenuTargets)
 
-            Button(skipContextMenuTitle) {
-                skipPhotosForNow(contextMenuTargetIDs)
-            }
+            Menu(incorrectContextMenuTitle) {
+                Button(skipContextMenuTitle) {
+                    skipPhotosForNow(contextMenuTargetIDs)
+                }
 
-            Button(dismissContextMenuTitle) {
-                Task {
-                    await dismissPhotosPermanently(contextMenuTargetIDs)
+                Button(dismissContextMenuTitle) {
+                    Task {
+                        await dismissPhotosPermanently(contextMenuTargetIDs)
+                    }
                 }
             }
 
@@ -303,7 +356,11 @@ private struct ReviewGridItemView: View {
     }
 
     private var applyContextMenuTitle: String {
-        appliesToMultiplePhotos ? "Apply Selected (\(contextMenuTargetIDs.count))" : "Apply"
+        appliesToMultiplePhotos ? "These Look Correct (\(contextMenuTargetIDs.count))" : "This Looks Correct"
+    }
+
+    private var incorrectContextMenuTitle: String {
+        appliesToMultiplePhotos ? "These Look Wrong (\(contextMenuTargetIDs.count))" : "This Looks Wrong"
     }
 
     private var skipContextMenuTitle: String {
@@ -312,6 +369,10 @@ private struct ReviewGridItemView: View {
 
     private var dismissContextMenuTitle: String {
         appliesToMultiplePhotos ? "Never Show Selected Again (\(contextMenuTargetIDs.count))" : "Never Show Again"
+    }
+
+    private var precisionContextMenuTitle: String {
+        appliesToMultiplePhotos ? "Choose Precision (\(contextMenuTargetIDs.count))" : "Choose Precision"
     }
 
     private var selectionMode: ReviewPhotoSelectionMode {
@@ -365,6 +426,7 @@ struct ReviewGridView: View {
     let selectedPhotoIDs: Set<String>
     let thumbnailProvider: PhotoThumbnailProvider
     let selectPhoto: (String, ReviewPhotoSelectionMode) -> Void
+    let setLocationPrecision: ([String], LocationPrecision) -> Void
     let applyChange: (String) async -> Void
     let applyChanges: ([String]) async -> Void
     let skipForNow: (String) -> Void
@@ -393,7 +455,7 @@ struct ReviewGridView: View {
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Use the action buttons to work through the queue. Click a photo to focus the map. Command-click toggles photos. Shift-click selects the range between photos. Command-A selects every photo on the current day. Right-click a selected group to apply, skip, or hide multiple photos at once.")
+                    Text("Each photo shows a timeline suggestion, not existing metadata from Apple Photos. Click a photo to focus the map. Command-click toggles photos. Shift-click selects the range between photos. Command-A selects every photo on the current day. Right-click a selected group to change precision or mark it correct or incorrect together.")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
 
@@ -405,8 +467,11 @@ struct ReviewGridView: View {
                                 isPhotoSelected: selectedPhotoIDs.contains(entry.id),
                                 contextMenuTargetIDs: contextMenuTargetIDs,
                                 canApplyContextMenuTargets: canApply(to: contextMenuTargetIDs),
+                                contextMenuPrecisions: contextMenuPrecisions(for: contextMenuTargetIDs),
+                                selectedContextMenuPrecision: selectedPrecision(for: contextMenuTargetIDs),
                                 thumbnailProvider: thumbnailProvider,
                                 selectPhoto: selectPhoto,
+                                setLocationPrecision: setLocationPrecision,
                                 applyChange: applyChange,
                                 applyChanges: applyChanges,
                                 skipForNow: skipForNow,
@@ -468,5 +533,34 @@ struct ReviewGridView: View {
         return entries
             .filter { targetAssetIDs.contains($0.id) }
             .allSatisfy { $0.item.suggestedDecision != nil }
+    }
+
+    private func contextMenuPrecisions(for assetIDs: [String]) -> [LocationPrecision] {
+        let targetAssetIDs = Set(assetIDs)
+        guard let firstEntry = entries.first(where: { targetAssetIDs.contains($0.id) }) else {
+            return []
+        }
+
+        var sharedPrecisions = Set(firstEntry.item.availableLocationOptions.map(\.precision))
+        for entry in entries where targetAssetIDs.contains(entry.id) {
+            sharedPrecisions.formIntersection(entry.item.availableLocationOptions.map(\.precision))
+        }
+
+        return LocationPrecision.allCases.filter { sharedPrecisions.contains($0) }
+    }
+
+    private func selectedPrecision(for assetIDs: [String]) -> LocationPrecision? {
+        let targetAssetIDs = Set(assetIDs)
+        let precisions = entries
+            .filter { targetAssetIDs.contains($0.id) }
+            .compactMap(\.item.selectedPrecision)
+
+        guard let firstPrecision = precisions.first,
+              precisions.count == assetIDs.count,
+              precisions.allSatisfy({ $0 == firstPrecision }) else {
+            return nil
+        }
+
+        return firstPrecision
     }
 }

@@ -128,6 +128,148 @@ final class ReviewViewModelTests: XCTestCase {
         )
     }
 
+    func testPasteLocationCarriesSelectedPrecisionAndOptionsFromSourcePhoto() throws {
+        let exactCoordinate = GeoCoordinate(latitude: 35.7101, longitude: 139.8107)
+        let cityCoordinate = GeoCoordinate(latitude: 35.6764, longitude: 139.6500)
+        let regionCoordinate = GeoCoordinate(latitude: 36.2048, longitude: 138.2529)
+        let countryCoordinate = GeoCoordinate(latitude: 36.2048, longitude: 138.2529)
+        let sourceItem = makeReviewItem(
+            assetID: "source-photo",
+            coordinate: exactCoordinate,
+            label: "Ueno Zoo, Tokyo, Japan",
+            confidence: .excellent,
+            disposition: .autoSuggested,
+            options: [
+                LocationOption(precision: .exact, coordinate: exactCoordinate, label: "Ueno Zoo, Tokyo, Japan"),
+                LocationOption(precision: .city, coordinate: cityCoordinate, label: "Tokyo, Japan"),
+                LocationOption(precision: .region, coordinate: regionCoordinate, label: "Tokyo Prefecture, Japan"),
+                LocationOption(precision: .country, coordinate: countryCoordinate, label: "Japan")
+            ],
+            selectedPrecision: .country
+        )
+        let targetItem = makeReviewItem(
+            assetID: "target-photo",
+            coordinate: GeoCoordinate(latitude: 34.6937, longitude: 135.5023),
+            label: "Osaka",
+            confidence: .maybe,
+            disposition: .ambiguous
+        )
+        let viewModel = makeViewModel(items: [sourceItem, targetItem])
+
+        viewModel.copyLocation(for: sourceItem.id)
+        viewModel.pasteLocation(into: targetItem.id)
+
+        let updatedTarget = try XCTUnwrap(viewModel.selections.first { $0.id == targetItem.id })
+        XCTAssertEqual(updatedTarget.item.locationLabel, "Japan")
+        XCTAssertEqual(updatedTarget.item.proposedCoordinate, countryCoordinate)
+        XCTAssertEqual(updatedTarget.item.suggestedDecision?.precision, .country)
+        XCTAssertEqual(updatedTarget.item.availableLocationOptions.map(\.precision), [.exact, .city, .region, .country])
+    }
+
+    func testSelectLocationPrecisionUpdatesPendingDecisionAndFocusedMapPin() throws {
+        let exactCoordinate = GeoCoordinate(latitude: 40.7678, longitude: -73.9718)
+        let cityCoordinate = GeoCoordinate(latitude: 40.7128, longitude: -74.0060)
+        let regionCoordinate = GeoCoordinate(latitude: 43.0000, longitude: -75.0000)
+        let countryCoordinate = GeoCoordinate(latitude: 39.8283, longitude: -98.5795)
+        let item = makeReviewItem(
+            assetID: "photo",
+            coordinate: exactCoordinate,
+            label: "Central Park Zoo, New York, NY, United States",
+            confidence: .excellent,
+            disposition: .autoSuggested,
+            options: [
+                LocationOption(precision: .exact, coordinate: exactCoordinate, label: "Central Park Zoo, New York, NY, United States"),
+                LocationOption(precision: .city, coordinate: cityCoordinate, label: "New York, NY, United States"),
+                LocationOption(precision: .region, coordinate: regionCoordinate, label: "NY, United States"),
+                LocationOption(precision: .country, coordinate: countryCoordinate, label: "United States")
+            ]
+        )
+        let viewModel = makeViewModel(items: [item])
+
+        viewModel.showOnMap(item)
+        viewModel.selectLocationPrecision(.city, for: item.id)
+
+        let updatedItem = try XCTUnwrap(viewModel.selections.first { $0.id == item.id })
+        XCTAssertEqual(updatedItem.item.locationLabel, "New York, NY, United States")
+        XCTAssertEqual(updatedItem.item.proposedCoordinate, cityCoordinate)
+        XCTAssertEqual(updatedItem.item.suggestedDecision?.precision, .city)
+        XCTAssertEqual(
+            viewModel.mapSelectionTargets,
+            [ReviewMapSelectionTarget(id: item.id, coordinate: cityCoordinate, label: "New York, NY, United States")]
+        )
+    }
+
+    func testSelectLocationPrecisionUpdatesEverySelectedPhoto() throws {
+        let firstItem = makeReviewItem(
+            assetID: "first-photo",
+            coordinate: GeoCoordinate(latitude: 35.7101, longitude: 139.8107),
+            label: "Ueno Zoo, Tokyo, Japan",
+            confidence: .excellent,
+            disposition: .autoSuggested,
+            options: [
+                LocationOption(precision: .exact, coordinate: GeoCoordinate(latitude: 35.7101, longitude: 139.8107), label: "Ueno Zoo, Tokyo, Japan"),
+                LocationOption(precision: .city, coordinate: GeoCoordinate(latitude: 35.6764, longitude: 139.6500), label: "Tokyo, Japan"),
+                LocationOption(precision: .country, coordinate: GeoCoordinate(latitude: 36.2048, longitude: 138.2529), label: "Japan")
+            ]
+        )
+        let secondItem = makeReviewItem(
+            assetID: "second-photo",
+            coordinate: GeoCoordinate(latitude: 34.6654, longitude: 135.4323),
+            label: "Osaka Aquarium Kaiyukan, Osaka, Japan",
+            confidence: .acceptable,
+            disposition: .autoSuggested,
+            options: [
+                LocationOption(precision: .exact, coordinate: GeoCoordinate(latitude: 34.6654, longitude: 135.4323), label: "Osaka Aquarium Kaiyukan, Osaka, Japan"),
+                LocationOption(precision: .city, coordinate: GeoCoordinate(latitude: 34.6937, longitude: 135.5023), label: "Osaka, Japan"),
+                LocationOption(precision: .country, coordinate: GeoCoordinate(latitude: 36.2048, longitude: 138.2529), label: "Japan")
+            ]
+        )
+        let viewModel = makeViewModel(items: [firstItem, secondItem])
+
+        viewModel.selectPhoto(firstItem.id, mode: .replace)
+        viewModel.selectPhoto(secondItem.id, mode: .toggle)
+        viewModel.selectLocationPrecision(.city, for: [firstItem.id, secondItem.id])
+
+        let updatedFirstItem = try XCTUnwrap(viewModel.selections.first { $0.id == firstItem.id })
+        let updatedSecondItem = try XCTUnwrap(viewModel.selections.first { $0.id == secondItem.id })
+        XCTAssertEqual(updatedFirstItem.item.locationLabel, "Tokyo, Japan")
+        XCTAssertEqual(updatedFirstItem.item.suggestedDecision?.precision, .city)
+        XCTAssertEqual(updatedSecondItem.item.locationLabel, "Osaka, Japan")
+        XCTAssertEqual(updatedSecondItem.item.suggestedDecision?.precision, .city)
+        XCTAssertEqual(viewModel.selectedPhotoIDs, Set([firstItem.id, secondItem.id]))
+    }
+
+    func testAvailableLocationPrecisionsReturnsIntersectionAcrossSelection() {
+        let firstItem = makeReviewItem(
+            assetID: "first-photo",
+            coordinate: GeoCoordinate(latitude: 35.7101, longitude: 139.8107),
+            label: "Tokyo",
+            confidence: .excellent,
+            disposition: .autoSuggested,
+            options: [
+                LocationOption(precision: .exact, coordinate: GeoCoordinate(latitude: 35.7101, longitude: 139.8107), label: "Ueno Zoo, Tokyo, Japan"),
+                LocationOption(precision: .city, coordinate: GeoCoordinate(latitude: 35.6764, longitude: 139.6500), label: "Tokyo, Japan"),
+                LocationOption(precision: .country, coordinate: GeoCoordinate(latitude: 36.2048, longitude: 138.2529), label: "Japan")
+            ]
+        )
+        let secondItem = makeReviewItem(
+            assetID: "second-photo",
+            coordinate: GeoCoordinate(latitude: 34.6654, longitude: 135.4323),
+            label: "Osaka",
+            confidence: .acceptable,
+            disposition: .autoSuggested,
+            options: [
+                LocationOption(precision: .exact, coordinate: GeoCoordinate(latitude: 34.6654, longitude: 135.4323), label: "Osaka Aquarium Kaiyukan, Osaka, Japan"),
+                LocationOption(precision: .city, coordinate: GeoCoordinate(latitude: 34.6937, longitude: 135.5023), label: "Osaka, Japan"),
+                LocationOption(precision: .region, coordinate: GeoCoordinate(latitude: 34.8000, longitude: 135.5000), label: "Osaka Prefecture, Japan"),
+                LocationOption(precision: .country, coordinate: GeoCoordinate(latitude: 36.2048, longitude: 138.2529), label: "Japan")
+            ]
+        )
+        let viewModel = makeViewModel(items: [firstItem, secondItem])
+
+        XCTAssertEqual(viewModel.availableLocationPrecisions(for: [firstItem.id, secondItem.id]), [.exact, .city, .country])
+    }
+
     func testSelectingMultiplePhotosProducesMultiPhotoMapSelection() {
         let sourceItem = makeReviewItem(
             assetID: "source-photo",
@@ -718,6 +860,8 @@ final class ReviewViewModelTests: XCTestCase {
         label: String,
         confidence: MatchConfidence,
         disposition: MatchDisposition,
+        options: [LocationOption]? = nil,
+        selectedPrecision: LocationPrecision = .exact,
         creationDate: Date = Date(timeIntervalSince1970: 1_700_300_000)
     ) -> ReviewItem {
         let asset = PhotoAsset(
@@ -725,22 +869,28 @@ final class ReviewViewModelTests: XCTestCase {
             creationDate: creationDate,
             hasLocation: false
         )
+        let resolvedOptions = options ?? [
+            LocationOption(precision: .exact, coordinate: coordinate, label: label)
+        ]
+        let selectedOption = resolvedOptions.first(where: { $0.precision == selectedPrecision }) ?? resolvedOptions[0]
         let decision = MatchDecision(
             assetID: assetID,
             captureDate: asset.creationDate,
-            coordinate: coordinate,
-            label: label,
-            confidence: confidence
+            coordinate: selectedOption.coordinate,
+            label: selectedOption.label,
+            confidence: confidence,
+            precision: selectedOption.precision
         )
 
         return ReviewItem(
             asset: asset,
-            proposedCoordinate: coordinate,
-            locationLabel: label,
+            proposedCoordinate: selectedOption.coordinate,
+            locationLabel: selectedOption.label,
             confidence: confidence,
             timeDelta: 60,
             disposition: disposition,
-            suggestedDecision: decision
+            suggestedDecision: decision,
+            availableLocationOptions: resolvedOptions
         )
     }
 }
