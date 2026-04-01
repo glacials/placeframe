@@ -6,6 +6,7 @@ This repository expects agents to leave a clean, reviewable git history.
 
 - If you change any repository file, create a git commit for that change before you conclude your work unless the user explicitly says not to commit.
 - Once an agent has finished and verified its work, it must merge that work back into `main` before concluding unless the user explicitly says not to.
+- After merging verified work back into `main`, the agent must delete the task worktree before concluding unless the user explicitly says not to.
 - Do not leave verified code or documentation edits unstaged or uncommitted.
 - Keep commits focused. Use one commit per logical change when practical.
 - `make lint` must pass before creating a commit. Do not commit while lint is failing or warnings remain.
