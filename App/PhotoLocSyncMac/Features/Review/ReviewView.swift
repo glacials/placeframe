@@ -24,8 +24,8 @@ struct ReviewView: View {
                         dismissPermanently: viewModel.dismissPermanently(_:),
                         dismissPhotosPermanently: viewModel.dismissPhotosPermanently(_:),
                         copyLocation: viewModel.copyLocation(for:),
-                        pasteLocation: viewModel.pasteLocation(into:),
-                        canPasteLocation: viewModel.canPasteLocation(into:),
+                        pasteLocation: { viewModel.pasteLocation(into: $0) },
+                        canPasteLocation: { viewModel.canPasteLocation(into: $0) },
                         deletePhoto: viewModel.deletePhoto(_:),
                         showOnMap: viewModel.showOnMap(_:),
                         quickLook: { item, sourceView, transitionImage in

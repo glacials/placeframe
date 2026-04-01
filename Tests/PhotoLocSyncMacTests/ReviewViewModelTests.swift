@@ -73,6 +73,61 @@ final class ReviewViewModelTests: XCTestCase {
         )
     }
 
+    func testPasteLocationUpdatesEverySelectedPhoto() throws {
+        let sourceCoordinate = GeoCoordinate(latitude: 35.6895, longitude: 139.6917)
+        let firstTargetCoordinate = GeoCoordinate(latitude: 34.6937, longitude: 135.5023)
+        let secondTargetCoordinate = GeoCoordinate(latitude: 43.0618, longitude: 141.3545)
+        let sourceItem = makeReviewItem(
+            assetID: "source-photo",
+            coordinate: sourceCoordinate,
+            label: "Shinjuku, Tokyo",
+            confidence: .excellent,
+            disposition: .autoSuggested
+        )
+        let firstTargetItem = makeReviewItem(
+            assetID: "first-target-photo",
+            coordinate: firstTargetCoordinate,
+            label: "Osaka",
+            confidence: .maybe,
+            disposition: .ambiguous
+        )
+        let secondTargetItem = makeReviewItem(
+            assetID: "second-target-photo",
+            coordinate: secondTargetCoordinate,
+            label: "Sapporo",
+            confidence: .acceptable,
+            disposition: .ambiguous
+        )
+        let viewModel = makeViewModel(items: [sourceItem, firstTargetItem, secondTargetItem])
+
+        viewModel.selectPhoto(firstTargetItem.id, mode: .replace)
+        viewModel.selectPhoto(secondTargetItem.id, mode: .toggle)
+        viewModel.copyLocation(for: sourceItem.id)
+
+        XCTAssertTrue(viewModel.canPasteLocation(into: [firstTargetItem.id, secondTargetItem.id]))
+
+        viewModel.pasteLocation(into: [firstTargetItem.id, secondTargetItem.id])
+
+        let updatedFirstTarget = try XCTUnwrap(viewModel.selections.first { $0.id == firstTargetItem.id })
+        let updatedSecondTarget = try XCTUnwrap(viewModel.selections.first { $0.id == secondTargetItem.id })
+        XCTAssertEqual(updatedFirstTarget.item.proposedCoordinate, sourceCoordinate)
+        XCTAssertEqual(updatedFirstTarget.item.locationLabel, "Shinjuku, Tokyo")
+        XCTAssertEqual(updatedFirstTarget.item.confidence, .excellent)
+        XCTAssertEqual(updatedFirstTarget.copiedFromAssetID, sourceItem.id)
+        XCTAssertEqual(updatedSecondTarget.item.proposedCoordinate, sourceCoordinate)
+        XCTAssertEqual(updatedSecondTarget.item.locationLabel, "Shinjuku, Tokyo")
+        XCTAssertEqual(updatedSecondTarget.item.confidence, .excellent)
+        XCTAssertEqual(updatedSecondTarget.copiedFromAssetID, sourceItem.id)
+        XCTAssertEqual(viewModel.selectedPhotoIDs, Set([firstTargetItem.id, secondTargetItem.id]))
+        XCTAssertEqual(
+            viewModel.mapSelectionTargets,
+            [
+                ReviewMapSelectionTarget(id: firstTargetItem.id, coordinate: sourceCoordinate, label: "Shinjuku, Tokyo"),
+                ReviewMapSelectionTarget(id: secondTargetItem.id, coordinate: sourceCoordinate, label: "Shinjuku, Tokyo")
+            ]
+        )
+    }
+
     func testSelectingMultiplePhotosProducesMultiPhotoMapSelection() {
         let sourceItem = makeReviewItem(
             assetID: "source-photo",

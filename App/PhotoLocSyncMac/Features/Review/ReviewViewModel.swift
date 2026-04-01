@@ -180,23 +180,37 @@ final class ReviewViewModel: ObservableObject {
     }
 
     func canPasteLocation(into assetID: String) -> Bool {
-        guard selections.contains(where: { $0.id == assetID }),
-              let copiedLocation else {
+        canPasteLocation(into: [assetID])
+    }
+
+    func canPasteLocation(into assetIDs: [String]) -> Bool {
+        guard let copiedLocation else {
             return false
         }
-        return copiedLocation.sourceAssetID != assetID
+
+        return orderedSelections(for: assetIDs).contains { selection in
+            selection.id != copiedLocation.sourceAssetID
+        }
     }
 
     func pasteLocation(into assetID: String) {
-        guard canPasteLocation(into: assetID),
-              let copiedLocation,
-              let index = selections.firstIndex(where: { $0.id == assetID }) else {
+        pasteLocation(into: [assetID])
+    }
+
+    func pasteLocation(into assetIDs: [String]) {
+        guard canPasteLocation(into: assetIDs),
+              let copiedLocation else {
             return
         }
 
-        let selection = selections[index]
-        selections[index].item = reviewItem(for: selection, using: copiedLocation)
-        selections[index].copiedFromAssetID = copiedLocation.sourceAssetID
+        for selection in orderedSelections(for: assetIDs) where selection.id != copiedLocation.sourceAssetID {
+            guard let index = selections.firstIndex(where: { $0.id == selection.id }) else {
+                continue
+            }
+
+            selections[index].item = reviewItem(for: selection, using: copiedLocation)
+            selections[index].copiedFromAssetID = copiedLocation.sourceAssetID
+        }
     }
 
     func showOnMap(_ item: ReviewItem) {

@@ -64,8 +64,8 @@ private struct ReviewGridItemView: View {
     let dismissPermanently: (String) async -> Void
     let dismissPhotosPermanently: ([String]) async -> Void
     let copyLocation: (String) -> Void
-    let pasteLocation: (String) -> Void
-    let canPasteLocation: (String) -> Bool
+    let pasteLocation: ([String]) -> Void
+    let canPasteLocation: ([String]) -> Bool
     let deletePhoto: (String) async -> Void
     let showOnMap: (ReviewItem) -> Void
     let quickLook: (ReviewItem, NSView?, NSImage?) -> Void
@@ -88,8 +88,8 @@ private struct ReviewGridItemView: View {
         dismissPermanently: @escaping (String) async -> Void,
         dismissPhotosPermanently: @escaping ([String]) async -> Void,
         copyLocation: @escaping (String) -> Void,
-        pasteLocation: @escaping (String) -> Void,
-        canPasteLocation: @escaping (String) -> Bool,
+        pasteLocation: @escaping ([String]) -> Void,
+        canPasteLocation: @escaping ([String]) -> Bool,
         deletePhoto: @escaping (String) async -> Void,
         showOnMap: @escaping (ReviewItem) -> Void,
         quickLook: @escaping (ReviewItem, NSView?, NSImage?) -> Void,
@@ -120,7 +120,7 @@ private struct ReviewGridItemView: View {
 
     var body: some View {
         let hasLocation = entry.item.proposedCoordinate != nil
-        let canPasteCopiedLocation = canPasteLocation(entry.id)
+        let canPasteCopiedLocation = canPasteLocation(contextMenuTargetIDs)
 
         VStack(alignment: .leading, spacing: 12) {
             ZStack {
@@ -274,7 +274,7 @@ private struct ReviewGridItemView: View {
                 .disabled(!hasLocation)
 
                 Button("Paste Location") {
-                    pasteLocation(entry.id)
+                    pasteLocation(contextMenuTargetIDs)
                 }
                 .disabled(!canPasteCopiedLocation)
 
@@ -372,8 +372,8 @@ struct ReviewGridView: View {
     let dismissPermanently: (String) async -> Void
     let dismissPhotosPermanently: ([String]) async -> Void
     let copyLocation: (String) -> Void
-    let pasteLocation: (String) -> Void
-    let canPasteLocation: (String) -> Bool
+    let pasteLocation: ([String]) -> Void
+    let canPasteLocation: ([String]) -> Bool
     let deletePhoto: (String) async -> Void
     let showOnMap: (ReviewItem) -> Void
     let quickLook: (ReviewItem, NSView?, NSImage?) -> Void
