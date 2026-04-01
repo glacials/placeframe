@@ -9,13 +9,13 @@ Photo Location Sync is a macOS SwiftUI app plus a reusable Swift package for mat
 - `Sources/PhotoLocSyncCore/` — domain models, matching, and workflow orchestration
 - `Sources/PhotoLocSyncAdapters/` — Timeline parsing, PhotoKit, geocoding, and security-scoped file access
 - `Tests/` — importer, matcher, pipeline, and manual verification coverage
-- `Configuration/` — reference `Info.plist` and entitlements for a future packaged app bundle
+- `Configuration/` — app bundle metadata used by Xcode and the local bundle-build script
 - `Docs/` — migration notes for future iPhone and iPad shells
 - `Scripts/anonymize_timeline_fixture.py` — helper used to anonymize a real Timeline export into a safe fixture
 
 ## Current v1 workflow
 
-1. Launch the macOS app from Xcode or `swift run PhotoLocSyncMac`.
+1. Launch the macOS app from Xcode, `swift run PhotoLocSyncMac`, or a generated `.app` bundle.
 2. Import a Google Maps `location-history.json` export with the native file picker or drag-and-drop.
 3. Grant Photos access.
 4. Review proposed location matches in grid, list, or map mode.
@@ -29,6 +29,20 @@ Photo Location Sync is a macOS SwiftUI app plus a reusable Swift package for mat
 swift build
 swift test
 ```
+
+### Build a macOS `.app` bundle
+
+Use the packaging script to build the SwiftPM app target and wrap it in a local macOS app bundle:
+
+```bash
+python3 Scripts/build_app_bundle.py
+```
+
+Notes:
+
+- The default output is `.build/bundle/PhotoLocSyncMac.app`.
+- Use `--configuration debug` if you want a debug bundle instead of the default release build.
+- Add `--open` to launch the packaged app as soon as the bundle has been written.
 
 ### Hot reload during development
 
