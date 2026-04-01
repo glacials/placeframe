@@ -1,0 +1,27 @@
+# SwiftPM and Xcode build products
+.build/
+.swiftpm/
+DerivedData/
+*.xcodeproj/
+*.xcworkspace/xcuserdata/
+*.xcuserdatad/
+*.xcuserstate
+
+# Local tooling state
+.omx/
+
+# OS and editor noise
+.DS_Store
+*.swp
+*.swo
+
+# Local secrets and env files
+.env
+.env.*
+
+# Raw Google Timeline / Takeout data should stay local
+location-history.json
+Records.json
+Semantic Location History/
+Takeout/
+

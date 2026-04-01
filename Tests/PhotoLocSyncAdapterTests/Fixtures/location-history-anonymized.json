@@ -1,0 +1,2326 @@
+[
+  {
+    "endTime": "2025-01-06T09:22:58.999-08:00",
+    "startTime": "2025-01-06T09:00:00.000-08:00",
+    "visit": {
+      "hierarchyLevel": "0",
+      "topCandidate": {
+        "probability": "0.144681",
+        "semanticType": "Unknown",
+        "placeID": "PLACE-0001",
+        "placeLocation": "geo:37.334900,-122.009000"
+      },
+      "probability": "0.740088"
+    }
+  },
+  {
+    "endTime": "2025-01-06T10:11:52.999-08:00",
+    "startTime": "2025-01-06T09:22:58.999-08:00",
+    "activity": {
+      "probability": "0.760726",
+      "end": "geo:37.335053,-122.009031",
+      "topCandidate": {
+        "type": "walking",
+        "probability": "0.748750"
+      },
+      "distanceMeters": "455.494385",
+      "start": "geo:37.335108,-122.009010"
+    }
+  },
+  {
+    "endTime": "2025-01-06T20:24:13.009-08:00",
+    "startTime": "2025-01-06T10:11:52.999-08:00",
+    "visit": {
+      "hierarchyLevel": "0",
+      "topCandidate": {
+        "probability": "0.378163",
+        "semanticType": "Unknown",
+        "placeID": "PLACE-0002",
+        "placeLocation": "geo:37.335153,-122.009107"
+      },
+      "probability": "0.648120"
+    }
+  },
+  {
+    "endTime": "2025-01-06T21:46:44.001-08:00",
+    "startTime": "2025-01-06T20:24:13.009-08:00",
+    "activity": {
+      "probability": "0.531749",
+      "end": "geo:37.335186,-122.009440",
+      "topCandidate": {
+        "type": "walking",
+        "probability": "0.527943"
+      },
+      "distanceMeters": "291.138000",
+      "start": "geo:37.335224,-122.009285"
+    }
+  },
+  {
+    "endTime": "2025-01-06T21:59:53.000-08:00",
+    "startTime": "2025-01-06T21:46:44.001-08:00",
+    "visit": {
+      "hierarchyLevel": "0",
+      "topCandidate": {
+        "probability": "0.252874",
+        "semanticType": "Unknown",
+        "placeID": "PLACE-0003",
+        "placeLocation": "geo:37.334617,-122.009224"
+      },
+      "probability": "0.711017"
+    }
+  },
+  {
+    "endTime": "2025-01-06T23:11:43.000-08:00",
+    "startTime": "2025-01-06T21:59:53.000-08:00",
+    "activity": {
+      "probability": "0.708291",
+      "end": "geo:37.333100,-122.010044",
+      "topCandidate": {
+        "type": "walking",
+        "probability": "0.689180"
+      },
+      "distanceMeters": "698.411255",
+      "start": "geo:37.333235,-122.009928"
+    }
+  },
+  {
+    "endTime": "2025-01-07T00:10:10.000-08:00",
+    "startTime": "2025-01-06T23:11:43.000-08:00",
+    "visit": {
+      "hierarchyLevel": "0",
+      "topCandidate": {
+        "probability": "0.416753",
+        "semanticType": "Unknown",
+        "placeID": "PLACE-0004",
+        "placeLocation": "geo:37.332739,-122.010346"
+      },
+      "probability": "0.591052"
+    }
+  },
+  {
+    "endTime": "2025-01-07T00:08:20.000-08:00",
+    "startTime": "2025-01-06T23:16:01.376-08:00",
+    "visit": {
+      "hierarchyLevel": "1",
+      "topCandidate": {
+        "probability": "0.298526",
+        "semanticType": "Unknown",
+        "placeID": "PLACE-0005",
+        "placeLocation": "geo:37.332738,-122.010379"
+      },
+      "probability": "0.591052"
+    }
+  },
+  {
+    "endTime": "2025-01-07T00:22:42.015-08:00",
+    "startTime": "2025-01-07T00:10:10.000-08:00",
+    "activity": {
+      "probability": "0.799843",
+      "end": "geo:37.332437,-122.010537",
+      "topCandidate": {
+        "type": "walking",
+        "probability": "0.735453"
+      },
+      "distanceMeters": "335.017120",
+      "start": "geo:37.332581,-122.010296"
+    }
+  },
+  {
+    "endTime": "2025-01-07T00:25:11.000-08:00",
+    "startTime": "2025-01-07T00:22:42.015-08:00",
+    "activity": {
+      "probability": "0.777479",
+      "end": "geo:37.332437,-122.011088",
+      "topCandidate": {
+        "type": "walking",
+        "probability": "0.351512"
+      },
+      "distanceMeters": "48.665688",
+      "start": "geo:37.332429,-122.011025"
+    }
+  },
+  {
+    "endTime": "2025-01-07T00:40:07.000-08:00",
+    "startTime": "2025-01-07T00:25:11.000-08:00",
+    "activity": {
+      "probability": "0.982916",
+      "end": "geo:37.336414,-122.019687",
+      "topCandidate": {
+        "type": "in passenger vehicle",
+        "probability": "0.687993"
+      },
+      "distanceMeters": "8202.010742",
+      "start": "geo:37.333195,-122.012336"
+    }
+  },
+  {
+    "endTime": "2025-01-07T00:48:35.000-08:00",
+    "startTime": "2025-01-07T00:40:07.000-08:00",
+    "visit": {
+      "hierarchyLevel": "0",
+      "topCandidate": {
+        "probability": "0.761861",
+        "semanticType": "Unknown",
+        "placeID": "PLACE-0006",
+        "placeLocation": "geo:37.336419,-122.019732"
+      },
+      "probability": "0.774130"
+    }
+  },
+  {
+    "endTime": "2025-01-07T02:12:19.998-08:00",
+    "startTime": "2025-01-07T00:48:35.000-08:00",
+    "visit": {
+      "hierarchyLevel": "0",
+      "topCandidate": {
+        "probability": "0.753078",
+        "semanticType": "Unknown",
+        "placeID": "PLACE-0007",
+        "placeLocation": "geo:37.337401,-122.021600"
+      },
+      "probability": "0.502038"
+    }
+  },
+  {
+    "endTime": "2025-01-07T02:42:00.098-08:00",
+    "startTime": "2025-01-07T02:12:19.998-08:00",
+    "activity": {
+      "probability": "0.979851",
+      "end": "geo:37.336736,-122.019960",
+      "topCandidate": {
+        "type": "walking",
+        "probability": "0.931422"
+      },
+      "distanceMeters": "943.610168",
+      "start": "geo:37.337238,-122.020936"
+    }
+  },
+  {
+    "endTime": "2025-01-07T03:34:15.099-08:00",
+    "startTime": "2025-01-07T02:42:00.098-08:00",
+    "visit": {
+      "hierarchyLevel": "0",
+      "topCandidate": {
+        "probability": "0.357041",
+        "semanticType": "Unknown",
+        "placeID": "PLACE-0008",
+        "placeLocation": "geo:37.336615,-122.019818"
+      },
+      "probability": "0.775907"
+    }
+  },
+  {
+    "endTime": "2025-01-07T03:42:58.999-08:00",
+    "startTime": "2025-01-07T03:34:15.099-08:00",
+    "activity": {
+      "probability": "0.631029",
+      "end": "geo:37.336385,-122.019610",
+      "topCandidate": {
+        "type": "walking",
+        "probability": "0.597821"
+      },
+      "distanceMeters": "216.294312",
+      "start": "geo:37.336532,-122.019705"
+    }
+  },
+  {
+    "endTime": "2025-01-07T03:51:37.999-08:00",
+    "startTime": "2025-01-07T03:42:58.999-08:00",
+    "activity": {
+      "probability": "0.986513",
+      "end": "geo:37.335579,-122.012433",
+      "topCandidate": {
+        "type": "in train",
+        "probability": "0.890159"
+      },
+      "distanceMeters": "5950.114258",
+      "start": "geo:37.336385,-122.019610"
+    }
+  },
+  {
+    "endTime": "2025-01-07T03:56:28.002-08:00",
+    "startTime": "2025-01-07T03:51:37.999-08:00",
+    "visit": {
+      "hierarchyLevel": "0",
+      "topCandidate": {
+        "probability": "0.779036",
+        "semanticType": "Unknown",
+        "placeID": "PLACE-0009",
+        "placeLocation": "geo:37.335482,-122.012468"
+      },
+      "probability": "0.872421"
+    }
+  },
+  {
+    "endTime": "2025-01-07T04:07:17.760-08:00",
+    "startTime": "2025-01-07T03:56:28.002-08:00",
+    "activity": {
+      "probability": "0.992111",
+      "end": "geo:37.335486,-122.009196",
+      "topCandidate": {
+        "type": "in subway",
+        "probability": "0.873614"
+      },
+      "distanceMeters": "2494.473389",
+      "start": "geo:37.335524,-122.012482"
+    }
+  },
+  {
+    "endTime": "2025-01-07T04:14:13.000-08:00",
+    "startTime": "2025-01-07T04:07:17.760-08:00",
+    "activity": {
+      "probability": "0.919546",
+      "end": "geo:37.335229,-122.009170",
+      "topCandidate": {
+        "type": "walking",
+        "probability": "0.803860"
+      },
+      "distanceMeters": "250.591888",
+      "start": "geo:37.335486,-122.009196"
+    }
+  },
+  {
+    "endTime": "2025-01-07T04:25:16.029-08:00",
+    "startTime": "2025-01-07T04:14:13.000-08:00",
+    "visit": {
+      "hierarchyLevel": "0",
+      "topCandidate": {
+        "probability": "0.346621",
+        "semanticType": "Unknown",
+        "placeID": "PLACE-0002",
+        "placeLocation": "geo:37.335153,-122.009107"
+      },
+      "probability": "0.606989"
+    }
+  },
+  {
+    "endTime": "2021-12-01T05:39:39.000-08:00",
+    "startTime": "2021-12-01T03:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.855093,-152.987664",
+        "durationMinutesOffsetFromStartTime": "110"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-01T15:39:39.000-08:00",
+    "startTime": "2021-12-01T13:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.854955,-152.987636",
+        "durationMinutesOffsetFromStartTime": "98"
+      },
+      {
+        "point": "geo:38.854709,-152.987660",
+        "durationMinutesOffsetFromStartTime": "101"
+      },
+      {
+        "point": "geo:38.854430,-152.987625",
+        "durationMinutesOffsetFromStartTime": "103"
+      },
+      {
+        "point": "geo:38.854457,-152.987629",
+        "durationMinutesOffsetFromStartTime": "103"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-01T23:39:39.000-08:00",
+    "startTime": "2021-12-01T21:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.854445,-152.987500",
+        "durationMinutesOffsetFromStartTime": "38"
+      },
+      {
+        "point": "geo:38.854666,-152.987653",
+        "durationMinutesOffsetFromStartTime": "39"
+      },
+      {
+        "point": "geo:38.854904,-152.987643",
+        "durationMinutesOffsetFromStartTime": "42"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-02T03:39:39.000-08:00",
+    "startTime": "2021-12-02T01:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.855095,-152.987662",
+        "durationMinutesOffsetFromStartTime": "89"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-02T15:39:39.000-08:00",
+    "startTime": "2021-12-02T13:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.855028,-152.987668",
+        "durationMinutesOffsetFromStartTime": "66"
+      },
+      {
+        "point": "geo:38.854787,-152.987650",
+        "durationMinutesOffsetFromStartTime": "69"
+      },
+      {
+        "point": "geo:38.854479,-152.987646",
+        "durationMinutesOffsetFromStartTime": "72"
+      },
+      {
+        "point": "geo:38.854440,-152.987671",
+        "durationMinutesOffsetFromStartTime": "73"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-02T17:39:39.000-08:00",
+    "startTime": "2021-12-02T15:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.854429,-152.987346",
+        "durationMinutesOffsetFromStartTime": "108"
+      },
+      {
+        "point": "geo:38.854429,-152.987346",
+        "durationMinutesOffsetFromStartTime": "108"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-02T19:39:39.000-08:00",
+    "startTime": "2021-12-02T17:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.854397,-152.987360",
+        "durationMinutesOffsetFromStartTime": "14"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-02T21:39:39.000-08:00",
+    "startTime": "2021-12-02T19:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.854435,-152.987479",
+        "durationMinutesOffsetFromStartTime": "76"
+      },
+      {
+        "point": "geo:38.854649,-152.987670",
+        "durationMinutesOffsetFromStartTime": "77"
+      },
+      {
+        "point": "geo:38.854911,-152.987650",
+        "durationMinutesOffsetFromStartTime": "80"
+      },
+      {
+        "point": "geo:38.854957,-152.987647",
+        "durationMinutesOffsetFromStartTime": "80"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-03T21:39:39.000-08:00",
+    "startTime": "2021-12-03T19:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.855093,-152.987664",
+        "durationMinutesOffsetFromStartTime": "44"
+      },
+      {
+        "point": "geo:38.855030,-152.987306",
+        "durationMinutesOffsetFromStartTime": "45"
+      },
+      {
+        "point": "geo:38.855033,-152.986843",
+        "durationMinutesOffsetFromStartTime": "46"
+      },
+      {
+        "point": "geo:38.854862,-152.986625",
+        "durationMinutesOffsetFromStartTime": "47"
+      },
+      {
+        "point": "geo:38.854497,-152.986607",
+        "durationMinutesOffsetFromStartTime": "47"
+      },
+      {
+        "point": "geo:38.854406,-152.984973",
+        "durationMinutesOffsetFromStartTime": "52"
+      },
+      {
+        "point": "geo:38.853624,-152.984156",
+        "durationMinutesOffsetFromStartTime": "54"
+      },
+      {
+        "point": "geo:38.853394,-152.982823",
+        "durationMinutesOffsetFromStartTime": "56"
+      },
+      {
+        "point": "geo:38.852838,-152.982818",
+        "durationMinutesOffsetFromStartTime": "57"
+      },
+      {
+        "point": "geo:38.852831,-152.980450",
+        "durationMinutesOffsetFromStartTime": "60"
+      },
+      {
+        "point": "geo:38.852691,-152.980156",
+        "durationMinutesOffsetFromStartTime": "61"
+      },
+      {
+        "point": "geo:38.852602,-152.979247",
+        "durationMinutesOffsetFromStartTime": "62"
+      },
+      {
+        "point": "geo:38.852300,-152.979148",
+        "durationMinutesOffsetFromStartTime": "63"
+      },
+      {
+        "point": "geo:38.852836,-152.979050",
+        "durationMinutesOffsetFromStartTime": "65"
+      },
+      {
+        "point": "geo:38.852594,-152.979115",
+        "durationMinutesOffsetFromStartTime": "66"
+      },
+      {
+        "point": "geo:38.852594,-152.979115",
+        "durationMinutesOffsetFromStartTime": "66"
+      },
+      {
+        "point": "geo:38.852244,-152.980337",
+        "durationMinutesOffsetFromStartTime": "71"
+      },
+      {
+        "point": "geo:38.852916,-152.979090",
+        "durationMinutesOffsetFromStartTime": "74"
+      },
+      {
+        "point": "geo:38.852534,-152.979143",
+        "durationMinutesOffsetFromStartTime": "75"
+      },
+      {
+        "point": "geo:38.852809,-152.979140",
+        "durationMinutesOffsetFromStartTime": "76"
+      },
+      {
+        "point": "geo:38.853250,-152.979118",
+        "durationMinutesOffsetFromStartTime": "87"
+      },
+      {
+        "point": "geo:38.852836,-152.979153",
+        "durationMinutesOffsetFromStartTime": "92"
+      },
+      {
+        "point": "geo:38.852538,-152.979138",
+        "durationMinutesOffsetFromStartTime": "94"
+      },
+      {
+        "point": "geo:38.853202,-152.978988",
+        "durationMinutesOffsetFromStartTime": "98"
+      },
+      {
+        "point": "geo:38.852611,-152.979130",
+        "durationMinutesOffsetFromStartTime": "100"
+      },
+      {
+        "point": "geo:38.852851,-152.979127",
+        "durationMinutesOffsetFromStartTime": "104"
+      },
+      {
+        "point": "geo:38.853175,-152.979101",
+        "durationMinutesOffsetFromStartTime": "112"
+      },
+      {
+        "point": "geo:38.852825,-152.979146",
+        "durationMinutesOffsetFromStartTime": "117"
+      },
+      {
+        "point": "geo:38.852542,-152.979144",
+        "durationMinutesOffsetFromStartTime": "119"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-03T23:39:39.000-08:00",
+    "startTime": "2021-12-03T21:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.852933,-152.979062",
+        "durationMinutesOffsetFromStartTime": "1"
+      },
+      {
+        "point": "geo:38.852538,-152.979134",
+        "durationMinutesOffsetFromStartTime": "4"
+      },
+      {
+        "point": "geo:38.852932,-152.979172",
+        "durationMinutesOffsetFromStartTime": "5"
+      },
+      {
+        "point": "geo:38.852537,-152.979132",
+        "durationMinutesOffsetFromStartTime": "7"
+      },
+      {
+        "point": "geo:38.852764,-152.979071",
+        "durationMinutesOffsetFromStartTime": "8"
+      },
+      {
+        "point": "geo:38.853341,-152.978982",
+        "durationMinutesOffsetFromStartTime": "37"
+      },
+      {
+        "point": "geo:38.852268,-152.979743",
+        "durationMinutesOffsetFromStartTime": "40"
+      },
+      {
+        "point": "geo:38.852806,-152.979136",
+        "durationMinutesOffsetFromStartTime": "42"
+      },
+      {
+        "point": "geo:38.852502,-152.979135",
+        "durationMinutesOffsetFromStartTime": "43"
+      },
+      {
+        "point": "geo:38.852587,-152.979198",
+        "durationMinutesOffsetFromStartTime": "48"
+      },
+      {
+        "point": "geo:38.853145,-152.979194",
+        "durationMinutesOffsetFromStartTime": "52"
+      },
+      {
+        "point": "geo:38.853370,-152.979191",
+        "durationMinutesOffsetFromStartTime": "53"
+      },
+      {
+        "point": "geo:38.853788,-152.979067",
+        "durationMinutesOffsetFromStartTime": "55"
+      },
+      {
+        "point": "geo:38.853788,-152.979067",
+        "durationMinutesOffsetFromStartTime": "55"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-04T01:39:39.000-08:00",
+    "startTime": "2021-12-03T23:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.853877,-152.979040",
+        "durationMinutesOffsetFromStartTime": "34"
+      },
+      {
+        "point": "geo:38.853962,-152.979929",
+        "durationMinutesOffsetFromStartTime": "36"
+      },
+      {
+        "point": "geo:38.853983,-152.982820",
+        "durationMinutesOffsetFromStartTime": "40"
+      },
+      {
+        "point": "geo:38.854727,-152.984005",
+        "durationMinutesOffsetFromStartTime": "42"
+      },
+      {
+        "point": "geo:38.855285,-152.984791",
+        "durationMinutesOffsetFromStartTime": "45"
+      },
+      {
+        "point": "geo:38.855275,-152.985296",
+        "durationMinutesOffsetFromStartTime": "45"
+      },
+      {
+        "point": "geo:38.855263,-152.987620",
+        "durationMinutesOffsetFromStartTime": "49"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-04T21:39:39.000-08:00",
+    "startTime": "2021-12-04T19:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.855097,-152.987655",
+        "durationMinutesOffsetFromStartTime": "63"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-05T13:39:39.000-08:00",
+    "startTime": "2021-12-05T11:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.855094,-152.987662",
+        "durationMinutesOffsetFromStartTime": "68"
+      },
+      {
+        "point": "geo:38.855132,-152.988027",
+        "durationMinutesOffsetFromStartTime": "69"
+      },
+      {
+        "point": "geo:38.855132,-152.988027",
+        "durationMinutesOffsetFromStartTime": "69"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-05T15:39:39.000-08:00",
+    "startTime": "2021-12-05T13:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.855093,-152.987669",
+        "durationMinutesOffsetFromStartTime": "70"
+      },
+      {
+        "point": "geo:38.855275,-152.987454",
+        "durationMinutesOffsetFromStartTime": "73"
+      },
+      {
+        "point": "geo:38.855043,-152.987335",
+        "durationMinutesOffsetFromStartTime": "74"
+      },
+      {
+        "point": "geo:38.854974,-152.986939",
+        "durationMinutesOffsetFromStartTime": "82"
+      },
+      {
+        "point": "geo:38.854915,-152.986635",
+        "durationMinutesOffsetFromStartTime": "83"
+      },
+      {
+        "point": "geo:38.854462,-152.986618",
+        "durationMinutesOffsetFromStartTime": "84"
+      },
+      {
+        "point": "geo:38.854394,-152.985116",
+        "durationMinutesOffsetFromStartTime": "87"
+      },
+      {
+        "point": "geo:38.853650,-152.984218",
+        "durationMinutesOffsetFromStartTime": "88"
+      },
+      {
+        "point": "geo:38.853617,-152.983532",
+        "durationMinutesOffsetFromStartTime": "89"
+      },
+      {
+        "point": "geo:38.853361,-152.983154",
+        "durationMinutesOffsetFromStartTime": "90"
+      },
+      {
+        "point": "geo:38.852402,-152.983084",
+        "durationMinutesOffsetFromStartTime": "91"
+      },
+      {
+        "point": "geo:38.851154,-152.983093",
+        "durationMinutesOffsetFromStartTime": "92"
+      },
+      {
+        "point": "geo:38.850443,-152.982693",
+        "durationMinutesOffsetFromStartTime": "92"
+      },
+      {
+        "point": "geo:38.849032,-152.982722",
+        "durationMinutesOffsetFromStartTime": "93"
+      },
+      {
+        "point": "geo:38.845448,-152.981602",
+        "durationMinutesOffsetFromStartTime": "96"
+      },
+      {
+        "point": "geo:38.841976,-152.982136",
+        "durationMinutesOffsetFromStartTime": "98"
+      },
+      {
+        "point": "geo:38.835033,-152.980493",
+        "durationMinutesOffsetFromStartTime": "103"
+      },
+      {
+        "point": "geo:38.830703,-152.981324",
+        "durationMinutesOffsetFromStartTime": "105"
+      },
+      {
+        "point": "geo:38.828267,-152.977409",
+        "durationMinutesOffsetFromStartTime": "111"
+      },
+      {
+        "point": "geo:38.828483,-152.977322",
+        "durationMinutesOffsetFromStartTime": "113"
+      },
+      {
+        "point": "geo:38.828483,-152.977322",
+        "durationMinutesOffsetFromStartTime": "113"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-13T20:11:46.170-08:00",
+    "startTime": "2021-12-05T15:02:49.000-08:00",
+    "timelineMemory": {
+      "destinations": [
+        {
+          "identifier": "DEST-0010"
+        },
+        {
+          "identifier": "DEST-0011"
+        },
+        {
+          "identifier": "DEST-0012"
+        }
+      ],
+      "distanceFromOriginKms": "8035"
+    }
+  },
+  {
+    "endTime": "2021-12-05T17:39:39.000-08:00",
+    "startTime": "2021-12-05T15:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.828125,-152.977357",
+        "durationMinutesOffsetFromStartTime": "7"
+      },
+      {
+        "point": "geo:38.828277,-152.977629",
+        "durationMinutesOffsetFromStartTime": "9"
+      },
+      {
+        "point": "geo:38.827487,-152.977560",
+        "durationMinutesOffsetFromStartTime": "11"
+      },
+      {
+        "point": "geo:38.827492,-152.977601",
+        "durationMinutesOffsetFromStartTime": "12"
+      },
+      {
+        "point": "geo:38.827268,-152.977521",
+        "durationMinutesOffsetFromStartTime": "41"
+      },
+      {
+        "point": "geo:38.826854,-152.977794",
+        "durationMinutesOffsetFromStartTime": "45"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-05T19:39:39.000-08:00",
+    "startTime": "2021-12-05T17:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.826851,-152.977232",
+        "durationMinutesOffsetFromStartTime": "20"
+      },
+      {
+        "point": "geo:38.826743,-152.977961",
+        "durationMinutesOffsetFromStartTime": "41"
+      },
+      {
+        "point": "geo:38.826788,-152.977891",
+        "durationMinutesOffsetFromStartTime": "51"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-06T05:39:39.000-08:00",
+    "startTime": "2021-12-06T03:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:39.007751,-137.995505",
+        "durationMinutesOffsetFromStartTime": "59"
+      },
+      {
+        "point": "geo:39.014557,-137.989925",
+        "durationMinutesOffsetFromStartTime": "62"
+      },
+      {
+        "point": "geo:39.014869,-137.990630",
+        "durationMinutesOffsetFromStartTime": "71"
+      },
+      {
+        "point": "geo:39.014869,-137.990630",
+        "durationMinutesOffsetFromStartTime": "71"
+      },
+      {
+        "point": "geo:39.014480,-137.992200",
+        "durationMinutesOffsetFromStartTime": "92"
+      },
+      {
+        "point": "geo:39.014657,-137.992888",
+        "durationMinutesOffsetFromStartTime": "114"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-06T07:39:39.000-08:00",
+    "startTime": "2021-12-06T05:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:39.014777,-137.992990",
+        "durationMinutesOffsetFromStartTime": "35"
+      },
+      {
+        "point": "geo:39.014553,-137.998445",
+        "durationMinutesOffsetFromStartTime": "42"
+      },
+      {
+        "point": "geo:39.013932,-137.999099",
+        "durationMinutesOffsetFromStartTime": "42"
+      },
+      {
+        "point": "geo:39.011788,-137.999172",
+        "durationMinutesOffsetFromStartTime": "44"
+      },
+      {
+        "point": "geo:39.011571,-137.999356",
+        "durationMinutesOffsetFromStartTime": "44"
+      },
+      {
+        "point": "geo:39.007891,-137.998505",
+        "durationMinutesOffsetFromStartTime": "47"
+      },
+      {
+        "point": "geo:39.006062,-138.004718",
+        "durationMinutesOffsetFromStartTime": "53"
+      },
+      {
+        "point": "geo:39.005272,-138.013378",
+        "durationMinutesOffsetFromStartTime": "58"
+      },
+      {
+        "point": "geo:39.003853,-138.018909",
+        "durationMinutesOffsetFromStartTime": "63"
+      },
+      {
+        "point": "geo:39.003486,-138.019181",
+        "durationMinutesOffsetFromStartTime": "63"
+      },
+      {
+        "point": "geo:39.001913,-138.018980",
+        "durationMinutesOffsetFromStartTime": "64"
+      },
+      {
+        "point": "geo:38.997684,-138.019751",
+        "durationMinutesOffsetFromStartTime": "74"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-06T15:39:39.000-08:00",
+    "startTime": "2021-12-06T13:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.997795,-138.019467",
+        "durationMinutesOffsetFromStartTime": "94"
+      },
+      {
+        "point": "geo:38.998030,-138.020010",
+        "durationMinutesOffsetFromStartTime": "96"
+      },
+      {
+        "point": "geo:38.997855,-138.019694",
+        "durationMinutesOffsetFromStartTime": "97"
+      },
+      {
+        "point": "geo:38.998081,-138.020118",
+        "durationMinutesOffsetFromStartTime": "102"
+      },
+      {
+        "point": "geo:38.997927,-138.019874",
+        "durationMinutesOffsetFromStartTime": "112"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-06T17:39:39.000-08:00",
+    "startTime": "2021-12-06T15:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.998189,-138.020207",
+        "durationMinutesOffsetFromStartTime": "5"
+      },
+      {
+        "point": "geo:38.997908,-138.019955",
+        "durationMinutesOffsetFromStartTime": "28"
+      },
+      {
+        "point": "geo:38.997697,-138.020092",
+        "durationMinutesOffsetFromStartTime": "85"
+      },
+      {
+        "point": "geo:38.997908,-138.019955",
+        "durationMinutesOffsetFromStartTime": "87"
+      },
+      {
+        "point": "geo:38.997733,-138.020280",
+        "durationMinutesOffsetFromStartTime": "88"
+      },
+      {
+        "point": "geo:38.997582,-138.020031",
+        "durationMinutesOffsetFromStartTime": "92"
+      },
+      {
+        "point": "geo:38.997348,-138.019627",
+        "durationMinutesOffsetFromStartTime": "94"
+      },
+      {
+        "point": "geo:38.997486,-138.019738",
+        "durationMinutesOffsetFromStartTime": "94"
+      },
+      {
+        "point": "geo:38.997295,-138.019581",
+        "durationMinutesOffsetFromStartTime": "98"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-06T19:39:39.000-08:00",
+    "startTime": "2021-12-06T17:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.997645,-138.019487",
+        "durationMinutesOffsetFromStartTime": "5"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-07T05:39:39.000-08:00",
+    "startTime": "2021-12-07T03:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.997669,-138.019483",
+        "durationMinutesOffsetFromStartTime": "43"
+      },
+      {
+        "point": "geo:38.997866,-138.019733",
+        "durationMinutesOffsetFromStartTime": "45"
+      },
+      {
+        "point": "geo:38.997946,-138.020044",
+        "durationMinutesOffsetFromStartTime": "48"
+      },
+      {
+        "point": "geo:38.997946,-138.020044",
+        "durationMinutesOffsetFromStartTime": "48"
+      },
+      {
+        "point": "geo:38.998117,-138.020248",
+        "durationMinutesOffsetFromStartTime": "55"
+      },
+      {
+        "point": "geo:38.997911,-138.019867",
+        "durationMinutesOffsetFromStartTime": "101"
+      },
+      {
+        "point": "geo:38.997855,-138.019904",
+        "durationMinutesOffsetFromStartTime": "102"
+      },
+      {
+        "point": "geo:38.997668,-138.019737",
+        "durationMinutesOffsetFromStartTime": "106"
+      },
+      {
+        "point": "geo:38.997376,-138.019688",
+        "durationMinutesOffsetFromStartTime": "111"
+      },
+      {
+        "point": "geo:38.997155,-138.019534",
+        "durationMinutesOffsetFromStartTime": "116"
+      },
+      {
+        "point": "geo:38.996888,-138.019291",
+        "durationMinutesOffsetFromStartTime": "119"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-07T07:39:39.000-08:00",
+    "startTime": "2021-12-07T05:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.996731,-138.019008",
+        "durationMinutesOffsetFromStartTime": "10"
+      },
+      {
+        "point": "geo:38.996601,-138.018982",
+        "durationMinutesOffsetFromStartTime": "14"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-07T09:39:39.000-08:00",
+    "startTime": "2021-12-07T07:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.996484,-138.018682",
+        "durationMinutesOffsetFromStartTime": "48"
+      },
+      {
+        "point": "geo:38.996484,-138.018682",
+        "durationMinutesOffsetFromStartTime": "48"
+      },
+      {
+        "point": "geo:38.996636,-138.018104",
+        "durationMinutesOffsetFromStartTime": "50"
+      },
+      {
+        "point": "geo:38.996670,-138.018447",
+        "durationMinutesOffsetFromStartTime": "52"
+      },
+      {
+        "point": "geo:38.996626,-138.018047",
+        "durationMinutesOffsetFromStartTime": "55"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-07T11:39:39.000-08:00",
+    "startTime": "2021-12-07T09:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.996985,-138.017944",
+        "durationMinutesOffsetFromStartTime": "39"
+      },
+      {
+        "point": "geo:38.996786,-138.018006",
+        "durationMinutesOffsetFromStartTime": "40"
+      },
+      {
+        "point": "geo:38.997090,-138.018179",
+        "durationMinutesOffsetFromStartTime": "41"
+      },
+      {
+        "point": "geo:38.997272,-138.018496",
+        "durationMinutesOffsetFromStartTime": "44"
+      },
+      {
+        "point": "geo:38.997516,-138.018741",
+        "durationMinutesOffsetFromStartTime": "48"
+      },
+      {
+        "point": "geo:38.997660,-138.019482",
+        "durationMinutesOffsetFromStartTime": "51"
+      },
+      {
+        "point": "geo:38.997576,-138.019339",
+        "durationMinutesOffsetFromStartTime": "54"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-07T17:39:39.000-08:00",
+    "startTime": "2021-12-07T15:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.997741,-138.019375",
+        "durationMinutesOffsetFromStartTime": "45"
+      },
+      {
+        "point": "geo:38.997684,-138.018994",
+        "durationMinutesOffsetFromStartTime": "47"
+      },
+      {
+        "point": "geo:38.997106,-138.019273",
+        "durationMinutesOffsetFromStartTime": "50"
+      },
+      {
+        "point": "geo:38.996892,-138.019490",
+        "durationMinutesOffsetFromStartTime": "53"
+      },
+      {
+        "point": "geo:38.996916,-138.020601",
+        "durationMinutesOffsetFromStartTime": "55"
+      },
+      {
+        "point": "geo:38.997544,-138.022752",
+        "durationMinutesOffsetFromStartTime": "60"
+      },
+      {
+        "point": "geo:38.997717,-138.023204",
+        "durationMinutesOffsetFromStartTime": "63"
+      },
+      {
+        "point": "geo:38.997700,-138.023931",
+        "durationMinutesOffsetFromStartTime": "64"
+      },
+      {
+        "point": "geo:38.997589,-138.025993",
+        "durationMinutesOffsetFromStartTime": "66"
+      },
+      {
+        "point": "geo:38.997589,-138.025993",
+        "durationMinutesOffsetFromStartTime": "66"
+      },
+      {
+        "point": "geo:38.997587,-138.025967",
+        "durationMinutesOffsetFromStartTime": "94"
+      },
+      {
+        "point": "geo:38.997796,-138.025456",
+        "durationMinutesOffsetFromStartTime": "99"
+      },
+      {
+        "point": "geo:38.997841,-138.024795",
+        "durationMinutesOffsetFromStartTime": "102"
+      },
+      {
+        "point": "geo:38.997747,-138.024299",
+        "durationMinutesOffsetFromStartTime": "104"
+      },
+      {
+        "point": "geo:38.997821,-138.023956",
+        "durationMinutesOffsetFromStartTime": "106"
+      },
+      {
+        "point": "geo:38.997794,-138.023547",
+        "durationMinutesOffsetFromStartTime": "108"
+      },
+      {
+        "point": "geo:38.997668,-138.022793",
+        "durationMinutesOffsetFromStartTime": "112"
+      },
+      {
+        "point": "geo:38.997572,-138.022479",
+        "durationMinutesOffsetFromStartTime": "114"
+      },
+      {
+        "point": "geo:38.997154,-138.021359",
+        "durationMinutesOffsetFromStartTime": "120"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-07T19:39:39.000-08:00",
+    "startTime": "2021-12-07T17:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.996992,-138.020610",
+        "durationMinutesOffsetFromStartTime": "3"
+      },
+      {
+        "point": "geo:38.996688,-138.020253",
+        "durationMinutesOffsetFromStartTime": "6"
+      },
+      {
+        "point": "geo:38.996386,-138.019503",
+        "durationMinutesOffsetFromStartTime": "11"
+      },
+      {
+        "point": "geo:38.996224,-138.018855",
+        "durationMinutesOffsetFromStartTime": "14"
+      },
+      {
+        "point": "geo:38.996155,-138.018534",
+        "durationMinutesOffsetFromStartTime": "15"
+      },
+      {
+        "point": "geo:38.996079,-138.018099",
+        "durationMinutesOffsetFromStartTime": "17"
+      },
+      {
+        "point": "geo:38.995835,-138.018024",
+        "durationMinutesOffsetFromStartTime": "19"
+      },
+      {
+        "point": "geo:38.995488,-138.017330",
+        "durationMinutesOffsetFromStartTime": "22"
+      },
+      {
+        "point": "geo:38.995078,-138.016849",
+        "durationMinutesOffsetFromStartTime": "26"
+      },
+      {
+        "point": "geo:38.994791,-138.016165",
+        "durationMinutesOffsetFromStartTime": "30"
+      },
+      {
+        "point": "geo:38.994520,-138.016285",
+        "durationMinutesOffsetFromStartTime": "31"
+      },
+      {
+        "point": "geo:38.994318,-138.016104",
+        "durationMinutesOffsetFromStartTime": "33"
+      },
+      {
+        "point": "geo:38.994108,-138.015928",
+        "durationMinutesOffsetFromStartTime": "36"
+      },
+      {
+        "point": "geo:38.994429,-138.016084",
+        "durationMinutesOffsetFromStartTime": "38"
+      },
+      {
+        "point": "geo:38.994522,-138.016409",
+        "durationMinutesOffsetFromStartTime": "40"
+      },
+      {
+        "point": "geo:38.994999,-138.016644",
+        "durationMinutesOffsetFromStartTime": "42"
+      },
+      {
+        "point": "geo:38.995176,-138.017119",
+        "durationMinutesOffsetFromStartTime": "44"
+      },
+      {
+        "point": "geo:38.995529,-138.017595",
+        "durationMinutesOffsetFromStartTime": "47"
+      },
+      {
+        "point": "geo:38.995826,-138.017727",
+        "durationMinutesOffsetFromStartTime": "50"
+      },
+      {
+        "point": "geo:38.995977,-138.017986",
+        "durationMinutesOffsetFromStartTime": "52"
+      },
+      {
+        "point": "geo:38.996380,-138.018224",
+        "durationMinutesOffsetFromStartTime": "55"
+      },
+      {
+        "point": "geo:38.996586,-138.018983",
+        "durationMinutesOffsetFromStartTime": "58"
+      },
+      {
+        "point": "geo:38.996604,-138.018911",
+        "durationMinutesOffsetFromStartTime": "59"
+      },
+      {
+        "point": "geo:38.996671,-138.019020",
+        "durationMinutesOffsetFromStartTime": "76"
+      },
+      {
+        "point": "geo:38.996830,-138.019293",
+        "durationMinutesOffsetFromStartTime": "76"
+      },
+      {
+        "point": "geo:38.996976,-138.019700",
+        "durationMinutesOffsetFromStartTime": "77"
+      },
+      {
+        "point": "geo:38.997102,-138.020586",
+        "durationMinutesOffsetFromStartTime": "79"
+      },
+      {
+        "point": "geo:38.997360,-138.021792",
+        "durationMinutesOffsetFromStartTime": "83"
+      },
+      {
+        "point": "geo:38.997806,-138.023579",
+        "durationMinutesOffsetFromStartTime": "86"
+      },
+      {
+        "point": "geo:38.997710,-138.024116",
+        "durationMinutesOffsetFromStartTime": "88"
+      },
+      {
+        "point": "geo:38.997782,-138.024995",
+        "durationMinutesOffsetFromStartTime": "90"
+      },
+      {
+        "point": "geo:38.997360,-138.026372",
+        "durationMinutesOffsetFromStartTime": "93"
+      },
+      {
+        "point": "geo:38.997203,-138.026680",
+        "durationMinutesOffsetFromStartTime": "97"
+      },
+      {
+        "point": "geo:38.996521,-138.027516",
+        "durationMinutesOffsetFromStartTime": "101"
+      },
+      {
+        "point": "geo:38.996225,-138.027488",
+        "durationMinutesOffsetFromStartTime": "101"
+      },
+      {
+        "point": "geo:38.996136,-138.027888",
+        "durationMinutesOffsetFromStartTime": "103"
+      },
+      {
+        "point": "geo:38.997149,-138.026648",
+        "durationMinutesOffsetFromStartTime": "110"
+      },
+      {
+        "point": "geo:38.997595,-138.025986",
+        "durationMinutesOffsetFromStartTime": "115"
+      },
+      {
+        "point": "geo:38.997592,-138.026002",
+        "durationMinutesOffsetFromStartTime": "115"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-07T21:39:39.000-08:00",
+    "startTime": "2021-12-07T19:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.997546,-138.025959",
+        "durationMinutesOffsetFromStartTime": "12"
+      },
+      {
+        "point": "geo:38.997795,-138.025694",
+        "durationMinutesOffsetFromStartTime": "17"
+      },
+      {
+        "point": "geo:38.997922,-138.024164",
+        "durationMinutesOffsetFromStartTime": "18"
+      },
+      {
+        "point": "geo:38.997041,-138.019764",
+        "durationMinutesOffsetFromStartTime": "23"
+      },
+      {
+        "point": "geo:38.997620,-138.019456",
+        "durationMinutesOffsetFromStartTime": "25"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-07T23:39:39.000-08:00",
+    "startTime": "2021-12-07T21:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.997667,-138.019502",
+        "durationMinutesOffsetFromStartTime": "72"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-08T11:39:39.000-08:00",
+    "startTime": "2021-12-08T09:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.997666,-138.019491",
+        "durationMinutesOffsetFromStartTime": "80"
+      },
+      {
+        "point": "geo:38.997666,-138.019491",
+        "durationMinutesOffsetFromStartTime": "80"
+      },
+      {
+        "point": "geo:38.997691,-138.019823",
+        "durationMinutesOffsetFromStartTime": "82"
+      },
+      {
+        "point": "geo:38.997691,-138.019823",
+        "durationMinutesOffsetFromStartTime": "82"
+      },
+      {
+        "point": "geo:38.997680,-138.019827",
+        "durationMinutesOffsetFromStartTime": "88"
+      },
+      {
+        "point": "geo:38.999199,-138.026212",
+        "durationMinutesOffsetFromStartTime": "99"
+      },
+      {
+        "point": "geo:38.999199,-138.026212",
+        "durationMinutesOffsetFromStartTime": "99"
+      },
+      {
+        "point": "geo:38.999138,-138.026019",
+        "durationMinutesOffsetFromStartTime": "109"
+      },
+      {
+        "point": "geo:38.998763,-138.026248",
+        "durationMinutesOffsetFromStartTime": "114"
+      },
+      {
+        "point": "geo:38.997691,-138.026953",
+        "durationMinutesOffsetFromStartTime": "118"
+      },
+      {
+        "point": "geo:38.997691,-138.026953",
+        "durationMinutesOffsetFromStartTime": "118"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-08T13:39:39.000-08:00",
+    "startTime": "2021-12-08T11:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.997666,-138.027063",
+        "durationMinutesOffsetFromStartTime": "24"
+      },
+      {
+        "point": "geo:38.997884,-138.026917",
+        "durationMinutesOffsetFromStartTime": "29"
+      },
+      {
+        "point": "geo:38.998196,-138.026687",
+        "durationMinutesOffsetFromStartTime": "34"
+      },
+      {
+        "point": "geo:38.998196,-138.026687",
+        "durationMinutesOffsetFromStartTime": "34"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-08T15:39:39.000-08:00",
+    "startTime": "2021-12-08T13:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.998207,-138.026662",
+        "durationMinutesOffsetFromStartTime": "2"
+      },
+      {
+        "point": "geo:38.997983,-138.026819",
+        "durationMinutesOffsetFromStartTime": "4"
+      },
+      {
+        "point": "geo:38.997784,-138.027068",
+        "durationMinutesOffsetFromStartTime": "10"
+      },
+      {
+        "point": "geo:38.997914,-138.026550",
+        "durationMinutesOffsetFromStartTime": "17"
+      },
+      {
+        "point": "geo:38.998101,-138.026279",
+        "durationMinutesOffsetFromStartTime": "21"
+      },
+      {
+        "point": "geo:38.998359,-138.026265",
+        "durationMinutesOffsetFromStartTime": "24"
+      },
+      {
+        "point": "geo:38.998675,-138.025779",
+        "durationMinutesOffsetFromStartTime": "30"
+      },
+      {
+        "point": "geo:38.998774,-138.025631",
+        "durationMinutesOffsetFromStartTime": "32"
+      },
+      {
+        "point": "geo:38.998765,-138.025415",
+        "durationMinutesOffsetFromStartTime": "38"
+      },
+      {
+        "point": "geo:38.997951,-138.022069",
+        "durationMinutesOffsetFromStartTime": "45"
+      },
+      {
+        "point": "geo:38.997488,-138.019614",
+        "durationMinutesOffsetFromStartTime": "50"
+      },
+      {
+        "point": "geo:38.997319,-138.019830",
+        "durationMinutesOffsetFromStartTime": "50"
+      },
+      {
+        "point": "geo:38.997205,-138.019766",
+        "durationMinutesOffsetFromStartTime": "52"
+      },
+      {
+        "point": "geo:38.997452,-138.019632",
+        "durationMinutesOffsetFromStartTime": "57"
+      },
+      {
+        "point": "geo:38.997671,-138.019482",
+        "durationMinutesOffsetFromStartTime": "58"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-08T17:39:39.000-08:00",
+    "startTime": "2021-12-08T15:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.997456,-138.019633",
+        "durationMinutesOffsetFromStartTime": "29"
+      },
+      {
+        "point": "geo:38.997219,-138.019533",
+        "durationMinutesOffsetFromStartTime": "33"
+      },
+      {
+        "point": "geo:38.997571,-138.019578",
+        "durationMinutesOffsetFromStartTime": "51"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-09T05:39:39.000-08:00",
+    "startTime": "2021-12-09T03:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.997672,-138.019480",
+        "durationMinutesOffsetFromStartTime": "75"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-09T09:39:39.000-08:00",
+    "startTime": "2021-12-09T07:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.997666,-138.019485",
+        "durationMinutesOffsetFromStartTime": "48"
+      },
+      {
+        "point": "geo:38.997548,-138.019180",
+        "durationMinutesOffsetFromStartTime": "49"
+      },
+      {
+        "point": "geo:38.997364,-138.018968",
+        "durationMinutesOffsetFromStartTime": "53"
+      },
+      {
+        "point": "geo:38.997296,-138.018949",
+        "durationMinutesOffsetFromStartTime": "54"
+      },
+      {
+        "point": "geo:38.997121,-138.018662",
+        "durationMinutesOffsetFromStartTime": "72"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-09T11:39:39.000-08:00",
+    "startTime": "2021-12-09T09:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.997116,-138.018922",
+        "durationMinutesOffsetFromStartTime": "65"
+      },
+      {
+        "point": "geo:38.996695,-138.019035",
+        "durationMinutesOffsetFromStartTime": "66"
+      },
+      {
+        "point": "geo:38.996604,-138.018980",
+        "durationMinutesOffsetFromStartTime": "71"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-09T13:39:39.000-08:00",
+    "startTime": "2021-12-09T11:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.996466,-138.018885",
+        "durationMinutesOffsetFromStartTime": "98"
+      },
+      {
+        "point": "geo:38.996526,-138.018518",
+        "durationMinutesOffsetFromStartTime": "99"
+      },
+      {
+        "point": "geo:38.997676,-138.021095",
+        "durationMinutesOffsetFromStartTime": "109"
+      },
+      {
+        "point": "geo:38.997539,-138.021380",
+        "durationMinutesOffsetFromStartTime": "113"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-09T15:39:39.000-08:00",
+    "startTime": "2021-12-09T13:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.997360,-138.020964",
+        "durationMinutesOffsetFromStartTime": "13"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-09T17:39:39.000-08:00",
+    "startTime": "2021-12-09T15:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.997538,-138.021380",
+        "durationMinutesOffsetFromStartTime": "49"
+      },
+      {
+        "point": "geo:38.997746,-138.021216",
+        "durationMinutesOffsetFromStartTime": "66"
+      },
+      {
+        "point": "geo:38.997614,-138.021335",
+        "durationMinutesOffsetFromStartTime": "69"
+      },
+      {
+        "point": "geo:38.996684,-138.018828",
+        "durationMinutesOffsetFromStartTime": "81"
+      },
+      {
+        "point": "geo:38.996369,-138.018695",
+        "durationMinutesOffsetFromStartTime": "86"
+      },
+      {
+        "point": "geo:38.996183,-138.019031",
+        "durationMinutesOffsetFromStartTime": "88"
+      },
+      {
+        "point": "geo:38.996159,-138.019090",
+        "durationMinutesOffsetFromStartTime": "91"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-09T21:39:39.000-08:00",
+    "startTime": "2021-12-09T19:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.996214,-138.019067",
+        "durationMinutesOffsetFromStartTime": "38"
+      },
+      {
+        "point": "geo:38.996601,-138.019962",
+        "durationMinutesOffsetFromStartTime": "41"
+      },
+      {
+        "point": "geo:38.997651,-138.019534",
+        "durationMinutesOffsetFromStartTime": "44"
+      },
+      {
+        "point": "geo:38.997651,-138.019534",
+        "durationMinutesOffsetFromStartTime": "44"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-10T11:39:39.000-08:00",
+    "startTime": "2021-12-10T09:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.997781,-138.019644",
+        "durationMinutesOffsetFromStartTime": "22"
+      },
+      {
+        "point": "geo:38.997884,-138.019798",
+        "durationMinutesOffsetFromStartTime": "54"
+      },
+      {
+        "point": "geo:38.998237,-138.020049",
+        "durationMinutesOffsetFromStartTime": "57"
+      },
+      {
+        "point": "geo:38.997995,-138.020086",
+        "durationMinutesOffsetFromStartTime": "68"
+      },
+      {
+        "point": "geo:38.997821,-138.020344",
+        "durationMinutesOffsetFromStartTime": "76"
+      },
+      {
+        "point": "geo:38.997674,-138.020595",
+        "durationMinutesOffsetFromStartTime": "79"
+      },
+      {
+        "point": "geo:38.997618,-138.020917",
+        "durationMinutesOffsetFromStartTime": "83"
+      },
+      {
+        "point": "geo:38.997718,-138.021227",
+        "durationMinutesOffsetFromStartTime": "85"
+      },
+      {
+        "point": "geo:38.997608,-138.021550",
+        "durationMinutesOffsetFromStartTime": "88"
+      },
+      {
+        "point": "geo:38.997492,-138.021874",
+        "durationMinutesOffsetFromStartTime": "92"
+      },
+      {
+        "point": "geo:38.997276,-138.021971",
+        "durationMinutesOffsetFromStartTime": "96"
+      },
+      {
+        "point": "geo:38.997008,-138.022156",
+        "durationMinutesOffsetFromStartTime": "99"
+      },
+      {
+        "point": "geo:38.996842,-138.022435",
+        "durationMinutesOffsetFromStartTime": "102"
+      },
+      {
+        "point": "geo:38.996644,-138.022605",
+        "durationMinutesOffsetFromStartTime": "105"
+      },
+      {
+        "point": "geo:38.996249,-138.022575",
+        "durationMinutesOffsetFromStartTime": "108"
+      },
+      {
+        "point": "geo:38.996351,-138.022643",
+        "durationMinutesOffsetFromStartTime": "109"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-10T15:39:39.000-08:00",
+    "startTime": "2021-12-10T13:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.996249,-138.022575",
+        "durationMinutesOffsetFromStartTime": "4"
+      },
+      {
+        "point": "geo:38.996355,-138.022256",
+        "durationMinutesOffsetFromStartTime": "4"
+      },
+      {
+        "point": "geo:38.996404,-138.021930",
+        "durationMinutesOffsetFromStartTime": "6"
+      },
+      {
+        "point": "geo:38.996507,-138.021299",
+        "durationMinutesOffsetFromStartTime": "8"
+      },
+      {
+        "point": "geo:38.996373,-138.020448",
+        "durationMinutesOffsetFromStartTime": "11"
+      },
+      {
+        "point": "geo:38.996796,-138.019975",
+        "durationMinutesOffsetFromStartTime": "13"
+      },
+      {
+        "point": "geo:38.997143,-138.019708",
+        "durationMinutesOffsetFromStartTime": "14"
+      },
+      {
+        "point": "geo:38.997582,-138.019466",
+        "durationMinutesOffsetFromStartTime": "15"
+      },
+      {
+        "point": "geo:38.997647,-138.019534",
+        "durationMinutesOffsetFromStartTime": "15"
+      },
+      {
+        "point": "geo:38.997779,-138.019331",
+        "durationMinutesOffsetFromStartTime": "93"
+      },
+      {
+        "point": "geo:38.997851,-138.019312",
+        "durationMinutesOffsetFromStartTime": "94"
+      },
+      {
+        "point": "geo:38.997891,-138.018877",
+        "durationMinutesOffsetFromStartTime": "98"
+      },
+      {
+        "point": "geo:38.997892,-138.018546",
+        "durationMinutesOffsetFromStartTime": "100"
+      },
+      {
+        "point": "geo:38.997892,-138.018546",
+        "durationMinutesOffsetFromStartTime": "100"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-10T17:39:39.000-08:00",
+    "startTime": "2021-12-10T15:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.997733,-138.018867",
+        "durationMinutesOffsetFromStartTime": "47"
+      },
+      {
+        "point": "geo:38.997523,-138.019059",
+        "durationMinutesOffsetFromStartTime": "61"
+      },
+      {
+        "point": "geo:38.997614,-138.019487",
+        "durationMinutesOffsetFromStartTime": "61"
+      },
+      {
+        "point": "geo:38.997591,-138.019373",
+        "durationMinutesOffsetFromStartTime": "63"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-11T09:39:39.000-08:00",
+    "startTime": "2021-12-11T07:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.997334,-138.019400",
+        "durationMinutesOffsetFromStartTime": "105"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-11T13:39:39.000-08:00",
+    "startTime": "2021-12-11T11:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.997408,-138.019382",
+        "durationMinutesOffsetFromStartTime": "55"
+      },
+      {
+        "point": "geo:38.997156,-138.019213",
+        "durationMinutesOffsetFromStartTime": "56"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-11T15:39:39.000-08:00",
+    "startTime": "2021-12-11T13:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.997257,-138.019006",
+        "durationMinutesOffsetFromStartTime": "34"
+      },
+      {
+        "point": "geo:38.997314,-138.018804",
+        "durationMinutesOffsetFromStartTime": "89"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-11T17:39:39.000-08:00",
+    "startTime": "2021-12-11T15:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.997269,-138.019089",
+        "durationMinutesOffsetFromStartTime": "8"
+      },
+      {
+        "point": "geo:38.997664,-138.019482",
+        "durationMinutesOffsetFromStartTime": "9"
+      },
+      {
+        "point": "geo:38.997417,-138.019335",
+        "durationMinutesOffsetFromStartTime": "10"
+      },
+      {
+        "point": "geo:38.997580,-138.019322",
+        "durationMinutesOffsetFromStartTime": "13"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-12T09:39:39.000-08:00",
+    "startTime": "2021-12-12T07:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.997739,-138.019347",
+        "durationMinutesOffsetFromStartTime": "71"
+      },
+      {
+        "point": "geo:38.997834,-138.019330",
+        "durationMinutesOffsetFromStartTime": "72"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-12T11:39:39.000-08:00",
+    "startTime": "2021-12-12T09:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.997702,-138.019028",
+        "durationMinutesOffsetFromStartTime": "60"
+      },
+      {
+        "point": "geo:38.997702,-138.019028",
+        "durationMinutesOffsetFromStartTime": "60"
+      },
+      {
+        "point": "geo:38.997549,-138.018701",
+        "durationMinutesOffsetFromStartTime": "70"
+      },
+      {
+        "point": "geo:38.997638,-138.019629",
+        "durationMinutesOffsetFromStartTime": "110"
+      },
+      {
+        "point": "geo:38.997560,-138.019290",
+        "durationMinutesOffsetFromStartTime": "111"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-12T13:39:39.000-08:00",
+    "startTime": "2021-12-12T11:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.997721,-138.019505",
+        "durationMinutesOffsetFromStartTime": "25"
+      },
+      {
+        "point": "geo:38.998096,-138.020010",
+        "durationMinutesOffsetFromStartTime": "28"
+      },
+      {
+        "point": "geo:38.998278,-138.020201",
+        "durationMinutesOffsetFromStartTime": "78"
+      },
+      {
+        "point": "geo:38.998529,-138.020345",
+        "durationMinutesOffsetFromStartTime": "81"
+      },
+      {
+        "point": "geo:38.998800,-138.020591",
+        "durationMinutesOffsetFromStartTime": "83"
+      },
+      {
+        "point": "geo:38.998844,-138.020861",
+        "durationMinutesOffsetFromStartTime": "96"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-12T17:39:39.000-08:00",
+    "startTime": "2021-12-12T15:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.998766,-138.021027",
+        "durationMinutesOffsetFromStartTime": "3"
+      },
+      {
+        "point": "geo:38.998678,-138.021338",
+        "durationMinutesOffsetFromStartTime": "5"
+      },
+      {
+        "point": "geo:38.998481,-138.021506",
+        "durationMinutesOffsetFromStartTime": "8"
+      },
+      {
+        "point": "geo:38.998370,-138.021501",
+        "durationMinutesOffsetFromStartTime": "10"
+      },
+      {
+        "point": "geo:38.998167,-138.021417",
+        "durationMinutesOffsetFromStartTime": "45"
+      },
+      {
+        "point": "geo:38.997792,-138.021208",
+        "durationMinutesOffsetFromStartTime": "50"
+      },
+      {
+        "point": "geo:38.997950,-138.020956",
+        "durationMinutesOffsetFromStartTime": "55"
+      },
+      {
+        "point": "geo:38.997725,-138.020483",
+        "durationMinutesOffsetFromStartTime": "62"
+      },
+      {
+        "point": "geo:38.997641,-138.019643",
+        "durationMinutesOffsetFromStartTime": "67"
+      },
+      {
+        "point": "geo:38.997699,-138.020020",
+        "durationMinutesOffsetFromStartTime": "68"
+      },
+      {
+        "point": "geo:38.997678,-138.019775",
+        "durationMinutesOffsetFromStartTime": "70"
+      },
+      {
+        "point": "geo:38.997633,-138.019439",
+        "durationMinutesOffsetFromStartTime": "87"
+      },
+      {
+        "point": "geo:38.997658,-138.019645",
+        "durationMinutesOffsetFromStartTime": "88"
+      },
+      {
+        "point": "geo:38.997883,-138.019304",
+        "durationMinutesOffsetFromStartTime": "89"
+      },
+      {
+        "point": "geo:38.999185,-138.018573",
+        "durationMinutesOffsetFromStartTime": "94"
+      },
+      {
+        "point": "geo:38.999939,-138.017625",
+        "durationMinutesOffsetFromStartTime": "99"
+      },
+      {
+        "point": "geo:39.000411,-138.017043",
+        "durationMinutesOffsetFromStartTime": "100"
+      },
+      {
+        "point": "geo:39.001348,-138.016712",
+        "durationMinutesOffsetFromStartTime": "104"
+      },
+      {
+        "point": "geo:39.001703,-138.016945",
+        "durationMinutesOffsetFromStartTime": "106"
+      },
+      {
+        "point": "geo:39.001927,-138.016912",
+        "durationMinutesOffsetFromStartTime": "106"
+      },
+      {
+        "point": "geo:39.002306,-138.018011",
+        "durationMinutesOffsetFromStartTime": "109"
+      },
+      {
+        "point": "geo:39.002359,-138.018369",
+        "durationMinutesOffsetFromStartTime": "109"
+      },
+      {
+        "point": "geo:39.002910,-138.018578",
+        "durationMinutesOffsetFromStartTime": "110"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-12T19:39:39.000-08:00",
+    "startTime": "2021-12-12T17:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:39.013313,-137.999725",
+        "durationMinutesOffsetFromStartTime": "0"
+      },
+      {
+        "point": "geo:39.015484,-137.993911",
+        "durationMinutesOffsetFromStartTime": "6"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-12T21:39:39.000-08:00",
+    "startTime": "2021-12-12T19:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:39.015438,-137.994124",
+        "durationMinutesOffsetFromStartTime": "82"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-13T03:39:39.000-08:00",
+    "startTime": "2021-12-13T01:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:39.015460,-137.993082",
+        "durationMinutesOffsetFromStartTime": "105"
+      },
+      {
+        "point": "geo:39.014718,-137.992917",
+        "durationMinutesOffsetFromStartTime": "108"
+      },
+      {
+        "point": "geo:39.014587,-137.992650",
+        "durationMinutesOffsetFromStartTime": "112"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-13T05:39:39.000-08:00",
+    "startTime": "2021-12-13T03:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:39.014527,-137.992294",
+        "durationMinutesOffsetFromStartTime": "6"
+      },
+      {
+        "point": "geo:39.014425,-137.991976",
+        "durationMinutesOffsetFromStartTime": "41"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-13T09:39:39.000-08:00",
+    "startTime": "2021-12-13T07:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:39.014344,-137.991860",
+        "durationMinutesOffsetFromStartTime": "60"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-13T19:39:39.000-08:00",
+    "startTime": "2021-12-13T17:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.826385,-152.978959",
+        "durationMinutesOffsetFromStartTime": "78"
+      },
+      {
+        "point": "geo:38.826385,-152.978959",
+        "durationMinutesOffsetFromStartTime": "78"
+      },
+      {
+        "point": "geo:38.826734,-152.977559",
+        "durationMinutesOffsetFromStartTime": "81"
+      },
+      {
+        "point": "geo:38.827138,-152.977784",
+        "durationMinutesOffsetFromStartTime": "85"
+      },
+      {
+        "point": "geo:38.826878,-152.977735",
+        "durationMinutesOffsetFromStartTime": "89"
+      },
+      {
+        "point": "geo:38.826858,-152.977371",
+        "durationMinutesOffsetFromStartTime": "95"
+      },
+      {
+        "point": "geo:38.827079,-152.977329",
+        "durationMinutesOffsetFromStartTime": "111"
+      },
+      {
+        "point": "geo:38.827267,-152.977501",
+        "durationMinutesOffsetFromStartTime": "112"
+      }
+    ]
+  },
+  {
+    "endTime": "2021-12-13T21:39:39.000-08:00",
+    "startTime": "2021-12-13T19:39:39.000-08:00",
+    "timelinePath": [
+      {
+        "point": "geo:38.827243,-152.977485",
+        "durationMinutesOffsetFromStartTime": "4"
+      },
+      {
+        "point": "geo:38.828339,-152.977325",
+        "durationMinutesOffsetFromStartTime": "6"
+      },
+      {
+        "point": "geo:38.828578,-152.977318",
+        "durationMinutesOffsetFromStartTime": "7"
+      },
+      {
+        "point": "geo:38.828479,-152.976927",
+        "durationMinutesOffsetFromStartTime": "7"
+      },
+      {
+        "point": "geo:38.828582,-152.977428",
+        "durationMinutesOffsetFromStartTime": "7"
+      },
+      {
+        "point": "geo:38.828162,-152.977359",
+        "durationMinutesOffsetFromStartTime": "14"
+      },
+      {
+        "point": "geo:38.829354,-152.977339",
+        "durationMinutesOffsetFromStartTime": "15"
+      },
+      {
+        "point": "geo:38.828879,-152.977681",
+        "durationMinutesOffsetFromStartTime": "15"
+      },
+      {
+        "point": "geo:38.830229,-152.973506",
+        "durationMinutesOffsetFromStartTime": "18"
+      },
+      {
+        "point": "geo:38.833306,-152.973390",
+        "durationMinutesOffsetFromStartTime": "20"
+      },
+      {
+        "point": "geo:38.844210,-152.979850",
+        "durationMinutesOffsetFromStartTime": "27"
+      },
+      {
+        "point": "geo:38.845753,-152.980799",
+        "durationMinutesOffsetFromStartTime": "32"
+      },
+      {
+        "point": "geo:38.845970,-152.980772",
+        "durationMinutesOffsetFromStartTime": "32"
+      },
+      {
+        "point": "geo:38.845801,-152.980805",
+        "durationMinutesOffsetFromStartTime": "32"
+      },
+      {
+        "point": "geo:38.846000,-152.980635",
+        "durationMinutesOffsetFromStartTime": "42"
+      },
+      {
+        "point": "geo:38.846069,-152.981121",
+        "durationMinutesOffsetFromStartTime": "43"
+      },
+      {
+        "point": "geo:38.846069,-152.981121",
+        "durationMinutesOffsetFromStartTime": "43"
+      },
+      {
+        "point": "geo:38.846074,-152.981500",
+        "durationMinutesOffsetFromStartTime": "44"
+      },
+      {
+        "point": "geo:38.845267,-152.981594",
+        "durationMinutesOffsetFromStartTime": "48"
+      },
+      {
+        "point": "geo:38.845084,-152.981799",
+        "durationMinutesOffsetFromStartTime": "48"
+      },
+      {
+        "point": "geo:38.852398,-152.983155",
+        "durationMinutesOffsetFromStartTime": "53"
+      },
+      {
+        "point": "geo:38.853563,-152.983226",
+        "durationMinutesOffsetFromStartTime": "54"
+      },
+      {
+        "point": "geo:38.855309,-152.983235",
+        "durationMinutesOffsetFromStartTime": "56"
+      },
+      {
+        "point": "geo:38.855283,-152.983909",
+        "durationMinutesOffsetFromStartTime": "57"
+      },
+      {
+        "point": "geo:38.855281,-152.984720",
+        "durationMinutesOffsetFromStartTime": "59"
+      },
+      {
+        "point": "geo:38.855317,-152.987604",
+        "durationMinutesOffsetFromStartTime": "63"
+      },
+      {
+        "point": "geo:38.855128,-152.987648",
+        "durationMinutesOffsetFromStartTime": "64"
+      },
+      {
+        "point": "geo:38.855087,-152.987655",
+        "durationMinutesOffsetFromStartTime": "64"
+      },
+      {
+        "point": "geo:38.855034,-152.987647",
+        "durationMinutesOffsetFromStartTime": "102"
+      },
+      {
+        "point": "geo:38.854939,-152.987996",
+        "durationMinutesOffsetFromStartTime": "103"
+      },
+      {
+        "point": "geo:38.854415,-152.988132",
+        "durationMinutesOffsetFromStartTime": "105"
+      },
+      {
+        "point": "geo:38.854415,-152.988132",
+        "durationMinutesOffsetFromStartTime": "105"
+      },
+      {
+        "point": "geo:38.854401,-152.988131",
+        "durationMinutesOffsetFromStartTime": "110"
+      },
+      {
+        "point": "geo:38.854414,-152.988534",
+        "durationMinutesOffsetFromStartTime": "111"
+      },
+      {
+        "point": "geo:38.854504,-152.988043",
+        "durationMinutesOffsetFromStartTime": "112"
+      },
+      {
+        "point": "geo:38.855093,-152.987981",
+        "durationMinutesOffsetFromStartTime": "114"
+      }
+    ]
+  }
+]
