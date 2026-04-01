@@ -341,7 +341,7 @@ struct ReviewGridView: View {
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Use the action buttons to work through the queue. Click a photo to focus the map. Command-click toggles photos. Shift-click selects the range between photos.")
+                    Text("Use the action buttons to work through the queue. Click a photo to focus the map. Command-click toggles photos. Shift-click selects the range between photos. Command-A selects every photo on the current day.")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
 

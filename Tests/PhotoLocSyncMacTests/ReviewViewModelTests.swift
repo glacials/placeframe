@@ -148,6 +148,53 @@ final class ReviewViewModelTests: XCTestCase {
         XCTAssertEqual(Set(viewModel.mapSelectionTargets.map(\.id)), Set([firstItem.id, secondItem.id, thirdItem.id, fourthItem.id]))
     }
 
+    func testSelectAllPhotosOnCurrentDayReplacesSelectionWithOnlyCurrentDayEntries() {
+        let firstDayFirstItem = makeReviewItem(
+            assetID: "first-day-first-photo",
+            coordinate: GeoCoordinate(latitude: 35.6895, longitude: 139.6917),
+            label: "Tokyo",
+            confidence: .excellent,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_000)
+        )
+        let firstDaySecondItem = makeReviewItem(
+            assetID: "first-day-second-photo",
+            coordinate: GeoCoordinate(latitude: 34.6937, longitude: 135.5023),
+            label: "Osaka",
+            confidence: .acceptable,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_060)
+        )
+        let secondDayFirstItem = makeReviewItem(
+            assetID: "second-day-first-photo",
+            coordinate: GeoCoordinate(latitude: 43.0642, longitude: 141.3469),
+            label: "Sapporo",
+            confidence: .maybe,
+            disposition: .ambiguous,
+            creationDate: Date(timeIntervalSince1970: 1_700_386_400)
+        )
+        let secondDaySecondItem = makeReviewItem(
+            assetID: "second-day-second-photo",
+            coordinate: GeoCoordinate(latitude: 33.5904, longitude: 130.4017),
+            label: "Fukuoka",
+            confidence: .acceptable,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_386_460)
+        )
+        let viewModel = makeViewModel(items: [secondDaySecondItem, firstDaySecondItem, secondDayFirstItem, firstDayFirstItem])
+
+        viewModel.selectPhoto(firstDayFirstItem.id, mode: .replace)
+        viewModel.currentDayIndex = 1
+
+        viewModel.selectAllPhotosOnCurrentDay()
+
+        XCTAssertEqual(viewModel.selectedPhotoIDs, Set([secondDayFirstItem.id, secondDaySecondItem.id]))
+        XCTAssertEqual(
+            Set(viewModel.mapSelectionTargets.map(\.id)),
+            Set([secondDayFirstItem.id, secondDaySecondItem.id])
+        )
+    }
+
     func testApplyChangeRemovesPhotoFromSessionAndAdvancesSelection() async {
         let recorder = ApplyRecorder()
         let firstItem = makeReviewItem(

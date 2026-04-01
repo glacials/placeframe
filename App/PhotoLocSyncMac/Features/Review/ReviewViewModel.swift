@@ -196,6 +196,22 @@ final class ReviewViewModel: ObservableObject {
         selectionAnchorID = item.id
     }
 
+    func selectAllPhotosOnCurrentDay() {
+        guard let currentDayEntries = currentDaySection?.entries,
+              !currentDayEntries.isEmpty else {
+            return
+        }
+
+        let currentDayPhotoIDs = Set(currentDayEntries.map(\.id))
+        selectedPhotoIDs = currentDayPhotoIDs
+
+        if let selectionAnchorID, currentDayPhotoIDs.contains(selectionAnchorID) {
+            return
+        }
+
+        selectionAnchorID = currentDayEntries.first?.id
+    }
+
     func goToPreviousDay() {
         guard canGoToPreviousDay else { return }
         currentDayIndex -= 1

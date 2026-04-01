@@ -58,6 +58,9 @@ struct ReviewView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .padding(24)
+        .background {
+            selectAllShortcut
+        }
         .alert(item: $viewModel.presentedError) { error in
             Alert(
                 title: Text(error.title),
@@ -128,6 +131,17 @@ struct ReviewView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
+    }
+
+    private var selectAllShortcut: some View {
+        Button("Select All Photos on Current Day") {
+            viewModel.selectAllPhotosOnCurrentDay()
+        }
+        .keyboardShortcut("a", modifiers: .command)
+        .disabled(viewModel.currentDaySection == nil)
+        .opacity(0)
+        .frame(width: 0, height: 0)
+        .accessibilityHidden(true)
     }
 
     private func summaryBadge(title: String, value: String) -> some View {
