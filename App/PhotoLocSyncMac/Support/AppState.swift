@@ -3,7 +3,8 @@ import PhotoLocSyncAdapters
 import PhotoLocSyncCore
 import SwiftUI
 
-struct UserPresentableError: Error, Sendable {
+struct UserPresentableError: Error, Sendable, Identifiable {
+    let id = UUID()
     let title: String
     let message: String
 }
@@ -93,6 +94,10 @@ final class AppState: ObservableObject {
             onApply: { [weak self] decisions in
                 await self?.apply(decisions: decisions)
             },
+            onDeletePhoto: { [weak self] assetID in
+                guard let self else { return }
+                try await self.deletePhoto(assetID: assetID)
+            },
             onCancel: { [weak self] in
                 Task { @MainActor in
                     self?.reset()
@@ -111,6 +116,10 @@ final class AppState: ObservableObject {
         } catch {
             flowState = .failed(errorPresenter.userPresentableError(for: error))
         }
+    }
+
+    func deletePhoto(assetID: String) async throws {
+        try await coordinator.deleteAsset(withID: assetID)
     }
 
     func reset() {

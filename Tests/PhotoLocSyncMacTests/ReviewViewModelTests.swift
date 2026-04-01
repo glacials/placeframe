@@ -1,0 +1,247 @@
+import Foundation
+import XCTest
+@testable import PhotoLocSyncAdapters
+@testable import PhotoLocSyncCore
+@testable import PhotoLocSyncMac
+
+@MainActor
+final class ReviewViewModelTests: XCTestCase {
+    func testCopyAndPasteLocationReplacesPendingDecisionAndSelectsTarget() throws {
+        let sourceCoordinate = GeoCoordinate(latitude: 35.6895, longitude: 139.6917)
+        let targetCoordinate = GeoCoordinate(latitude: 34.6937, longitude: 135.5023)
+        let sourceItem = makeReviewItem(
+            assetID: "source-photo",
+            coordinate: sourceCoordinate,
+            label: "Shinjuku, Tokyo",
+            confidence: .excellent,
+            disposition: .autoSuggested
+        )
+        let targetItem = makeReviewItem(
+            assetID: "target-photo",
+            coordinate: targetCoordinate,
+            label: "Osaka",
+            confidence: .maybe,
+            disposition: .ambiguous
+        )
+        let viewModel = makeViewModel(items: [sourceItem, targetItem])
+
+        XCTAssertFalse(viewModel.canPasteLocation(into: targetItem.id))
+
+        viewModel.copyLocation(for: sourceItem.id)
+
+        XCTAssertTrue(viewModel.canPasteLocation(into: targetItem.id))
+        XCTAssertFalse(viewModel.canPasteLocation(into: sourceItem.id))
+
+        viewModel.pasteLocation(into: targetItem.id)
+
+        let updatedTarget = try XCTUnwrap(viewModel.selections.first { $0.id == targetItem.id })
+        XCTAssertEqual(updatedTarget.item.proposedCoordinate, sourceCoordinate)
+        XCTAssertEqual(updatedTarget.item.locationLabel, "Shinjuku, Tokyo")
+        XCTAssertEqual(updatedTarget.item.confidence, .excellent)
+        XCTAssertEqual(updatedTarget.item.suggestedDecision?.assetID, targetItem.id)
+        XCTAssertEqual(updatedTarget.item.suggestedDecision?.coordinate, sourceCoordinate)
+        XCTAssertEqual(updatedTarget.copiedFromAssetID, sourceItem.id)
+        XCTAssertTrue(updatedTarget.isSelected)
+
+        XCTAssertTrue(viewModel.selectedDecisions.contains { $0.assetID == targetItem.id && $0.coordinate == sourceCoordinate })
+    }
+
+    func testPasteLocationUpdatesFocusedMapPin() {
+        let sourceCoordinate = GeoCoordinate(latitude: 51.5007, longitude: -0.1246)
+        let targetCoordinate = GeoCoordinate(latitude: 48.8566, longitude: 2.3522)
+        let sourceItem = makeReviewItem(
+            assetID: "source-photo",
+            coordinate: sourceCoordinate,
+            label: "London",
+            confidence: .acceptable,
+            disposition: .autoSuggested
+        )
+        let targetItem = makeReviewItem(
+            assetID: "target-photo",
+            coordinate: targetCoordinate,
+            label: "Paris",
+            confidence: .maybe,
+            disposition: .ambiguous
+        )
+        let viewModel = makeViewModel(items: [sourceItem, targetItem])
+
+        viewModel.showOnMap(targetItem)
+        viewModel.copyLocation(for: sourceItem.id)
+        viewModel.pasteLocation(into: targetItem.id)
+
+        XCTAssertEqual(viewModel.selectedPhotoIDs, Set([targetItem.id]))
+        XCTAssertEqual(
+            viewModel.mapSelectionTargets,
+            [ReviewMapSelectionTarget(id: targetItem.id, coordinate: sourceCoordinate, label: "London")]
+        )
+    }
+
+    func testSelectingMultiplePhotosProducesMultiPhotoMapSelection() {
+        let sourceItem = makeReviewItem(
+            assetID: "source-photo",
+            coordinate: GeoCoordinate(latitude: 35.6895, longitude: 139.6917),
+            label: "Tokyo",
+            confidence: .excellent,
+            disposition: .autoSuggested
+        )
+        let targetItem = makeReviewItem(
+            assetID: "target-photo",
+            coordinate: GeoCoordinate(latitude: 34.6937, longitude: 135.5023),
+            label: "Osaka",
+            confidence: .maybe,
+            disposition: .ambiguous
+        )
+        let viewModel = makeViewModel(items: [sourceItem, targetItem])
+
+        viewModel.selectPhoto(sourceItem.id, extendingSelection: false)
+        viewModel.selectPhoto(targetItem.id, extendingSelection: true)
+
+        XCTAssertEqual(viewModel.selectedPhotoIDs, Set([sourceItem.id, targetItem.id]))
+        XCTAssertEqual(
+            viewModel.mapSelectionTargets,
+            [
+                ReviewMapSelectionTarget(id: sourceItem.id, coordinate: sourceItem.proposedCoordinate!, label: "Tokyo"),
+                ReviewMapSelectionTarget(id: targetItem.id, coordinate: targetItem.proposedCoordinate!, label: "Osaka")
+            ]
+        )
+    }
+
+    func testDeletePhotoRemovesSelectionAndUpdatesSummary() async {
+        let recorder = DeletionRecorder()
+        let sourceItem = makeReviewItem(
+            assetID: "source-photo",
+            coordinate: GeoCoordinate(latitude: 35.6895, longitude: 139.6917),
+            label: "Shinjuku, Tokyo",
+            confidence: .excellent,
+            disposition: .autoSuggested
+        )
+        let targetItem = makeReviewItem(
+            assetID: "target-photo",
+            coordinate: GeoCoordinate(latitude: 34.6937, longitude: 135.5023),
+            label: "Osaka",
+            confidence: .maybe,
+            disposition: .ambiguous
+        )
+        let viewModel = makeViewModel(items: [sourceItem, targetItem]) { assetID in
+            await recorder.record(assetID)
+        }
+
+        await viewModel.deletePhoto(sourceItem.id)
+        let deletedAssetIDs = await recorder.snapshot()
+
+        XCTAssertEqual(deletedAssetIDs, [sourceItem.id])
+        XCTAssertEqual(viewModel.selections.map(\.id), [targetItem.id])
+        XCTAssertEqual(viewModel.summary.totalAssets, 1)
+        XCTAssertEqual(viewModel.summary.autoSuggested, 0)
+        XCTAssertEqual(viewModel.summary.ambiguous, 1)
+        XCTAssertEqual(viewModel.selectedCount, 0)
+    }
+
+    func testDeletePhotoClearsCopiedLocationAndPhotoSelectionForDeletedAsset() async {
+        let sourceItem = makeReviewItem(
+            assetID: "source-photo",
+            coordinate: GeoCoordinate(latitude: 51.5007, longitude: -0.1246),
+            label: "London",
+            confidence: .acceptable,
+            disposition: .autoSuggested
+        )
+        let targetItem = makeReviewItem(
+            assetID: "target-photo",
+            coordinate: GeoCoordinate(latitude: 48.8566, longitude: 2.3522),
+            label: "Paris",
+            confidence: .maybe,
+            disposition: .ambiguous
+        )
+        let viewModel = makeViewModel(items: [sourceItem, targetItem])
+
+        viewModel.copyLocation(for: sourceItem.id)
+        viewModel.showOnMap(sourceItem)
+
+        await viewModel.deletePhoto(sourceItem.id)
+
+        XCTAssertTrue(viewModel.selectedPhotoIDs.isEmpty)
+        XCTAssertTrue(viewModel.mapSelectionTargets.isEmpty)
+        XCTAssertFalse(viewModel.canPasteLocation(into: targetItem.id))
+    }
+
+    func testDeletePhotoPreservesSelectionAndSurfacesErrorWhenDeleteFails() async {
+        let sourceItem = makeReviewItem(
+            assetID: "source-photo",
+            coordinate: GeoCoordinate(latitude: 35.6895, longitude: 139.6917),
+            label: "Shinjuku, Tokyo",
+            confidence: .excellent,
+            disposition: .autoSuggested
+        )
+        let viewModel = makeViewModel(items: [sourceItem]) { _ in
+            throw UserPresentableError(title: "Delete Failed", message: "No permission.")
+        }
+
+        await viewModel.deletePhoto(sourceItem.id)
+
+        XCTAssertEqual(viewModel.selections.map(\.id), [sourceItem.id])
+        XCTAssertEqual(viewModel.presentedError?.title, "Delete Failed")
+        XCTAssertEqual(viewModel.presentedError?.message, "No permission.")
+    }
+
+    private func makeViewModel(
+        items: [ReviewItem],
+        onDeletePhoto: @escaping @Sendable (String) async throws -> Void = { _ in }
+    ) -> ReviewViewModel {
+        ReviewViewModel(
+            summary: ReviewSummary(
+                totalAssets: items.count,
+                autoSuggested: items.filter { $0.disposition == .autoSuggested }.count,
+                ambiguous: items.filter { $0.disposition == .ambiguous }.count,
+                unmatched: 0
+            ),
+            items: items,
+            thumbnailProvider: PhotoThumbnailProvider(),
+            onApply: { _ in },
+            onDeletePhoto: onDeletePhoto,
+            onCancel: {}
+        )
+    }
+
+    private func makeReviewItem(
+        assetID: String,
+        coordinate: GeoCoordinate,
+        label: String,
+        confidence: MatchConfidence,
+        disposition: MatchDisposition
+    ) -> ReviewItem {
+        let asset = PhotoAsset(
+            id: assetID,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_000),
+            hasLocation: false
+        )
+        let decision = MatchDecision(
+            assetID: assetID,
+            captureDate: asset.creationDate,
+            coordinate: coordinate,
+            label: label,
+            confidence: confidence
+        )
+
+        return ReviewItem(
+            asset: asset,
+            proposedCoordinate: coordinate,
+            locationLabel: label,
+            confidence: confidence,
+            timeDelta: 60,
+            disposition: disposition,
+            suggestedDecision: decision
+        )
+    }
+}
+
+private actor DeletionRecorder {
+    private var assetIDs: [String] = []
+
+    func record(_ assetID: String) {
+        assetIDs.append(assetID)
+    }
+
+    func snapshot() -> [String] {
+        assetIDs
+    }
+}

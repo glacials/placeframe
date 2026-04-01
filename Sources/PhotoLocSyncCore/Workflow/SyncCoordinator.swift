@@ -25,4 +25,8 @@ public final class SyncCoordinator: Sendable {
             failures: results.filter { $0.outcome == .failed }
         )
     }
+
+    public func deleteAsset(withID assetID: String) async throws {
+        try await writer.deleteAsset(withID: assetID)
+    }
 }

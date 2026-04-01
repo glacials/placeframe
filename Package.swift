@@ -44,6 +44,11 @@ let package = Package(
             dependencies: ["PhotoLocSyncCore", "PhotoLocSyncAdapters"],
             path: "Tests/PhotoLocSyncManualTests",
             exclude: ["MANUAL_TEST_GUIDE.md"]
+        ),
+        .testTarget(
+            name: "PhotoLocSyncMacTests",
+            dependencies: ["PhotoLocSyncMac", "PhotoLocSyncCore", "PhotoLocSyncAdapters"],
+            path: "Tests/PhotoLocSyncMacTests"
         )
     ]
 )

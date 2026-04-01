@@ -13,8 +13,14 @@ struct ReviewView: View {
                 HSplitView {
                     ReviewGridView(
                         entries: currentDaySection.entries,
+                        selectedPhotoIDs: viewModel.selectedPhotoIDs,
                         thumbnailProvider: viewModel.thumbnailProvider,
+                        selectPhoto: viewModel.selectPhoto(_:extendingSelection:),
                         toggleSelection: viewModel.toggleSelection(for:),
+                        copyLocation: viewModel.copyLocation(for:),
+                        pasteLocation: viewModel.pasteLocation(into:),
+                        canPasteLocation: viewModel.canPasteLocation(into:),
+                        deletePhoto: viewModel.deletePhoto(_:),
                         showOnMap: viewModel.showOnMap(_:),
                         quickLook: { item, sourceView, transitionImage in
                             quickLookController.quickLook(
@@ -29,7 +35,10 @@ struct ReviewView: View {
                     )
                     .frame(minWidth: 440, idealWidth: 640, maxHeight: .infinity, alignment: .topLeading)
 
-                    ReviewMapView(entries: currentDaySection.entries, focus: viewModel.mapFocus)
+                    ReviewMapView(
+                        entries: currentDaySection.entries,
+                        selectionTargets: viewModel.mapSelectionTargets
+                    )
                         .frame(minWidth: 320, idealWidth: 420, maxHeight: .infinity, alignment: .topLeading)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -45,6 +54,13 @@ struct ReviewView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .padding(24)
+        .alert(item: $viewModel.presentedError) { error in
+            Alert(
+                title: Text(error.title),
+                message: Text(error.message),
+                dismissButton: .default(Text("OK"))
+            )
+        }
     }
 
     private var header: some View {

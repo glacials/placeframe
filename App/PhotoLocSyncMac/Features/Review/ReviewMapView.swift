@@ -12,7 +12,7 @@ private struct ReviewMapCluster: Identifiable {
 
 struct ReviewMapView: View {
     let entries: [ReviewSelection]
-    let focus: ReviewMapFocus?
+    let selectionTargets: [ReviewMapSelectionTarget]
 
     private var clusters: [ReviewMapCluster] {
         var grouped: [String: (coordinate: CLLocationCoordinate2D, count: Int, label: String)] = [:]
@@ -56,20 +56,31 @@ struct ReviewMapView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             VStack(alignment: .leading, spacing: 12) {
-                Text("Showing \(clusters.count) map \(clusters.count == 1 ? "cluster" : "clusters") for \(entries.filter { $0.item.proposedCoordinate != nil }.count) matched photos.")
+                Text(mapSummaryText)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
 
-                ReviewMapNativeView(clusters: clusters, focus: focus)
+                ReviewMapNativeView(clusters: clusters, selectionTargets: selectionTargets)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
+    }
+
+    private var mapSummaryText: String {
+        let matchedPhotoCount = entries.filter { $0.item.proposedCoordinate != nil }.count
+
+        guard !selectionTargets.isEmpty else {
+            return "Showing \(clusters.count) map \(clusters.count == 1 ? "cluster" : "clusters") for \(matchedPhotoCount) matched photos."
+        }
+
+        let noun = selectionTargets.count == 1 ? "photo" : "photos"
+        return "Map focused on \(selectionTargets.count) selected \(noun) out of \(matchedPhotoCount) matched photos."
     }
 }
 
 private struct ReviewMapNativeView: NSViewRepresentable {
     let clusters: [ReviewMapCluster]
-    let focus: ReviewMapFocus?
+    let selectionTargets: [ReviewMapSelectionTarget]
 
     func makeCoordinator() -> Coordinator {
         Coordinator()
@@ -85,32 +96,32 @@ private struct ReviewMapNativeView: NSViewRepresentable {
         mapView.isPitchEnabled = false
         mapView.pointOfInterestFilter = .excludingAll
         mapView.register(ReviewClusterAnnotationView.self, forAnnotationViewWithReuseIdentifier: Coordinator.clusterReuseIdentifier)
-        mapView.register(MKMarkerAnnotationView.self, forAnnotationViewWithReuseIdentifier: Coordinator.focusReuseIdentifier)
+        mapView.register(MKMarkerAnnotationView.self, forAnnotationViewWithReuseIdentifier: Coordinator.selectionReuseIdentifier)
         return mapView
     }
 
     func updateNSView(_ nsView: MKMapView, context: Context) {
-        context.coordinator.update(mapView: nsView, clusters: clusters, focus: focus)
+        context.coordinator.update(mapView: nsView, clusters: clusters, selectionTargets: selectionTargets)
     }
 
     final class Coordinator: NSObject, MKMapViewDelegate {
         static let clusterReuseIdentifier = "ReviewClusterAnnotation"
-        static let focusReuseIdentifier = "ReviewFocusAnnotation"
+        static let selectionReuseIdentifier = "ReviewSelectionAnnotation"
 
         private var annotationSignature = ""
         private var cameraSignature = ""
 
-        func update(mapView: MKMapView, clusters: [ReviewMapCluster], focus: ReviewMapFocus?) {
-            let nextAnnotationSignature = Self.annotationSignature(for: clusters, focus: focus)
+        func update(mapView: MKMapView, clusters: [ReviewMapCluster], selectionTargets: [ReviewMapSelectionTarget]) {
+            let nextAnnotationSignature = Self.makeAnnotationSignature(for: clusters, selectionTargets: selectionTargets)
             if nextAnnotationSignature != annotationSignature {
                 mapView.removeAnnotations(mapView.annotations)
-                mapView.addAnnotations(Self.makeAnnotations(clusters: clusters, focus: focus))
+                mapView.addAnnotations(Self.makeAnnotations(clusters: clusters, selectionTargets: selectionTargets))
                 annotationSignature = nextAnnotationSignature
             }
 
-            let nextCameraSignature = Self.cameraSignature(for: clusters, focus: focus)
+            let nextCameraSignature = Self.makeCameraSignature(for: clusters, selectionTargets: selectionTargets)
             if nextCameraSignature != cameraSignature {
-                Self.applyVisibleRegion(to: mapView, clusters: clusters, focus: focus)
+                Self.applyVisibleRegion(to: mapView, clusters: clusters, selectionTargets: selectionTargets)
                 cameraSignature = nextCameraSignature
             }
         }
@@ -125,9 +136,9 @@ private struct ReviewMapNativeView: NSViewRepresentable {
                 return view
             }
 
-            if annotation is ReviewFocusAnnotation {
+            if annotation is ReviewSelectionAnnotation {
                 let view = mapView.dequeueReusableAnnotationView(
-                    withIdentifier: Self.focusReuseIdentifier,
+                    withIdentifier: Self.selectionReuseIdentifier,
                     for: annotation
                 ) as? MKMarkerAnnotationView
                 view?.annotation = annotation
@@ -144,48 +155,52 @@ private struct ReviewMapNativeView: NSViewRepresentable {
             return nil
         }
 
-        private static func makeAnnotations(clusters: [ReviewMapCluster], focus: ReviewMapFocus?) -> [MKAnnotation] {
+        private static func makeAnnotations(clusters: [ReviewMapCluster], selectionTargets: [ReviewMapSelectionTarget]) -> [MKAnnotation] {
             var annotations: [MKAnnotation] = clusters.map { ReviewClusterAnnotation(cluster: $0) }
-            if let focus {
-                annotations.append(ReviewFocusAnnotation(focus: focus))
-            }
+            annotations.append(contentsOf: selectionTargets.map(ReviewSelectionAnnotation.init(target:)))
             return annotations
         }
 
-        private static func annotationSignature(for clusters: [ReviewMapCluster], focus: ReviewMapFocus?) -> String {
+        private static func makeAnnotationSignature(for clusters: [ReviewMapCluster], selectionTargets: [ReviewMapSelectionTarget]) -> String {
             let clusterSignature = clusters
                 .map { "\($0.id):\($0.count):\($0.sampleLabel)" }
                 .joined(separator: "|")
-            let focusSignature = focus.map {
-                "\($0.id):\($0.coordinate.latitude):\($0.coordinate.longitude):\($0.label)"
-            } ?? "none"
-            return clusterSignature + "||" + focusSignature
+            let selectionSignature = selectionTargets
+                .map { "\($0.id):\($0.coordinate.latitude):\($0.coordinate.longitude):\($0.label)" }
+                .joined(separator: "|")
+            return clusterSignature + "||" + selectionSignature
         }
 
-        private static func cameraSignature(for clusters: [ReviewMapCluster], focus: ReviewMapFocus?) -> String {
-            if let focus {
-                return "focus:\(focus.id):\(focus.coordinate.latitude):\(focus.coordinate.longitude)"
+        private static func makeCameraSignature(for clusters: [ReviewMapCluster], selectionTargets: [ReviewMapSelectionTarget]) -> String {
+            if !selectionTargets.isEmpty {
+                return "selection:" + selectionTargets
+                    .map { "\($0.id):\($0.coordinate.latitude):\($0.coordinate.longitude)" }
+                    .joined(separator: "|")
             }
             return "clusters:" + clusters.map(\.id).joined(separator: "|")
         }
 
-        private static func applyVisibleRegion(to mapView: MKMapView, clusters: [ReviewMapCluster], focus: ReviewMapFocus?) {
-            if let focus {
+        private static func applyVisibleRegion(to mapView: MKMapView, clusters: [ReviewMapCluster], selectionTargets: [ReviewMapSelectionTarget]) {
+            if let selectedCoordinate = selectionTargets.onlyCoordinate {
                 let region = MKCoordinateRegion(
-                    center: CLLocationCoordinate2D(
-                        latitude: focus.coordinate.latitude,
-                        longitude: focus.coordinate.longitude
-                    ),
+                    center: selectedCoordinate,
                     span: MKCoordinateSpan(latitudeDelta: 0.015, longitudeDelta: 0.015)
                 )
                 mapView.setRegion(mapView.regionThatFits(region), animated: true)
                 return
             }
 
-            let coordinates = clusters.map(\.coordinate)
+            let coordinates = selectionTargets.isEmpty
+                ? clusters.map(\.coordinate)
+                : selectionTargets.map {
+                    CLLocationCoordinate2D(
+                        latitude: $0.coordinate.latitude,
+                        longitude: $0.coordinate.longitude
+                    )
+                }
             guard let firstCoordinate = coordinates.first else { return }
 
-            guard coordinates.count > 1 else {
+            guard coordinates.uniqueCoordinateCount > 1 else {
                 let region = MKCoordinateRegion(
                     center: firstCoordinate,
                     span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
@@ -222,16 +237,16 @@ private final class ReviewClusterAnnotation: NSObject, MKAnnotation {
     }
 }
 
-private final class ReviewFocusAnnotation: NSObject, MKAnnotation {
+private final class ReviewSelectionAnnotation: NSObject, MKAnnotation {
     let coordinate: CLLocationCoordinate2D
     let title: String?
 
-    init(focus: ReviewMapFocus) {
+    init(target: ReviewMapSelectionTarget) {
         self.coordinate = CLLocationCoordinate2D(
-            latitude: focus.coordinate.latitude,
-            longitude: focus.coordinate.longitude
+            latitude: target.coordinate.latitude,
+            longitude: target.coordinate.longitude
         )
-        self.title = focus.label
+        self.title = target.label
         super.init()
     }
 }
@@ -295,5 +310,27 @@ private final class ReviewClusterAnnotationView: MKAnnotationView {
 private extension NSFont {
     func bold() -> NSFont {
         NSFontManager.shared.convert(self, toHaveTrait: .boldFontMask)
+    }
+}
+
+private extension Array where Element == CLLocationCoordinate2D {
+    var onlyCoordinate: CLLocationCoordinate2D? {
+        uniqueCoordinateCount == 1 ? first : nil
+    }
+
+    var uniqueCoordinateCount: Int {
+        Set(map { "\($0.latitude),\($0.longitude)" }).count
+    }
+}
+
+private extension Array where Element == ReviewMapSelectionTarget {
+    var onlyCoordinate: CLLocationCoordinate2D? {
+        map {
+            CLLocationCoordinate2D(
+                latitude: $0.coordinate.latitude,
+                longitude: $0.coordinate.longitude
+            )
+        }
+        .onlyCoordinate
     }
 }

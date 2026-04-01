@@ -35,6 +35,41 @@ public final class PhotoKitLibraryWriter: PhotoLibraryWriting, @unchecked Sendab
         return results
     }
 
+    public func deleteAsset(withID assetID: String) async throws {
+        try await authorization.requestReadWriteAccess()
+
+        let fetchResult = await MainActor.run {
+            PHAsset.fetchAssets(withLocalIdentifiers: [assetID], options: nil)
+        }
+        guard let asset = await MainActor.run(body: { fetchResult.firstObject }) else {
+            throw NSError(
+                domain: "PhotoLocSync",
+                code: -2,
+                userInfo: [NSLocalizedDescriptionKey: "The photo no longer exists in Apple Photos."]
+            )
+        }
+
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            PHPhotoLibrary.shared().performChanges {
+                PHAssetChangeRequest.deleteAssets([asset] as NSArray)
+            } completionHandler: { success, error in
+                if let error {
+                    continuation.resume(throwing: error)
+                } else if success {
+                    continuation.resume()
+                } else {
+                    continuation.resume(
+                        throwing: NSError(
+                            domain: "PhotoLocSync",
+                            code: -3,
+                            userInfo: [NSLocalizedDescriptionKey: "PhotoKit did not report a successful delete."]
+                        )
+                    )
+                }
+            }
+        }
+    }
+
     private func updateLocation(for asset: PHAsset, coordinate: GeoCoordinate) async throws {
         let location = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
