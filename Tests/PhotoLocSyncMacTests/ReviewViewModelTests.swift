@@ -370,6 +370,48 @@ final class ReviewViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.summary.autoSuggested, 1)
     }
 
+    func testApplyChangeOnLastPhotoOfDayKeepsFocusOnRemainingPhotoThatDay() async {
+        let recorder = ApplyRecorder()
+        let firstDayFirstItem = makeReviewItem(
+            assetID: "first-day-first-photo",
+            coordinate: GeoCoordinate(latitude: 35.6895, longitude: 139.6917),
+            label: "Tokyo",
+            confidence: .excellent,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_000)
+        )
+        let firstDayLastItem = makeReviewItem(
+            assetID: "first-day-last-photo",
+            coordinate: GeoCoordinate(latitude: 34.6937, longitude: 135.5023),
+            label: "Osaka",
+            confidence: .acceptable,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_060)
+        )
+        let secondDayItem = makeReviewItem(
+            assetID: "second-day-photo",
+            coordinate: GeoCoordinate(latitude: 43.0642, longitude: 141.3469),
+            label: "Sapporo",
+            confidence: .maybe,
+            disposition: .ambiguous,
+            creationDate: Date(timeIntervalSince1970: 1_700_386_400)
+        )
+        let viewModel = makeViewModel(items: [secondDayItem, firstDayLastItem, firstDayFirstItem]) { decision in
+            await recorder.record(decision)
+        }
+
+        await viewModel.applyChange(for: firstDayLastItem.id)
+        let appliedAssetIDs = await recorder.appliedAssetIDs()
+
+        XCTAssertEqual(appliedAssetIDs, [firstDayLastItem.id])
+        XCTAssertEqual(viewModel.currentDaySection?.entries.map(\.id), [firstDayFirstItem.id])
+        XCTAssertEqual(viewModel.currentDayIndex, 0)
+        XCTAssertEqual(viewModel.selectedPhotoIDs, [firstDayFirstItem.id])
+        XCTAssertEqual(viewModel.summary.totalAssets, 2)
+        XCTAssertEqual(viewModel.summary.autoSuggested, 1)
+        XCTAssertEqual(viewModel.summary.ambiguous, 1)
+    }
+
     func testApplyChangesProcessesBatchInReviewOrderAndAdvancesSelection() async {
         let recorder = ApplyRecorder()
         let firstItem = makeReviewItem(

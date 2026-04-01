@@ -292,7 +292,7 @@ final class ReviewViewModel: ObservableObject {
         let applicableAssetIDs = reserveActionAssetIDs(applicableSelections.map(\.id))
         guard !applicableAssetIDs.isEmpty else { return }
 
-        let nextAssetIDAfterAllApplies = nextAssetID(afterRemoving: Set(applicableAssetIDs))
+        let nextAssetIDAfterAllApplies = nextAssetIDAfterApplying(applicableAssetIDs)
 
         defer {
             applicableAssetIDs.forEach { actionAssetIDs.remove($0) }
@@ -475,6 +475,36 @@ final class ReviewViewModel: ObservableObject {
         }
 
         return nil
+    }
+
+    private func nextAssetIDAfterApplying(_ assetIDs: [String]) -> String? {
+        guard assetIDs.count == 1,
+              let assetID = assetIDs.first else {
+            return nextAssetID(afterRemoving: Set(assetIDs))
+        }
+
+        return nextAssetIDOnSameDay(afterRemoving: assetID) ?? nextAssetID(afterRemoving: [assetID])
+    }
+
+    private func nextAssetIDOnSameDay(afterRemoving assetID: String) -> String? {
+        guard let selection = selections.first(where: { $0.id == assetID }) else {
+            return nil
+        }
+
+        let dayStart = calendar.startOfDay(for: selection.item.asset.creationDate)
+        guard let dayEntryIDs = daySections.first(where: { $0.dayStart == dayStart })?.entries.map(\.id),
+              let removedIndex = dayEntryIDs.firstIndex(of: assetID) else {
+            return nil
+        }
+
+        for index in dayEntryIDs.indices where index > removedIndex {
+            let nextAssetID = dayEntryIDs[index]
+            if nextAssetID != assetID {
+                return nextAssetID
+            }
+        }
+
+        return dayEntryIDs.first(where: { $0 != assetID })
     }
 
     private func focusPhoto(withID assetID: String?) {
