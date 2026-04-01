@@ -44,6 +44,7 @@ final class ReviewViewModel: ObservableObject {
     @Published private(set) var summary: ReviewSummary
     @Published private(set) var selections: [ReviewSelection]
     @Published private(set) var selectedPhotoIDs: Set<String> = []
+    @Published private(set) var isApplyingCurrentDay = false
     @Published private var copiedLocation: CopiedLocation?
 
     let thumbnailProvider: PhotoThumbnailProvider
@@ -127,6 +128,14 @@ final class ReviewViewModel: ObservableObject {
 
     var canGoToPreviousDay: Bool { currentDayIndex > 0 }
     var canGoToNextDay: Bool { currentDayIndex + 1 < daySections.count }
+    var canApplyCurrentDay: Bool {
+        guard let currentDayEntries = currentDaySection?.entries,
+              !currentDayEntries.isEmpty else {
+            return false
+        }
+
+        return !isApplyingCurrentDay && currentDayEntries.allSatisfy { $0.item.suggestedDecision != nil }
+    }
 
     var mapSelectionTargets: [ReviewMapSelectionTarget] {
         selections.compactMap { selection in
@@ -238,48 +247,85 @@ final class ReviewViewModel: ObservableObject {
     }
 
     func applyChange(for assetID: String) async {
-        guard let selection = selections.first(where: { $0.id == assetID }),
-              let decision = selection.item.suggestedDecision,
-              actionAssetIDs.insert(assetID).inserted else {
+        await applyChanges(for: [assetID])
+    }
+
+    func applyCurrentDay() async {
+        guard canApplyCurrentDay,
+              let currentDayAssetIDs = currentDaySection?.entries.map(\.id),
+              !currentDayAssetIDs.isEmpty else {
             return
         }
 
-        let nextAssetID = nextAssetID(after: assetID)
-
+        isApplyingCurrentDay = true
         defer {
-            actionAssetIDs.remove(assetID)
+            isApplyingCurrentDay = false
         }
 
-        do {
-            try await onApplyDecision(decision)
-            removeSelection(withID: assetID)
-            focusPhoto(withID: nextAssetID)
-        } catch {
-            presentedError = errorPresenter.userPresentableError(for: error)
-        }
+        await applyChanges(for: currentDayAssetIDs)
     }
 
     func skipForNow(_ assetID: String) {
-        guard selections.contains(where: { $0.id == assetID }) else { return }
-        let nextAssetID = nextAssetID(after: assetID)
-        removeSelection(withID: assetID)
-        focusPhoto(withID: nextAssetID)
+        skipPhotosForNow([assetID])
     }
 
     func dismissPermanently(_ assetID: String) async {
-        guard selections.contains(where: { $0.id == assetID }),
-              actionAssetIDs.insert(assetID).inserted else {
-            return
-        }
+        await dismissPhotosPermanently([assetID])
+    }
 
-        let nextAssetID = nextAssetID(after: assetID)
+    func applyChanges(for assetIDs: [String]) async {
+        let applicableSelections = orderedSelections(for: assetIDs).filter { $0.item.suggestedDecision != nil }
+        let applicableAssetIDs = reserveActionAssetIDs(applicableSelections.map(\.id))
+        guard !applicableAssetIDs.isEmpty else { return }
+
+        let nextAssetIDAfterAllApplies = nextAssetID(afterRemoving: Set(applicableAssetIDs))
 
         defer {
-            actionAssetIDs.remove(assetID)
+            applicableAssetIDs.forEach { actionAssetIDs.remove($0) }
         }
 
-        await onDismissPermanently(assetID)
-        removeSelection(withID: assetID)
+        for assetID in applicableAssetIDs {
+            guard let decision = selections.first(where: { $0.id == assetID })?.item.suggestedDecision else {
+                continue
+            }
+
+            do {
+                try await onApplyDecision(decision)
+                removeSelection(withID: assetID)
+            } catch {
+                presentedError = errorPresenter.userPresentableError(for: error)
+                focusPhoto(withID: assetID)
+                return
+            }
+        }
+
+        focusPhoto(withID: nextAssetIDAfterAllApplies)
+    }
+
+    func skipPhotosForNow(_ assetIDs: [String]) {
+        let orderedAssetIDs = orderedSelections(for: assetIDs).map(\.id)
+        guard !orderedAssetIDs.isEmpty else { return }
+
+        let nextAssetID = nextAssetID(afterRemoving: Set(orderedAssetIDs))
+        removeSelections(withIDs: orderedAssetIDs)
+        focusPhoto(withID: nextAssetID)
+    }
+
+    func dismissPhotosPermanently(_ assetIDs: [String]) async {
+        let orderedAssetIDs = reserveActionAssetIDs(orderedSelections(for: assetIDs).map(\.id))
+        guard !orderedAssetIDs.isEmpty else { return }
+
+        let nextAssetID = nextAssetID(afterRemoving: Set(orderedAssetIDs))
+
+        defer {
+            orderedAssetIDs.forEach { actionAssetIDs.remove($0) }
+        }
+
+        for assetID in orderedAssetIDs {
+            await onDismissPermanently(assetID)
+        }
+
+        removeSelections(withIDs: orderedAssetIDs)
         focusPhoto(withID: nextAssetID)
     }
 
@@ -373,15 +419,48 @@ final class ReviewViewModel: ObservableObject {
         }
     }
 
-    private func nextAssetID(after assetID: String) -> String? {
+    private func orderedSelections(for assetIDs: [String]) -> [ReviewSelection] {
+        let targetAssetIDs = Set(assetIDs)
+        guard !targetAssetIDs.isEmpty else { return [] }
+
         let orderedAssetIDs = daySections.flatMap { section in
             section.entries.map(\.id)
         }
-        guard let index = orderedAssetIDs.firstIndex(of: assetID) else { return nil }
+        let selectionByID = Dictionary(uniqueKeysWithValues: selections.map { ($0.id, $0) })
 
-        let nextIndex = orderedAssetIDs.index(after: index)
-        guard orderedAssetIDs.indices.contains(nextIndex) else { return nil }
-        return orderedAssetIDs[nextIndex]
+        return orderedAssetIDs.compactMap { assetID in
+            guard targetAssetIDs.contains(assetID) else { return nil }
+            return selectionByID[assetID]
+        }
+    }
+
+    private func reserveActionAssetIDs(_ assetIDs: [String]) -> [String] {
+        var reservedAssetIDs: [String] = []
+        reservedAssetIDs.reserveCapacity(assetIDs.count)
+
+        for assetID in assetIDs where actionAssetIDs.insert(assetID).inserted {
+            reservedAssetIDs.append(assetID)
+        }
+
+        return reservedAssetIDs
+    }
+
+    private func nextAssetID(afterRemoving assetIDs: Set<String>) -> String? {
+        let orderedAssetIDs = daySections.flatMap { section in
+            section.entries.map(\.id)
+        }
+        guard let firstRemovedIndex = orderedAssetIDs.firstIndex(where: { assetIDs.contains($0) }) else {
+            return nil
+        }
+
+        for index in firstRemovedIndex..<orderedAssetIDs.count {
+            let assetID = orderedAssetIDs[index]
+            if assetIDs.contains(assetID) == false {
+                return assetID
+            }
+        }
+
+        return nil
     }
 
     private func focusPhoto(withID assetID: String?) {
@@ -406,18 +485,25 @@ final class ReviewViewModel: ObservableObject {
         selectionAnchorID = assetID
     }
 
-    private func removeSelection(withID assetID: String) {
-        selections.removeAll { $0.id == assetID }
-        selectedPhotoIDs.remove(assetID)
-        if selectionAnchorID == assetID {
-            selectionAnchorID = nil
+    private func removeSelections(withIDs assetIDs: [String]) {
+        let removedAssetIDs = Set(assetIDs)
+        guard !removedAssetIDs.isEmpty else { return }
+
+        selections.removeAll { removedAssetIDs.contains($0.id) }
+        selectedPhotoIDs.subtract(removedAssetIDs)
+        if let selectionAnchorID, removedAssetIDs.contains(selectionAnchorID) {
+            self.selectionAnchorID = nil
         }
-        if copiedLocation?.sourceAssetID == assetID {
-            copiedLocation = nil
+        if let copiedLocation, removedAssetIDs.contains(copiedLocation.sourceAssetID) {
+            self.copiedLocation = nil
         }
 
         refreshSummary()
         clampCurrentDayIndex()
+    }
+
+    private func removeSelection(withID assetID: String) {
+        removeSelections(withIDs: [assetID])
     }
 
     private func refreshSummary() {

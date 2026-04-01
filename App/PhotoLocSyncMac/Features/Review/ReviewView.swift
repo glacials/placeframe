@@ -74,7 +74,7 @@ struct ReviewView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Review Proposed Locations")
                 .font(.largeTitle.bold())
-            Text("Review one day at a time. Nothing is written to Apple Photos until you press Apply on a photo.")
+            Text("Review one day at a time. Nothing is written to Apple Photos until you press Apply on a photo or Apply Day.")
                 .foregroundStyle(.secondary)
 
             HStack(spacing: 12) {
@@ -93,7 +93,7 @@ struct ReviewView: View {
             } label: {
                 Label("Previous Day", systemImage: "chevron.left")
             }
-            .disabled(!viewModel.canGoToPreviousDay)
+            .disabled(!viewModel.canGoToPreviousDay || viewModel.isApplyingCurrentDay)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(viewModel.currentDaySection?.title ?? "No Day Selected")
@@ -110,11 +110,21 @@ struct ReviewView: View {
                 .foregroundStyle(.secondary)
 
             Button {
+                Task {
+                    await viewModel.applyCurrentDay()
+                }
+            } label: {
+                Label(viewModel.isApplyingCurrentDay ? "Applying..." : "Apply Day", systemImage: "checkmark.circle")
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(!viewModel.canApplyCurrentDay)
+
+            Button {
                 viewModel.goToNextDay()
             } label: {
                 Label("Next Day", systemImage: "chevron.right")
             }
-            .disabled(!viewModel.canGoToNextDay)
+            .disabled(!viewModel.canGoToNextDay || viewModel.isApplyingCurrentDay)
         }
     }
 

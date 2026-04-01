@@ -195,6 +195,94 @@ final class ReviewViewModelTests: XCTestCase {
         )
     }
 
+    func testApplyCurrentDayAppliesEveryPhotoShownAndAdvancesToNextDay() async {
+        let recorder = ApplyRecorder()
+        let firstDayFirstItem = makeReviewItem(
+            assetID: "first-day-first-photo",
+            coordinate: GeoCoordinate(latitude: 35.6895, longitude: 139.6917),
+            label: "Tokyo",
+            confidence: .excellent,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_000)
+        )
+        let firstDaySecondItem = makeReviewItem(
+            assetID: "first-day-second-photo",
+            coordinate: GeoCoordinate(latitude: 34.6937, longitude: 135.5023),
+            label: "Osaka",
+            confidence: .acceptable,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_060)
+        )
+        let secondDayItem = makeReviewItem(
+            assetID: "second-day-photo",
+            coordinate: GeoCoordinate(latitude: 43.0642, longitude: 141.3469),
+            label: "Sapporo",
+            confidence: .maybe,
+            disposition: .ambiguous,
+            creationDate: Date(timeIntervalSince1970: 1_700_386_400)
+        )
+        let viewModel = makeViewModel(items: [secondDayItem, firstDaySecondItem, firstDayFirstItem]) { decision in
+            await recorder.record(decision)
+        }
+
+        await viewModel.applyCurrentDay()
+        let appliedAssetIDs = await recorder.appliedAssetIDs()
+
+        XCTAssertEqual(appliedAssetIDs, [firstDayFirstItem.id, firstDaySecondItem.id])
+        XCTAssertEqual(viewModel.currentDaySection?.entries.map(\.id), [secondDayItem.id])
+        XCTAssertEqual(viewModel.currentDayIndex, 0)
+        XCTAssertEqual(viewModel.selectedPhotoIDs, [secondDayItem.id])
+        XCTAssertEqual(viewModel.summary.totalAssets, 1)
+        XCTAssertEqual(viewModel.summary.autoSuggested, 0)
+        XCTAssertEqual(viewModel.summary.ambiguous, 1)
+        XCTAssertFalse(viewModel.isApplyingCurrentDay)
+    }
+
+    func testApplyCurrentDayStopsAtFirstErrorAndKeepsFailedPhotoSelected() async {
+        let recorder = ApplyRecorder()
+        let firstDayFirstItem = makeReviewItem(
+            assetID: "first-day-first-photo",
+            coordinate: GeoCoordinate(latitude: 35.6895, longitude: 139.6917),
+            label: "Tokyo",
+            confidence: .excellent,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_000)
+        )
+        let firstDaySecondItem = makeReviewItem(
+            assetID: "first-day-second-photo",
+            coordinate: GeoCoordinate(latitude: 34.6937, longitude: 135.5023),
+            label: "Osaka",
+            confidence: .acceptable,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_060)
+        )
+        let secondDayItem = makeReviewItem(
+            assetID: "second-day-photo",
+            coordinate: GeoCoordinate(latitude: 43.0642, longitude: 141.3469),
+            label: "Sapporo",
+            confidence: .maybe,
+            disposition: .ambiguous,
+            creationDate: Date(timeIntervalSince1970: 1_700_386_400)
+        )
+        let viewModel = makeViewModel(items: [secondDayItem, firstDaySecondItem, firstDayFirstItem]) { decision in
+            if decision.assetID == firstDaySecondItem.id {
+                throw UserPresentableError(title: "Apply Failed", message: "No permission.")
+            }
+
+            await recorder.record(decision)
+        }
+
+        await viewModel.applyCurrentDay()
+        let appliedAssetIDs = await recorder.appliedAssetIDs()
+
+        XCTAssertEqual(appliedAssetIDs, [firstDayFirstItem.id])
+        XCTAssertEqual(viewModel.currentDaySection?.entries.map(\.id), [firstDaySecondItem.id])
+        XCTAssertEqual(viewModel.selectedPhotoIDs, [firstDaySecondItem.id])
+        XCTAssertEqual(viewModel.presentedError?.title, "Apply Failed")
+        XCTAssertEqual(viewModel.presentedError?.message, "No permission.")
+        XCTAssertFalse(viewModel.isApplyingCurrentDay)
+    }
+
     func testApplyChangeRemovesPhotoFromSessionAndAdvancesSelection() async {
         let recorder = ApplyRecorder()
         let firstItem = makeReviewItem(
