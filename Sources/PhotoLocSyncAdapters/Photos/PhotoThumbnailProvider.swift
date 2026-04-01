@@ -4,6 +4,32 @@ import Foundation
 import CoreGraphics
 import PhotoLocSyncCore
 
+private final class LockedContinuation<Value>: @unchecked Sendable {
+    private let lock = NSLock()
+    private var didResume = false
+    private let continuation: CheckedContinuation<Value, Error>
+
+    init(_ continuation: CheckedContinuation<Value, Error>) {
+        self.continuation = continuation
+    }
+
+    func resume(returning value: sending Value) {
+        lock.lock()
+        defer { lock.unlock() }
+        guard !didResume else { return }
+        didResume = true
+        continuation.resume(returning: value)
+    }
+
+    func resume(throwing error: sending any Error) {
+        lock.lock()
+        defer { lock.unlock() }
+        guard !didResume else { return }
+        didResume = true
+        continuation.resume(throwing: error)
+    }
+}
+
 public final class PhotoThumbnailProvider: ThumbnailProviding, @unchecked Sendable {
     private let imageManager: PHCachingImageManager
     private let assetResourceManager: PHAssetResourceManager
@@ -30,33 +56,24 @@ public final class PhotoThumbnailProvider: ThumbnailProviding, @unchecked Sendab
         options.isNetworkAccessAllowed = true
 
         return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<CGImage?, Error>) in
-            let lock = NSLock()
-            var didResume = false
-
-            func resumeOnce(_ result: Result<CGImage?, Error>) {
-                lock.lock()
-                defer { lock.unlock() }
-                guard !didResume else { return }
-                didResume = true
-                continuation.resume(with: result)
-            }
+            let lockedContinuation = LockedContinuation(continuation)
 
             self.imageManager.requestImage(for: phAsset, targetSize: targetSize, contentMode: .aspectFill, options: options) { image, info in
                 if let error = info?[PHImageErrorKey] as? Error {
-                    resumeOnce(.failure(error))
+                    lockedContinuation.resume(throwing: error)
                     return
                 }
                 if let cancelled = info?[PHImageCancelledKey] as? Bool, cancelled {
-                    resumeOnce(.success(nil))
+                    lockedContinuation.resume(returning: nil)
                     return
                 }
                 if let degraded = info?[PHImageResultIsDegradedKey] as? Bool, degraded {
                     return
                 }
                 if let cgImage = image?.cgImage(forProposedRect: nil, context: nil, hints: nil) {
-                    resumeOnce(.success(cgImage))
+                    lockedContinuation.resume(returning: cgImage)
                 } else {
-                    resumeOnce(.success(nil))
+                    lockedContinuation.resume(returning: nil)
                 }
             }
         }
@@ -80,24 +97,15 @@ public final class PhotoThumbnailProvider: ThumbnailProviding, @unchecked Sendab
         options.isNetworkAccessAllowed = true
 
         return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<URL?, Error>) in
-            let lock = NSLock()
-            var didResume = false
-
-            func resumeOnce(_ result: Result<URL?, Error>) {
-                lock.lock()
-                defer { lock.unlock() }
-                guard !didResume else { return }
-                didResume = true
-                continuation.resume(with: result)
-            }
+            let lockedContinuation = LockedContinuation(continuation)
 
             self.assetResourceManager.writeData(for: resource, toFile: destinationURL, options: options) { error in
                 if let error {
                     try? self.fileManager.removeItem(at: destinationURL)
-                    resumeOnce(.failure(error))
+                    lockedContinuation.resume(throwing: error)
                     return
                 }
-                resumeOnce(.success(destinationURL))
+                lockedContinuation.resume(returning: destinationURL)
             }
         }
     }

@@ -26,8 +26,16 @@ Photo Location Sync is a macOS SwiftUI app plus a reusable Swift package for mat
 ### Automated verification
 
 ```bash
-swift build
-swift test
+make lint
+make test
+```
+
+`make lint` builds source and test targets with `-warnings-as-errors`, and `make test` runs the test suite with the same warning-free requirement.
+
+This repository also includes a tracked pre-commit hook at `.githooks/pre-commit`. Enable it in your clone with:
+
+```bash
+git config core.hooksPath .githooks
 ```
 
 ### Build a macOS `.app` bundle

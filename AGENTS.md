@@ -7,6 +7,7 @@ This repository expects agents to leave a clean, reviewable git history.
 - If you change any repository file, create a git commit for that change before you conclude your work unless the user explicitly says not to commit.
 - Do not leave verified code or documentation edits unstaged or uncommitted.
 - Keep commits focused. Use one commit per logical change when practical.
+- `make lint` must pass before creating a commit. Do not commit while lint is failing or warnings remain.
 
 ## Commit Message Format
 
@@ -22,4 +23,5 @@ This repository expects agents to leave a clean, reviewable git history.
 ## Verification
 
 - Run the smallest useful verification for the change before committing.
+- Treat compiler warnings as failures during verification. Use `make lint` and `make test` so warnings fail the build or test run.
 - Report the verification you ran and any known gaps.
