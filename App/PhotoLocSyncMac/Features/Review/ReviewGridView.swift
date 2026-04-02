@@ -259,13 +259,13 @@ private struct ReviewListItemView: View {
                             .font(.subheadline)
                     }
                     .buttonStyle(.plain)
-                    .help("Explain this color")
+                    .help("Explain this minute badge")
 
                     Spacer()
                 }
                 .foregroundStyle(.secondary)
                 .popover(isPresented: $isShowingStatusInfo, arrowEdge: .top) {
-                    ReviewSuggestionStatusHelpView(currentDisposition: entry.item.disposition)
+                    ReviewSuggestionStatusHelpView(item: entry.item)
                         .padding()
                 }
 

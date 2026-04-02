@@ -43,17 +43,6 @@ extension MatchDisposition {
         case .unmatched: .secondary
         }
     }
-
-    var reviewStatusLegendDescription: String {
-        switch self {
-        case .autoSuggested:
-            "Strong enough time match that the app prefilled the location. Usually within 15 minutes, or inside a stationary visit."
-        case .ambiguous:
-            "A nearby timeline match was found, but it was loose enough that you should double-check it. Usually within 60 minutes."
-        case .unmatched:
-            "No nearby timeline evidence was usable, or there was a large gap in timeline coverage, so the photo is left out of review."
-        }
-    }
 }
 
 struct ReviewSuggestionStatusDescriptor {
@@ -98,42 +87,69 @@ struct ReviewSuggestionStatusDescriptor {
     }
 }
 
+struct ReviewSuggestionStatusHelpContent {
+    let badgeText: String
+    let minuteExplanation: String
+    let directionExplanation: String
+    let colorExplanation: String
+
+    init(item: ReviewItem) {
+        let status = ReviewSuggestionStatusDescriptor(item: item)
+        badgeText = status.title
+
+        if let timeDelta = item.timeDelta {
+            let minuteOffset = Int((abs(timeDelta) / 60).rounded())
+            let minuteNoun = minuteOffset == 1 ? "minute" : "minutes"
+            minuteExplanation = "This \(status.title) badge means the matched Google Timeline point is \(minuteOffset) \(minuteNoun) away from the photo's camera timestamp."
+            directionExplanation = "The badge uses the absolute gap only. The \"Timeline time offset\" line below shows whether the timeline point was before (−) or after (+) the photo."
+        } else {
+            minuteExplanation = "No usable Google Timeline point was close enough to calculate a minute gap for this photo."
+            directionExplanation = "When a timeline point is missing or falls inside a large coverage gap, the app cannot show a minute badge."
+        }
+
+        switch item.disposition {
+        case .autoSuggested:
+            colorExplanation = "Green means the timing was strong enough that the app prefilled the location for you."
+        case .ambiguous:
+            colorExplanation = "Yellow means a nearby timeline point was found, but the timing was loose enough that you should verify it before applying."
+        case .unmatched:
+            colorExplanation = "Gray means the timeline did not have a usable nearby match for this photo."
+        }
+    }
+}
+
 struct ReviewSuggestionStatusHelpView: View {
-    let currentDisposition: MatchDisposition
+    let item: ReviewItem
 
     var body: some View {
+        let status = ReviewSuggestionStatusDescriptor(item: item)
+        let content = ReviewSuggestionStatusHelpContent(item: item)
+
         VStack(alignment: .leading, spacing: 12) {
-            Text("Why this color?")
+            Text("What does this minute badge mean?")
                 .font(.headline)
 
-            Text("The badge shows how many minutes the Google Timeline suggestion differs from the camera timestamp. Its color explains whether that timing was strong enough to prefill the location or loose enough that you should double-check it.")
+            Label(content.badgeText, systemImage: status.symbolName)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(status.tone.color)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(status.tone.backgroundColor, in: Capsule())
+
+            Text(content.minuteExplanation)
+                .font(.subheadline)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Text(content.directionExplanation)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 
-            ForEach(MatchDisposition.allCases, id: \.self) { disposition in
-                HStack(alignment: .top, spacing: 10) {
-                    Text(disposition.reviewStatusTitle)
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(disposition.reviewStatusTone.color)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(disposition.reviewStatusTone.backgroundColor, in: Capsule())
+            Text(content.colorExplanation)
+                .font(.subheadline)
+                .fixedSize(horizontal: false, vertical: true)
 
-                    Text(disposition.reviewStatusLegendDescription)
-                        .font(.subheadline)
-                        .fixedSize(horizontal: false, vertical: true)
-
-                    if disposition == currentDisposition {
-                        Image(systemName: "checkmark")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                            .padding(.top, 2)
-                    }
-                }
-            }
-
-            Text("Nothing is written until you click This Looks Correct.")
+            Text("Nothing is written until you click Apply.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

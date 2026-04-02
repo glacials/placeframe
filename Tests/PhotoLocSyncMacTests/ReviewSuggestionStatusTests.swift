@@ -42,18 +42,41 @@ final class ReviewSuggestionStatusTests: XCTestCase {
         )
     }
 
-    func testLegendDescriptionsExplainEachStatusMeaning() {
+    func testHelpContentExplainsMinuteValueAndSignedOffset() {
+        let content = ReviewSuggestionStatusHelpContent(
+            item: makeReviewItem(confidence: .excellent, disposition: .autoSuggested, timeDelta: 8 * 60)
+        )
+
         XCTAssertEqual(
-            MatchDisposition.autoSuggested.reviewStatusLegendDescription,
-            "Strong enough time match that the app prefilled the location. Usually within 15 minutes, or inside a stationary visit."
+            content.minuteExplanation,
+            "This 8 min badge means the matched Google Timeline point is 8 minutes away from the photo's camera timestamp."
         )
         XCTAssertEqual(
-            MatchDisposition.ambiguous.reviewStatusLegendDescription,
-            "A nearby timeline match was found, but it was loose enough that you should double-check it. Usually within 60 minutes."
+            content.directionExplanation,
+            "The badge uses the absolute gap only. The \"Timeline time offset\" line below shows whether the timeline point was before (−) or after (+) the photo."
         )
         XCTAssertEqual(
-            MatchDisposition.unmatched.reviewStatusLegendDescription,
-            "No nearby timeline evidence was usable, or there was a large gap in timeline coverage, so the photo is left out of review."
+            content.colorExplanation,
+            "Green means the timing was strong enough that the app prefilled the location for you."
+        )
+    }
+
+    func testHelpContentExplainsMissingMinuteGapForUnmatchedItems() {
+        let content = ReviewSuggestionStatusHelpContent(
+            item: makeReviewItem(confidence: .rejected, disposition: .unmatched, timeDelta: nil)
+        )
+
+        XCTAssertEqual(
+            content.minuteExplanation,
+            "No usable Google Timeline point was close enough to calculate a minute gap for this photo."
+        )
+        XCTAssertEqual(
+            content.directionExplanation,
+            "When a timeline point is missing or falls inside a large coverage gap, the app cannot show a minute badge."
+        )
+        XCTAssertEqual(
+            content.colorExplanation,
+            "Gray means the timeline did not have a usable nearby match for this photo."
         )
     }
 
