@@ -26,6 +26,7 @@ private struct ReviewSessionSource {
 final class AppState: ObservableObject {
     @Published var flowState: AppFlowState = .idle
     @Published var reviewViewModel: ReviewViewModel?
+    @Published var isShowingKeyboardShortcuts = false
 
     let importViewModel: ImportViewModel
     let leftBlankHistoryViewModel: LeftBlankHistoryViewModel
@@ -121,6 +122,7 @@ final class AppState: ObservableObject {
     }
 
     func reset() {
+        isShowingKeyboardShortcuts = false
         captureTimeOffsetsByDayStart.removeAll()
         reviewSessionSource = nil
         reviewViewModel = nil

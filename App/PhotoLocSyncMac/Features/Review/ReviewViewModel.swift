@@ -40,6 +40,16 @@ enum ReviewPhotoSelectionMode {
     case range(extendExisting: Bool)
 }
 
+enum ReviewKeyboardSelectionDirection {
+    case previous
+    case next
+}
+
+enum ReviewCaptureTimeOffsetSelectionDirection {
+    case previous
+    case next
+}
+
 private struct CopiedLocation {
     let sourceAssetID: String
     let locationOptions: [LocationOption]
@@ -208,6 +218,15 @@ final class ReviewViewModel: ObservableObject {
         currentDaySection?.dayStart
     }
 
+    private var currentDayEntryIDs: [String] {
+        currentDaySection?.entries.map(\.id) ?? []
+    }
+
+    private var focusedSelection: ReviewSelection? {
+        guard let focusedPhotoID else { return nil }
+        return selections.first(where: { $0.id == focusedPhotoID })
+    }
+
     private var currentDayCaptureTimeOffset: TimeInterval {
         guard let currentDayStart else { return 0 }
         return dayCaptureTimeOffsets[currentDayStart] ?? 0
@@ -225,6 +244,26 @@ final class ReviewViewModel: ObservableObject {
     var canRedo: Bool { !hasInFlightReviewMutation && !redoHistory.isEmpty }
     var undoTitle: String { undoHistory.last?.action.undoTitle ?? "Undo" }
     var redoTitle: String { redoHistory.last?.action.redoTitle ?? "Redo" }
+    var focusedPhotoID: String? {
+        let entryIDs = currentDayEntryIDs
+        guard !entryIDs.isEmpty else { return nil }
+
+        if let selectionAnchorID,
+           selectedPhotoIDs.contains(selectionAnchorID),
+           entryIDs.contains(selectionAnchorID) {
+            return selectionAnchorID
+        }
+
+        if selectedPhotoIDs.count == 1,
+           let selectedPhotoID = selectedPhotoIDs.first,
+           entryIDs.contains(selectedPhotoID) {
+            return selectedPhotoID
+        }
+
+        return entryIDs.first(where: { selectedPhotoIDs.contains($0) })
+    }
+    var canApplyFocusedPhoto: Bool { focusedSelection?.canApplyChoice ?? false }
+    var canOpenLocationMenuForFocusedPhoto: Bool { focusedSelection != nil }
     var canApplyCurrentDay: Bool {
         guard let currentDayEntries = currentDaySection?.entries,
               !currentDayEntries.isEmpty else {
@@ -461,17 +500,19 @@ final class ReviewViewModel: ObservableObject {
     }
 
     func goToPreviousDay() {
-        guard canGoToPreviousDay else { return }
-        currentDayIndex -= 1
-        selectedPhotoIDs.removeAll()
-        selectionAnchorID = nil
+        setCurrentDayIndex(currentDayIndex - 1, focusFirstPhoto: false)
     }
 
     func goToNextDay() {
-        guard canGoToNextDay else { return }
-        currentDayIndex += 1
-        selectedPhotoIDs.removeAll()
-        selectionAnchorID = nil
+        setCurrentDayIndex(currentDayIndex + 1, focusFirstPhoto: false)
+    }
+
+    func goToPreviousDayAndFocusFirstPhoto() {
+        setCurrentDayIndex(currentDayIndex - 1, focusFirstPhoto: true)
+    }
+
+    func goToNextDayAndFocusFirstPhoto() {
+        setCurrentDayIndex(currentDayIndex + 1, focusFirstPhoto: true)
     }
 
     func presentCaptureTimeOffsetSheet() {
@@ -486,6 +527,48 @@ final class ReviewViewModel: ObservableObject {
 
     func selectCaptureTimeOffset(_ offset: TimeInterval) {
         selectedCaptureTimeOffset = offset
+    }
+
+    func moveSelectedCaptureTimeOffset(_ direction: ReviewCaptureTimeOffsetSelectionDirection) {
+        let options = captureTimeOffsetOptions
+        guard !options.isEmpty else { return }
+
+        guard let currentIndex = options.firstIndex(where: { $0.offset == selectedCaptureTimeOffset }) else {
+            selectedCaptureTimeOffset = options[0].offset
+            return
+        }
+
+        let targetIndex: Int
+        switch direction {
+        case .previous:
+            targetIndex = max(currentIndex - 1, 0)
+        case .next:
+            targetIndex = min(currentIndex + 1, options.count - 1)
+        }
+
+        selectedCaptureTimeOffset = options[targetIndex].offset
+    }
+
+    func moveKeyboardSelection(_ direction: ReviewKeyboardSelectionDirection) {
+        let entryIDs = currentDayEntryIDs
+        guard !entryIDs.isEmpty else { return }
+
+        guard let focusedPhotoID,
+              let currentIndex = entryIDs.firstIndex(of: focusedPhotoID) else {
+            let fallbackAssetID = direction == .next ? entryIDs.first : entryIDs.last
+            focusPhoto(withID: fallbackAssetID)
+            return
+        }
+
+        let targetIndex: Int
+        switch direction {
+        case .previous:
+            targetIndex = max(currentIndex - 1, 0)
+        case .next:
+            targetIndex = min(currentIndex + 1, entryIDs.count - 1)
+        }
+
+        focusPhoto(withID: entryIDs[targetIndex])
     }
 
     func formattedCaptureDate(for item: ReviewItem) -> String {
@@ -622,6 +705,11 @@ final class ReviewViewModel: ObservableObject {
 
     func applyChange(for assetID: String) async {
         await applyChanges(for: [assetID])
+    }
+
+    func applyFocusedPhoto() async {
+        guard let focusedPhotoID else { return }
+        await applyChange(for: focusedPhotoID)
     }
 
     func applyCurrentDay() async {
@@ -929,7 +1017,7 @@ final class ReviewViewModel: ObservableObject {
     }
 
     private func selectPhotoRange(to assetID: String, extendExisting: Bool) {
-        let orderedAssetIDs = currentDaySection?.entries.map(\.id) ?? selections.map(\.id)
+        let orderedAssetIDs = currentDayEntryIDs.isEmpty ? selections.map(\.id) : currentDayEntryIDs
         guard let targetIndex = orderedAssetIDs.firstIndex(of: assetID) else { return }
 
         let anchorID = selectionAnchorID ?? assetID
@@ -1188,6 +1276,29 @@ final class ReviewViewModel: ObservableObject {
     private func clampCurrentDayIndex() {
         let lastIndex = max(daySections.count - 1, 0)
         currentDayIndex = min(currentDayIndex, lastIndex)
+    }
+
+    private func setCurrentDayIndex(_ proposedIndex: Int, focusFirstPhoto: Bool) {
+        guard daySections.indices.contains(proposedIndex) else { return }
+        currentDayIndex = proposedIndex
+
+        if focusFirstPhoto {
+            focusFirstPhotoOnCurrentDay()
+        } else {
+            selectedPhotoIDs.removeAll()
+            selectionAnchorID = nil
+        }
+    }
+
+    private func focusFirstPhotoOnCurrentDay() {
+        guard let firstPhotoID = currentDayEntryIDs.first else {
+            selectedPhotoIDs.removeAll()
+            selectionAnchorID = nil
+            return
+        }
+
+        selectedPhotoIDs = [firstPhotoID]
+        selectionAnchorID = firstPhotoID
     }
 
     private func formattedTimeInterval(_ interval: TimeInterval) -> String {

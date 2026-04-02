@@ -411,6 +411,134 @@ final class ReviewViewModelTests: XCTestCase {
         )
     }
 
+    func testMoveKeyboardSelectionStartsAtFirstPhotoOnCurrentDay() {
+        let firstItem = makeReviewItem(
+            assetID: "first-photo",
+            coordinate: GeoCoordinate(latitude: 35.6895, longitude: 139.6917),
+            label: "Tokyo",
+            confidence: .excellent,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_000)
+        )
+        let secondItem = makeReviewItem(
+            assetID: "second-photo",
+            coordinate: GeoCoordinate(latitude: 34.6937, longitude: 135.5023),
+            label: "Osaka",
+            confidence: .acceptable,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_060)
+        )
+        let viewModel = makeViewModel(items: [secondItem, firstItem])
+
+        viewModel.moveKeyboardSelection(.next)
+
+        XCTAssertEqual(viewModel.selectedPhotoIDs, [firstItem.id])
+        XCTAssertEqual(viewModel.focusedPhotoID, firstItem.id)
+    }
+
+    func testMoveKeyboardSelectionCollapsesMultiSelectionAroundKeyboardFocus() {
+        let firstItem = makeReviewItem(
+            assetID: "first-photo",
+            coordinate: GeoCoordinate(latitude: 35.6895, longitude: 139.6917),
+            label: "Tokyo",
+            confidence: .excellent,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_000)
+        )
+        let secondItem = makeReviewItem(
+            assetID: "second-photo",
+            coordinate: GeoCoordinate(latitude: 34.6937, longitude: 135.5023),
+            label: "Osaka",
+            confidence: .acceptable,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_060)
+        )
+        let thirdItem = makeReviewItem(
+            assetID: "third-photo",
+            coordinate: GeoCoordinate(latitude: 43.0642, longitude: 141.3469),
+            label: "Sapporo",
+            confidence: .maybe,
+            disposition: .ambiguous,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_120)
+        )
+        let viewModel = makeViewModel(items: [thirdItem, firstItem, secondItem])
+
+        viewModel.selectPhoto(firstItem.id, mode: .replace)
+        viewModel.selectPhoto(secondItem.id, mode: .toggle)
+        viewModel.moveKeyboardSelection(.next)
+
+        XCTAssertEqual(viewModel.selectedPhotoIDs, [thirdItem.id])
+        XCTAssertEqual(viewModel.focusedPhotoID, thirdItem.id)
+    }
+
+    func testMoveKeyboardSelectionUpWithoutSelectionStartsAtLastPhotoOnCurrentDay() {
+        let firstItem = makeReviewItem(
+            assetID: "first-photo",
+            coordinate: GeoCoordinate(latitude: 35.6895, longitude: 139.6917),
+            label: "Tokyo",
+            confidence: .excellent,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_000)
+        )
+        let secondItem = makeReviewItem(
+            assetID: "second-photo",
+            coordinate: GeoCoordinate(latitude: 34.6937, longitude: 135.5023),
+            label: "Osaka",
+            confidence: .acceptable,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_060)
+        )
+        let thirdItem = makeReviewItem(
+            assetID: "third-photo",
+            coordinate: GeoCoordinate(latitude: 43.0642, longitude: 141.3469),
+            label: "Sapporo",
+            confidence: .maybe,
+            disposition: .ambiguous,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_120)
+        )
+        let viewModel = makeViewModel(items: [secondItem, thirdItem, firstItem])
+
+        viewModel.moveKeyboardSelection(.previous)
+
+        XCTAssertEqual(viewModel.selectedPhotoIDs, [thirdItem.id])
+        XCTAssertEqual(viewModel.focusedPhotoID, thirdItem.id)
+    }
+
+    func testGoToNextDayAndFocusFirstPhotoSelectsFirstEntryForKeyboardFlow() {
+        let firstDayItem = makeReviewItem(
+            assetID: "first-day-photo",
+            coordinate: GeoCoordinate(latitude: 35.6895, longitude: 139.6917),
+            label: "Tokyo",
+            confidence: .excellent,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_000)
+        )
+        let secondDayFirstItem = makeReviewItem(
+            assetID: "second-day-first-photo",
+            coordinate: GeoCoordinate(latitude: 34.6937, longitude: 135.5023),
+            label: "Osaka",
+            confidence: .acceptable,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_386_400)
+        )
+        let secondDaySecondItem = makeReviewItem(
+            assetID: "second-day-second-photo",
+            coordinate: GeoCoordinate(latitude: 43.0642, longitude: 141.3469),
+            label: "Sapporo",
+            confidence: .maybe,
+            disposition: .ambiguous,
+            creationDate: Date(timeIntervalSince1970: 1_700_386_460)
+        )
+        let viewModel = makeViewModel(items: [secondDaySecondItem, firstDayItem, secondDayFirstItem])
+
+        viewModel.goToNextDayAndFocusFirstPhoto()
+
+        XCTAssertEqual(viewModel.currentDayIndex, 1)
+        XCTAssertEqual(viewModel.currentDaySection?.entries.map(\.id), [secondDayFirstItem.id, secondDaySecondItem.id])
+        XCTAssertEqual(viewModel.selectedPhotoIDs, [secondDayFirstItem.id])
+        XCTAssertEqual(viewModel.focusedPhotoID, secondDayFirstItem.id)
+    }
+
     func testApplyCurrentDayAppliesEveryPhotoShownAndAdvancesToNextDay() async {
         let recorder = ApplyRecorder()
         let firstDayFirstItem = makeReviewItem(
@@ -529,6 +657,38 @@ final class ReviewViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.selectedPhotoIDs, [secondItem.id])
         XCTAssertEqual(viewModel.summary.totalAssets, 1)
         XCTAssertEqual(viewModel.summary.autoSuggested, 1)
+    }
+
+    func testApplyFocusedPhotoUsesKeyboardFocusedSelection() async {
+        let recorder = ApplyRecorder()
+        let firstItem = makeReviewItem(
+            assetID: "first-photo",
+            coordinate: GeoCoordinate(latitude: 35.6895, longitude: 139.6917),
+            label: "Tokyo",
+            confidence: .excellent,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_000)
+        )
+        let secondItem = makeReviewItem(
+            assetID: "second-photo",
+            coordinate: GeoCoordinate(latitude: 34.6937, longitude: 135.5023),
+            label: "Osaka",
+            confidence: .acceptable,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_060)
+        )
+        let viewModel = makeViewModel(items: [firstItem, secondItem]) { decision in
+            await recorder.record(decision)
+        }
+
+        viewModel.selectPhoto(firstItem.id, mode: .replace)
+        viewModel.selectPhoto(secondItem.id, mode: .toggle)
+        await viewModel.applyFocusedPhoto()
+
+        let appliedAssetIDs = await recorder.appliedAssetIDs()
+        XCTAssertEqual(appliedAssetIDs, [secondItem.id])
+        XCTAssertEqual(viewModel.selections.map(\.id), [firstItem.id])
+        XCTAssertEqual(viewModel.selectedPhotoIDs, [firstItem.id])
     }
 
     func testApplyChangeOnLastPhotoOfDayKeepsFocusOnRemainingPhotoThatDay() async {

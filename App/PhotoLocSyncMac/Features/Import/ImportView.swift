@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct ImportView: View {
+    @EnvironmentObject private var appState: AppState
     @Environment(\.openWindow) private var openWindow
     @ObservedObject var viewModel: ImportViewModel
 
@@ -35,6 +36,7 @@ struct ImportView: View {
                     viewModel.presentImporter()
                 }
                 .buttonStyle(.borderedProminent)
+                .keyboardShortcut(.defaultAction)
 
                 Text("You can also drag a valid location-history.json file onto this window.")
                     .foregroundStyle(.secondary)
@@ -66,5 +68,27 @@ struct ImportView: View {
         .onDrop(of: ["public.file-url"], isTargeted: $viewModel.isDropTargeted) { providers in
             viewModel.handleDroppedProviders(providers)
         }
+        .background {
+            keyboardShortcuts
+        }
+    }
+
+    private var keyboardShortcuts: some View {
+        VStack {
+            Button("Import Timeline") {
+                viewModel.presentImporter()
+            }
+            .keyboardShortcut("i", modifiers: [])
+            .disabled(appState.isShowingKeyboardShortcuts || viewModel.isFileImporterPresented)
+
+            Button("Open Timeline Importer") {
+                viewModel.presentImporter()
+            }
+            .keyboardShortcut("o", modifiers: .command)
+            .disabled(appState.isShowingKeyboardShortcuts || viewModel.isFileImporterPresented)
+        }
+        .opacity(0)
+        .frame(width: 0, height: 0)
+        .accessibilityHidden(true)
     }
 }

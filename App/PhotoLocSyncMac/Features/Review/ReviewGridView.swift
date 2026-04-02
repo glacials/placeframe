@@ -33,11 +33,11 @@ final class ReviewThumbnailLoader: ObservableObject {
 }
 
 @MainActor
-final class ReviewPreviewSourceAnchor: ObservableObject {
+final class ReviewSourceAnchor: ObservableObject {
     weak var view: NSView?
 }
 
-private struct ReviewPreviewSourceBridge: NSViewRepresentable {
+private struct ReviewSourceBridge: NSViewRepresentable {
     let captureView: (NSView) -> Void
 
     func makeNSView(context: Context) -> NSView {
@@ -51,9 +51,23 @@ private struct ReviewPreviewSourceBridge: NSViewRepresentable {
     }
 }
 
+@MainActor
+private final class ReviewMenuActionDispatcher: NSObject {
+    var actions: [() -> Void] = []
+
+    @objc
+    func performAction(_ sender: NSMenuItem) {
+        guard actions.indices.contains(sender.tag) else { return }
+        actions[sender.tag]()
+    }
+}
+
 private struct ReviewListItemView: View {
     let entry: ReviewSelection
     let isPhotoSelected: Bool
+    let isKeyboardFocusTarget: Bool
+    let locationMenuRequestID: UUID
+    let quickLookRequestID: UUID
     let contextMenuTargetIDs: [String]
     let canApplyContextMenuTargets: Bool
     let contextMenuPrecisions: [LocationPrecision]
@@ -76,11 +90,15 @@ private struct ReviewListItemView: View {
     let timeDeltaText: (ReviewItem) -> String
 
     @StateObject private var thumbnailLoader: ReviewThumbnailLoader
-    @StateObject private var previewSourceAnchor = ReviewPreviewSourceAnchor()
+    @StateObject private var previewSourceAnchor = ReviewSourceAnchor()
+    @StateObject private var locationMenuAnchor = ReviewSourceAnchor()
     @State private var isShowingStatusInfo = false
     init(
         entry: ReviewSelection,
         isPhotoSelected: Bool,
+        isKeyboardFocusTarget: Bool,
+        locationMenuRequestID: UUID,
+        quickLookRequestID: UUID,
         contextMenuTargetIDs: [String],
         canApplyContextMenuTargets: Bool,
         contextMenuPrecisions: [LocationPrecision],
@@ -105,6 +123,9 @@ private struct ReviewListItemView: View {
     ) {
         self.entry = entry
         self.isPhotoSelected = isPhotoSelected
+        self.isKeyboardFocusTarget = isKeyboardFocusTarget
+        self.locationMenuRequestID = locationMenuRequestID
+        self.quickLookRequestID = quickLookRequestID
         self.contextMenuTargetIDs = contextMenuTargetIDs
         self.canApplyContextMenuTargets = canApplyContextMenuTargets
         self.contextMenuPrecisions = contextMenuPrecisions
@@ -157,7 +178,7 @@ private struct ReviewListItemView: View {
                 triggerQuickLook()
             }
             .overlay {
-                ReviewPreviewSourceBridge { view in
+                ReviewSourceBridge { view in
                     previewSourceAnchor.view = view
                 }
                 .allowsHitTesting(false)
@@ -166,33 +187,8 @@ private struct ReviewListItemView: View {
 
             VStack(alignment: .leading, spacing: 10) {
                 HStack(alignment: .top, spacing: 10) {
-                    Menu {
-                        Button {
-                            selectLeaveBlank([entry.id])
-                        } label: {
-                            if entry.saveChoice == .leaveBlank {
-                                Label("Leave Blank", systemImage: "checkmark")
-                            } else {
-                                Text("Leave Blank")
-                            }
-                        }
-
-                        if !entry.item.availableLocationOptions.isEmpty {
-                            Divider()
-                        }
-
-                        ForEach(entry.item.availableLocationOptions) { option in
-                            Button {
-                                setLocationPrecision([entry.id], option.precision)
-                            } label: {
-                                if entry.saveChoice == .location,
-                                   entry.item.selectedPrecision == option.precision {
-                                    Label(locationOptionMenuTitle(for: option), systemImage: "checkmark")
-                                } else {
-                                    Text(locationOptionMenuTitle(for: option))
-                                }
-                            }
-                        }
+                    Button {
+                        presentLocationMenu()
                     } label: {
                         HStack(alignment: .top, spacing: 8) {
                             Image(systemName: selectedMenuSystemImage)
@@ -223,6 +219,12 @@ private struct ReviewListItemView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     .buttonStyle(.bordered)
+                    .overlay {
+                        ReviewSourceBridge { view in
+                            locationMenuAnchor.view = view
+                        }
+                        .allowsHitTesting(false)
+                    }
 
                     Button(applyButtonTitle) {
                         Task {
@@ -282,6 +284,14 @@ private struct ReviewListItemView: View {
         .contentShape(RoundedRectangle(cornerRadius: 16))
         .onTapGesture {
             selectPhoto(entry.id, selectionMode)
+        }
+        .onChange(of: locationMenuRequestID) { _, _ in
+            guard isKeyboardFocusTarget else { return }
+            presentLocationMenu()
+        }
+        .onChange(of: quickLookRequestID) { _, _ in
+            guard isKeyboardFocusTarget else { return }
+            triggerQuickLook()
         }
         .contextMenu {
             Button("Quick Look") {
@@ -386,6 +396,46 @@ private struct ReviewListItemView: View {
         quickLook(entry.item, previewSourceAnchor.view, thumbnailLoader.image)
     }
 
+    private func presentLocationMenu() {
+        guard let anchorView = locationMenuAnchor.view else { return }
+
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+
+        let dispatcher = ReviewMenuActionDispatcher()
+        func addItem(
+            _ title: String,
+            state: NSControl.StateValue = .off,
+            action: @escaping () -> Void
+        ) {
+            let item = NSMenuItem(title: title, action: #selector(ReviewMenuActionDispatcher.performAction(_:)), keyEquivalent: "")
+            dispatcher.actions.append(action)
+            item.target = dispatcher
+            item.tag = dispatcher.actions.count - 1
+            item.state = state
+            menu.addItem(item)
+        }
+
+        addItem("Leave Blank", state: entry.saveChoice == .leaveBlank ? .on : .off) {
+            selectLeaveBlank([entry.id])
+        }
+
+        if !entry.item.availableLocationOptions.isEmpty {
+            menu.addItem(.separator())
+        }
+
+        for option in entry.item.availableLocationOptions {
+            addItem(
+                locationOptionMenuTitle(for: option),
+                state: entry.saveChoice == .location && entry.item.selectedPrecision == option.precision ? .on : .off
+            ) {
+                setLocationPrecision([entry.id], option.precision)
+            }
+        }
+
+        menu.popUp(positioning: nil, at: NSPoint(x: 0, y: anchorView.bounds.height + 6), in: anchorView)
+    }
+
     private var selectedLocationOption: LocationOption? {
         if let selectedPrecision = entry.item.selectedPrecision,
            let option = entry.item.locationOption(for: selectedPrecision) {
@@ -445,6 +495,9 @@ private struct ReviewListItemView: View {
 struct ReviewListView: View {
     let entries: [ReviewSelection]
     let selectedPhotoIDs: Set<String>
+    let focusedPhotoID: String?
+    let locationMenuRequestID: UUID
+    let quickLookRequestID: UUID
     let thumbnailProvider: PhotoThumbnailProvider
     let selectPhoto: (String, ReviewPhotoSelectionMode) -> Void
     let selectLeaveBlank: ([String]) -> Void
@@ -463,11 +516,6 @@ struct ReviewListView: View {
     let captureDateText: (ReviewItem) -> String
     let timeDeltaText: (ReviewItem) -> String
 
-    private var focusedPhotoID: String? {
-        guard selectedPhotoIDs.count == 1 else { return nil }
-        return selectedPhotoIDs.first
-    }
-
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView {
@@ -477,6 +525,9 @@ struct ReviewListView: View {
                         ReviewListItemView(
                             entry: entry,
                             isPhotoSelected: selectedPhotoIDs.contains(entry.id),
+                            isKeyboardFocusTarget: focusedPhotoID == entry.id,
+                            locationMenuRequestID: locationMenuRequestID,
+                            quickLookRequestID: quickLookRequestID,
                             contextMenuTargetIDs: contextMenuTargetIDs,
                             canApplyContextMenuTargets: canApply(to: contextMenuTargetIDs),
                             contextMenuPrecisions: contextMenuPrecisions(for: contextMenuTargetIDs),
