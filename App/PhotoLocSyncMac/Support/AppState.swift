@@ -26,9 +26,11 @@ private struct ReviewSessionSource {
 final class AppState: ObservableObject {
     @Published var flowState: AppFlowState = .idle
     @Published var reviewViewModel: ReviewViewModel?
+    @Published var isShowingLocationLabelingConsent = false
 
     let importViewModel: ImportViewModel
     let leftBlankHistoryViewModel: LeftBlankHistoryViewModel
+    let locationLabelingSettings: LocationLabelingSettings
 
     private let coordinator: SyncCoordinator
     private let fileReader: ImportedFileReading
@@ -47,6 +49,7 @@ final class AppState: ObservableObject {
         thumbnailProvider: PhotoThumbnailProvider,
         reviewItemFilter: PhotoKitImportedReviewItemFilter,
         reviewSuppressionStore: ReviewSuppressionStoring,
+        locationLabelingSettings: LocationLabelingSettings,
         captureTimeOffsetAnalyzer: CaptureTimeOffsetAnalyzer = CaptureTimeOffsetAnalyzer(),
         errorPresenter: ErrorPresenter = ErrorPresenter()
     ) {
@@ -55,14 +58,21 @@ final class AppState: ObservableObject {
         self.thumbnailProvider = thumbnailProvider
         self.reviewItemFilter = reviewItemFilter
         self.reviewSuppressionStore = reviewSuppressionStore
+        self.locationLabelingSettings = locationLabelingSettings
         self.captureTimeOffsetAnalyzer = captureTimeOffsetAnalyzer
         self.errorPresenter = errorPresenter
+        self.isShowingLocationLabelingConsent = locationLabelingSettings.needsExplicitChoice
         self.leftBlankHistoryViewModel = LeftBlankHistoryViewModel(
             reviewSuppressionStore: reviewSuppressionStore,
             thumbnailProvider: thumbnailProvider
         )
         self.importViewModel = ImportViewModel()
         self.importViewModel.bind(appState: self)
+    }
+
+    func chooseLocationLabelingPreference(_ preference: LocationLabelingPreference) {
+        locationLabelingSettings.setChoice(preference)
+        isShowingLocationLabelingConsent = false
     }
 
     var flowStateScreenKey: String {

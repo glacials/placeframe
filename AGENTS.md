@@ -29,6 +29,7 @@ This repository expects agents to leave a clean, reviewable git history.
 
 - Never send a user's location history, coordinates, imported timeline files, match results, or other non-photo PII to any external server or network-backed service by default.
 - Photo previews may be fetched from the user's iCloud Photos library when needed to display assets.
+- Rich place labels may use Apple geocoding only when the user has explicitly enabled that setting.
 - Any other exception requires the user's explicit permission for that specific transfer before the code path is introduced or used.
 - Prefer fully local processing and local-only platform APIs. If a platform integration can cause data to sync outside the app, disclose that caveat before making user-facing privacy guarantees.
 

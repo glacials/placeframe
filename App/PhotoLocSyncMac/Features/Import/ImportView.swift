@@ -38,6 +38,10 @@ struct ImportView: View {
 
                 Text("You can also drag a valid location-history.json file onto this window.")
                     .foregroundStyle(.secondary)
+
+                Text("Rich place labels are optional. On first launch, the app asks whether to keep labels local or allow Apple geocoding, and you can change that later in Settings.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
             }
 
             Spacer()

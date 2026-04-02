@@ -88,7 +88,7 @@ struct ReviewView: View {
             Text("Choose the place you want to save for each photo, or mark it to stay blank forever. Review one day at a time, then apply the choices you want to keep.")
                 .foregroundStyle(.secondary)
 
-            Label("Coordinates stay local, but Apple map tiles may load while reviewing locations on the map.", systemImage: "lock.shield")
+            Label("Apple map tiles may load while reviewing the map. Rich place labels use Apple geocoding only if you enabled that option in Settings.", systemImage: "lock.shield")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 

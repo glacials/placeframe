@@ -30,5 +30,11 @@ struct AppView: View {
             }
         }
         .animation(.default, value: appState.flowStateScreenKey)
+        .sheet(isPresented: $appState.isShowingLocationLabelingConsent) {
+            LocationLabelingConsentView { preference in
+                appState.chooseLocationLabelingPreference(preference)
+            }
+            .interactiveDismissDisabled(true)
+        }
     }
 }

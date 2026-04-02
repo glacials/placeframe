@@ -4,9 +4,9 @@ Photo Location Sync is a macOS SwiftUI app plus a reusable Swift package for mat
 
 ## Privacy posture
 
-Photo Location Sync does not send your imported timeline data, coordinates, or match results to external servers. Matching and coordinate labeling run locally on your Mac, and the app avoids online geocoding, analytics, and crash-reporting services.
+Photo Location Sync does not send your imported timeline data or match results to third-party servers. Timeline matching always runs locally on your Mac.
 
-If you open the review map, Apple map tiles may load for the visible region. Photo previews are allowed to load from iCloud Photos when an asset is not stored locally, so Apple Photos may download image data for display. Separately, when you approve an update, the app writes metadata into Apple Photos locally, and iCloud Photos may sync those approved library changes through Photos after the local write.
+Rich place labels are optional. If the user enables Apple geocoding in Settings, Apple receives coordinates to return address and place-name labels. If the review map is visible, Apple map tiles may load for the visible region. Photo previews are also allowed to load from iCloud Photos when an asset is not stored locally, so Apple Photos may download image data for display. Separately, when you approve an update, the app writes metadata into Apple Photos locally, and iCloud Photos may sync those approved library changes through Photos after the local write.
 
 ## Repository structure
 

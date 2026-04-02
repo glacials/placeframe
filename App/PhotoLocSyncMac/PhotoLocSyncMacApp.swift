@@ -46,5 +46,9 @@ struct PhotoLocSyncMacApp: App {
             PrivacyInfoView()
         }
         .defaultSize(width: 760, height: 520)
+
+        Settings {
+            LocationLabelingSettingsView(settings: appState.locationLabelingSettings)
+        }
     }
 }

@@ -12,7 +12,7 @@ public enum ProcessingStage: String, CaseIterable, Sendable {
         case .readingTimeline: "Reading Timeline file"
         case .scanningPhotosLibrary: "Scanning Photos library"
         case .matchingLocations: "Matching locations"
-        case .reverseGeocodingPlaces: "Preparing local location labels"
+        case .reverseGeocodingPlaces: "Preparing location labels"
         case .preparingReview: "Preparing review"
         }
     }

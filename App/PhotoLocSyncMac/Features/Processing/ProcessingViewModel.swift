@@ -18,7 +18,7 @@ struct ProcessingViewModel {
     var eyebrow: String { phase.eyebrow }
     var symbolName: String { phase.symbolName }
     var assurance: String {
-        "This is the real processing pipeline. Nothing is written to Photos or sent off-device on this screen, and review opens as soon as this finishes."
+        "This is the real processing pipeline. Nothing is written to Photos on this screen, and any optional Apple geocoding only happens if you enabled rich place labels in Settings."
     }
     var detailPills: [String] { phase.detailPills }
     var mapHeadline: String { phase.mapHeadline }
@@ -75,7 +75,7 @@ enum ProcessingProgressPhase: String, CaseIterable {
         case .matchingLocations:
             "Placing photos onto your route"
         case .reverseGeocodingPlaces:
-            "Preparing local location labels"
+            "Preparing location labels"
         case .preparingReview:
             "Building your review board"
         }
@@ -92,7 +92,7 @@ enum ProcessingProgressPhase: String, CaseIterable {
         case .matchingLocations:
             "Comparing capture times against Timeline visits and motion points so each candidate can land on the map."
         case .reverseGeocodingPlaces:
-            "Formatting readable on-device coordinate labels without contacting any external service."
+            "Formatting coordinates for review, or asking Apple for rich place labels if you enabled that option."
         case .preparingReview:
             "Assembling thumbnails, map context, and review cards before you approve anything."
         }
@@ -109,7 +109,7 @@ enum ProcessingProgressPhase: String, CaseIterable {
         case .matchingLocations:
             "Map placement underway"
         case .reverseGeocodingPlaces:
-            "Local labels resolving"
+            "Labels resolving"
         case .preparingReview:
             "Review workspace almost ready"
         }
@@ -160,8 +160,8 @@ enum ProcessingProgressPhase: String, CaseIterable {
             ]
         case .reverseGeocodingPlaces:
             [
-                "On-device coordinate labels",
-                "No external lookups",
+                "Coordinates or rich labels",
+                "Uses your privacy choice",
                 "Review is next"
             ]
         case .preparingReview:
