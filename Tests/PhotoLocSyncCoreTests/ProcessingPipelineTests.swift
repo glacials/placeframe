@@ -75,6 +75,8 @@ final class ProcessingPipelineTests: XCTestCase {
         XCTAssertEqual(prepared.summary.autoSuggested, 1)
         XCTAssertEqual(prepared.summary.ambiguous, 1)
         XCTAssertEqual(prepared.summary.unmatched, 0)
+        XCTAssertEqual(prepared.candidateAssets.map(\.id), assets.map(\.id))
+        XCTAssertEqual(prepared.captureTimeOffset, 0)
         XCTAssertNotNil(prepared.items[0].suggestedDecision)
         XCTAssertNotNil(prepared.items[1].suggestedDecision)
         XCTAssertTrue(prepared.items[0].locationLabel.contains("Label"))
@@ -110,5 +112,47 @@ final class ProcessingPipelineTests: XCTestCase {
         XCTAssertEqual(prepared.summary.autoSuggested, 0)
         XCTAssertEqual(prepared.summary.ambiguous, 0)
         XCTAssertEqual(prepared.summary.unmatched, 1)
+    }
+
+    func testProcessingPipelineSuggestsSystematicCaptureTimeOffsetAndCanApplyIt() async {
+        let hour = 60.0 * 60.0
+        let base = Date(timeIntervalSince1970: 1_700_400_000)
+        let timeline = ImportedTimeline(
+            range: base.addingTimeInterval(9 * hour)...base.addingTimeInterval(12 * hour),
+            points: [
+                TimelinePoint(id: "visit-1", timestamp: base.addingTimeInterval(9 * hour + 15 * 60), coordinate: GeoCoordinate(latitude: 35.6895, longitude: 139.6917), source: .visit),
+                TimelinePoint(id: "visit-2", timestamp: base.addingTimeInterval(10 * hour + 15 * 60), coordinate: GeoCoordinate(latitude: 35.7101, longitude: 139.8107), source: .visit),
+                TimelinePoint(id: "visit-3", timestamp: base.addingTimeInterval(11 * hour + 15 * 60), coordinate: GeoCoordinate(latitude: 34.6937, longitude: 135.5023), source: .visit)
+            ],
+            segments: [
+                TimelineSegment(id: "segment-1", kind: .visit, startTime: base.addingTimeInterval(9 * hour), endTime: base.addingTimeInterval(9 * hour + 30 * 60), centerCoordinate: GeoCoordinate(latitude: 35.6895, longitude: 139.6917)),
+                TimelineSegment(id: "segment-2", kind: .visit, startTime: base.addingTimeInterval(10 * hour), endTime: base.addingTimeInterval(10 * hour + 30 * 60), centerCoordinate: GeoCoordinate(latitude: 35.7101, longitude: 139.8107)),
+                TimelineSegment(id: "segment-3", kind: .visit, startTime: base.addingTimeInterval(11 * hour), endTime: base.addingTimeInterval(11 * hour + 30 * 60), centerCoordinate: GeoCoordinate(latitude: 34.6937, longitude: 135.5023))
+            ],
+            recordTypeCounts: ["visit": 3]
+        )
+        let assets = [
+            PhotoAsset(id: "photo-1", creationDate: base.addingTimeInterval(5 * 60), hasLocation: false),
+            PhotoAsset(id: "photo-2", creationDate: base.addingTimeInterval(15 * 60), hasLocation: false),
+            PhotoAsset(id: "photo-3", creationDate: base.addingTimeInterval(hour + 5 * 60), hasLocation: false),
+            PhotoAsset(id: "photo-4", creationDate: base.addingTimeInterval(hour + 15 * 60), hasLocation: false),
+            PhotoAsset(id: "photo-5", creationDate: base.addingTimeInterval(2 * hour + 5 * 60), hasLocation: false),
+            PhotoAsset(id: "photo-6", creationDate: base.addingTimeInterval(2 * hour + 15 * 60), hasLocation: false)
+        ]
+        let pipeline = ProcessingPipeline(
+            importer: FakeImporter(timeline: timeline),
+            reader: FakeReader(assets: assets),
+            geocoder: FakeGeocoder()
+        )
+
+        let baseline = await pipeline.prepareReview(timeline: timeline, assets: assets)
+        let adjusted = await pipeline.prepareReview(timeline: timeline, assets: assets, captureTimeOffset: 9 * hour)
+
+        XCTAssertEqual(baseline.captureTimeOffsetAnalysis?.recommendedOffset, 9 * hour)
+        XCTAssertTrue(baseline.items.isEmpty)
+        XCTAssertEqual(adjusted.captureTimeOffset, 9 * hour)
+        XCTAssertEqual(adjusted.summary.totalAssets, 6)
+        XCTAssertEqual(adjusted.summary.autoSuggested, 6)
+        XCTAssertEqual(adjusted.summary.unmatched, 0)
     }
 }

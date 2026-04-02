@@ -16,6 +16,18 @@ public final class SyncCoordinator: Sendable {
         try await pipeline.prepareReview(from: data, onStageChange: onStageChange)
     }
 
+    public func prepareReview(
+        timeline: ImportedTimeline,
+        assets: [PhotoAsset],
+        captureTimeOffset: TimeInterval = 0
+    ) async -> PreparedReview {
+        await pipeline.prepareReview(
+            timeline: timeline,
+            assets: assets,
+            captureTimeOffset: captureTimeOffset
+        )
+    }
+
     public func apply(_ decisions: [MatchDecision]) async throws -> ApplySummary {
         let results = try await writer.apply(decisions)
         return ApplySummary(

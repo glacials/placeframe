@@ -9,30 +9,35 @@ public struct TimelineMatcher: Sendable {
         self.policy = policy
     }
 
-    public func match(assets: [PhotoAsset], timeline: ImportedTimeline) -> [MatchCandidate] {
+    public func match(
+        assets: [PhotoAsset],
+        timeline: ImportedTimeline,
+        captureTimeOffset: TimeInterval = 0
+    ) -> [MatchCandidate] {
         let sortedPoints = timeline.points.sorted { $0.timestamp < $1.timestamp }
         let visitSegments = timeline.segments.filter { $0.kind == .visit && $0.centerCoordinate != nil }
 
         return assets.map { asset in
-            let nearestPoint = nearestPoint(to: asset.creationDate, points: sortedPoints)
-            let containingVisit = visitSegments.first { $0.contains(asset.creationDate) }
+            let adjustedCaptureDate = asset.creationDate.addingTimeInterval(captureTimeOffset)
+            let nearestPoint = nearestPoint(to: adjustedCaptureDate, points: sortedPoints)
+            let containingVisit = visitSegments.first { $0.contains(adjustedCaptureDate) }
 
             guard let point = nearestPoint else {
                 return MatchCandidate(asset: asset, point: nil, timeDelta: nil, confidence: .rejected, disposition: .unmatched)
             }
 
-            if containingVisit == nil, liesInCoverageGap(asset.creationDate, points: sortedPoints) {
+            if containingVisit == nil, liesInCoverageGap(adjustedCaptureDate, points: sortedPoints) {
                 return MatchCandidate(asset: asset, point: nil, timeDelta: nil, confidence: .rejected, disposition: .unmatched)
             }
 
-            let delta = asset.creationDate.timeIntervalSince(point.timestamp)
+            let delta = adjustedCaptureDate.timeIntervalSince(point.timestamp)
             let insideVisit = containingVisit != nil
             let scored = scorer.score(delta: delta, insideStationaryVisit: insideVisit, policy: policy)
 
             if let visit = containingVisit, let center = visit.centerCoordinate, abs(delta) > policy.maybeThreshold {
                 let midpoint = visit.startTime.addingTimeInterval(visit.endTime.timeIntervalSince(visit.startTime) / 2)
                 let visitPoint = TimelinePoint(id: "\(visit.id)-fallback", timestamp: midpoint, coordinate: center, source: .visit, semanticLabel: "Visit")
-                let visitDelta = asset.creationDate.timeIntervalSince(midpoint)
+                let visitDelta = adjustedCaptureDate.timeIntervalSince(midpoint)
                 let visitScore = scorer.score(delta: visitDelta, insideStationaryVisit: true, policy: policy)
                 return MatchCandidate(asset: asset, point: visitPoint, timeDelta: visitDelta, confidence: visitScore.0, disposition: visitScore.1)
             }

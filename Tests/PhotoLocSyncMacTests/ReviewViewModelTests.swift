@@ -847,11 +847,83 @@ final class ReviewViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.presentedError?.message, "No permission.")
     }
 
+    func testPresentCaptureTimeOffsetSheetDefaultsToRecommendedOption() {
+        let item = makeReviewItem(
+            assetID: "source-photo",
+            coordinate: GeoCoordinate(latitude: 35.6895, longitude: 139.6917),
+            label: "Tokyo",
+            confidence: .maybe,
+            disposition: .ambiguous
+        )
+        let analysis = makeCaptureTimeOffsetAnalysis(assetIDs: [item.id], recommendedOffset: 9 * 60 * 60)
+        let viewModel = makeViewModel(
+            items: [item],
+            captureTimeOffsetAnalysis: analysis
+        )
+
+        viewModel.presentCaptureTimeOffsetSheet()
+
+        XCTAssertTrue(viewModel.isShowingCaptureTimeOffsetSheet)
+        XCTAssertEqual(viewModel.selectedCaptureTimeOffset, 9 * 60 * 60)
+        XCTAssertEqual(viewModel.captureTimeOffsetButtonTitle, "Fix Camera Time")
+    }
+
+    func testApplySelectedCaptureTimeOffsetPassesExcludedAssetIDsAndPreferredDay() async {
+        let recorder = CaptureTimeOffsetApplyRecorder()
+        let firstDayItem = makeReviewItem(
+            assetID: "first-day-photo",
+            coordinate: GeoCoordinate(latitude: 35.6895, longitude: 139.6917),
+            label: "Tokyo",
+            confidence: .maybe,
+            disposition: .ambiguous,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_000)
+        )
+        let secondDayItem = makeReviewItem(
+            assetID: "second-day-photo",
+            coordinate: GeoCoordinate(latitude: 34.6937, longitude: 135.5023),
+            label: "Osaka",
+            confidence: .maybe,
+            disposition: .ambiguous,
+            creationDate: Date(timeIntervalSince1970: 1_700_386_400)
+        )
+        let analysis = makeCaptureTimeOffsetAnalysis(
+            assetIDs: [firstDayItem.id, secondDayItem.id],
+            recommendedOffset: 9 * 60 * 60
+        )
+        let viewModel = makeViewModel(
+            items: [firstDayItem, secondDayItem],
+            captureTimeOffsetAnalysis: analysis,
+            onApplyCaptureTimeOffset: { offset, excludedAssetIDs, preferredDayStart in
+                await recorder.record(
+                    offset: offset,
+                    excludedAssetIDs: excludedAssetIDs,
+                    preferredDayStart: preferredDayStart
+                )
+            }
+        )
+
+        viewModel.skipForNow(firstDayItem.id)
+        viewModel.currentDayIndex = 0
+        viewModel.presentCaptureTimeOffsetSheet()
+        await viewModel.applySelectedCaptureTimeOffset()
+
+        let snapshot = await recorder.snapshot()
+        XCTAssertEqual(snapshot.offset, 9 * 60 * 60)
+        XCTAssertEqual(snapshot.excludedAssetIDs, Set([firstDayItem.id]))
+        XCTAssertEqual(
+            snapshot.preferredDayStart,
+            Calendar.autoupdatingCurrent.startOfDay(for: secondDayItem.asset.creationDate)
+        )
+    }
+
     private func makeViewModel(
         items: [ReviewItem],
+        captureTimeOffset: TimeInterval = 0,
+        captureTimeOffsetAnalysis: CaptureTimeOffsetAnalysis? = nil,
         onApplyDecision: @escaping @Sendable (MatchDecision) async throws -> Void = { _ in },
         onDismissPermanently: @escaping @Sendable (String) async -> Void = { _ in },
         onDeletePhoto: @escaping @Sendable (String) async throws -> Void = { _ in },
+        onApplyCaptureTimeOffset: @escaping @Sendable (TimeInterval, Set<String>, Date?) async -> Void = { _, _, _ in },
         onCancel: @escaping @Sendable () -> Void = {}
     ) -> ReviewViewModel {
         ReviewViewModel(
@@ -862,6 +934,9 @@ final class ReviewViewModelTests: XCTestCase {
                 unmatched: 0
             ),
             items: items,
+            sessionAssetIDs: Set(items.map(\.id)),
+            captureTimeOffset: captureTimeOffset,
+            captureTimeOffsetAnalysis: captureTimeOffsetAnalysis,
             thumbnailProvider: PhotoThumbnailProvider(),
             onApplyDecision: { decision in
                 try await onApplyDecision(decision)
@@ -870,6 +945,7 @@ final class ReviewViewModelTests: XCTestCase {
                 await onDismissPermanently(assetID)
             },
             onDeletePhoto: onDeletePhoto,
+            onApplyCaptureTimeOffset: onApplyCaptureTimeOffset,
             onCancel: onCancel
         )
     }
@@ -913,6 +989,84 @@ final class ReviewViewModelTests: XCTestCase {
             availableLocationOptions: resolvedOptions
         )
     }
+
+    private func makeCaptureTimeOffsetAnalysis(
+        assetIDs: [String],
+        currentOffset: TimeInterval = 0,
+        recommendedOffset: TimeInterval? = nil
+    ) -> CaptureTimeOffsetAnalysis {
+        let baseline = makeCaptureTimeOffsetOption(
+            offset: currentOffset,
+            assetIDs: assetIDs,
+            disposition: .unmatched,
+            confidence: .rejected,
+            timeDelta: 8 * 60 * 60,
+            metrics: CaptureTimeOffsetMetrics(
+                totalAssets: assetIDs.count,
+                autoSuggested: 0,
+                ambiguous: 0,
+                unmatched: assetIDs.count,
+                visitContained: 0,
+                medianAbsoluteTimeDelta: 8 * 60 * 60
+            )
+        )
+        let improved = makeCaptureTimeOffsetOption(
+            offset: 9 * 60 * 60,
+            assetIDs: assetIDs,
+            disposition: .autoSuggested,
+            confidence: .acceptable,
+            timeDelta: 10 * 60,
+            metrics: CaptureTimeOffsetMetrics(
+                totalAssets: assetIDs.count,
+                autoSuggested: assetIDs.count,
+                ambiguous: 0,
+                unmatched: 0,
+                visitContained: assetIDs.count,
+                medianAbsoluteTimeDelta: 10 * 60
+            )
+        )
+
+        return CaptureTimeOffsetAnalysis(
+            currentOffset: currentOffset,
+            recommendedOffset: recommendedOffset,
+            options: recommendedOffset == nil ? [baseline, improved] : [improved, baseline]
+        )
+    }
+
+    private func makeCaptureTimeOffsetOption(
+        offset: TimeInterval,
+        assetIDs: [String],
+        disposition: MatchDisposition,
+        confidence: MatchConfidence,
+        timeDelta: TimeInterval,
+        metrics: CaptureTimeOffsetMetrics
+    ) -> CaptureTimeOffsetOption {
+        let matches = assetIDs.enumerated().map { index, assetID in
+            let asset = PhotoAsset(
+                id: assetID,
+                creationDate: Date(timeIntervalSince1970: 1_700_300_000 + TimeInterval(index * 60)),
+                hasLocation: false
+            )
+            let point = disposition == .unmatched
+                ? nil
+                : TimelinePoint(
+                    id: "point-\(assetID)",
+                    timestamp: asset.creationDate.addingTimeInterval(offset),
+                    coordinate: GeoCoordinate(latitude: 35 + Double(index), longitude: 139 + Double(index)),
+                    source: .visit,
+                    semanticLabel: "Preview \(assetID)"
+                )
+            return MatchCandidate(
+                asset: asset,
+                point: point,
+                timeDelta: disposition == .unmatched ? nil : timeDelta,
+                confidence: confidence,
+                disposition: disposition
+            )
+        }
+
+        return CaptureTimeOffsetOption(offset: offset, matches: matches, metrics: metrics)
+    }
 }
 
 private final class CancellationFlag: @unchecked Sendable {
@@ -952,5 +1106,21 @@ private actor SuppressionRecorder {
 
     func snapshot() -> [String] {
         assetIDs
+    }
+}
+
+private actor CaptureTimeOffsetApplyRecorder {
+    private var offset: TimeInterval?
+    private var excludedAssetIDs: Set<String> = []
+    private var preferredDayStart: Date?
+
+    func record(offset: TimeInterval, excludedAssetIDs: Set<String>, preferredDayStart: Date?) {
+        self.offset = offset
+        self.excludedAssetIDs = excludedAssetIDs
+        self.preferredDayStart = preferredDayStart
+    }
+
+    func snapshot() -> (offset: TimeInterval?, excludedAssetIDs: Set<String>, preferredDayStart: Date?) {
+        (offset, excludedAssetIDs, preferredDayStart)
     }
 }

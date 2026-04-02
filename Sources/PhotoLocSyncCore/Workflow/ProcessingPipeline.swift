@@ -7,6 +7,7 @@ public final class ProcessingPipeline: Sendable {
     private let matcher: TimelineMatcher
     private let labelFormatter: LocationLabelFormatter
     private let policy: MatchPolicy
+    private let captureTimeOffsetAnalyzer: CaptureTimeOffsetAnalyzer
 
     public init(
         importer: any TimelineImporting,
@@ -14,7 +15,8 @@ public final class ProcessingPipeline: Sendable {
         geocoder: any ReverseGeocoding,
         matcher: TimelineMatcher = TimelineMatcher(),
         labelFormatter: LocationLabelFormatter = LocationLabelFormatter(),
-        policy: MatchPolicy = MatchPolicy()
+        policy: MatchPolicy = MatchPolicy(),
+        captureTimeOffsetAnalyzer: CaptureTimeOffsetAnalyzer = CaptureTimeOffsetAnalyzer()
     ) {
         self.importer = importer
         self.reader = reader
@@ -22,6 +24,7 @@ public final class ProcessingPipeline: Sendable {
         self.matcher = matcher
         self.labelFormatter = labelFormatter
         self.policy = policy
+        self.captureTimeOffsetAnalyzer = captureTimeOffsetAnalyzer
     }
 
     public func prepareReview(
@@ -35,13 +38,45 @@ public final class ProcessingPipeline: Sendable {
         let candidateRange = timeline.range.expanded(by: policy.candidatePadding)
         let assets = try await reader.fetchCandidateAssets(in: candidateRange)
 
-        onStageChange(.matchingLocations)
-        let matches = matcher.match(assets: assets, timeline: timeline)
+        return await prepareReview(
+            timeline: timeline,
+            assets: assets,
+            captureTimeOffset: 0,
+            onStageChange: onStageChange
+        )
+    }
 
-        onStageChange(.reverseGeocodingPlaces)
+    public func prepareReview(
+        timeline: ImportedTimeline,
+        assets: [PhotoAsset],
+        captureTimeOffset: TimeInterval = 0
+    ) async -> PreparedReview {
+        await prepareReview(
+            timeline: timeline,
+            assets: assets,
+            captureTimeOffset: captureTimeOffset,
+            onStageChange: nil
+        )
+    }
+
+    private func prepareReview(
+        timeline: ImportedTimeline,
+        assets: [PhotoAsset],
+        captureTimeOffset: TimeInterval,
+        onStageChange: (@Sendable (ProcessingStage) -> Void)?
+    ) async -> PreparedReview {
+        onStageChange?(.matchingLocations)
+        let matches = matcher.match(assets: assets, timeline: timeline, captureTimeOffset: captureTimeOffset)
+        let captureTimeOffsetAnalysis = captureTimeOffsetAnalyzer.analyze(
+            timeline: timeline,
+            assets: assets,
+            currentOffset: captureTimeOffset
+        )
+
+        onStageChange?(.reverseGeocodingPlaces)
         let items = await buildReviewItems(from: matches)
 
-        onStageChange(.preparingReview)
+        onStageChange?(.preparingReview)
         let summary = ReviewSummary(
             totalAssets: items.count,
             autoSuggested: matches.filter { $0.disposition == .autoSuggested }.count,
@@ -49,7 +84,14 @@ public final class ProcessingPipeline: Sendable {
             unmatched: matches.filter { $0.disposition == .unmatched }.count
         )
 
-        return PreparedReview(timeline: timeline, items: items, summary: summary)
+        return PreparedReview(
+            timeline: timeline,
+            candidateAssets: assets,
+            items: items,
+            summary: summary,
+            captureTimeOffset: captureTimeOffset,
+            captureTimeOffsetAnalysis: captureTimeOffsetAnalysis
+        )
     }
 
     private func buildReviewItems(from matches: [MatchCandidate]) async -> [ReviewItem] {
