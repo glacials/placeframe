@@ -4,42 +4,33 @@ struct LocationLabelingSettingsView: View {
     @ObservedObject var settings: LocationLabelingSettings
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Location Labels")
-                        .font(.largeTitle.bold())
-                    Text("Choose whether Photo Location Sync should keep labels as coordinates or ask Apple to turn those coordinates into rich place names.")
+        VStack(alignment: .leading) {
+            Toggle(isOn: richPlaceLabelsBinding) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Rich Place Labels")
+                        .font(.headline)
+                    Text("Use Apple to turn coordinates into place names. Apple receives anonymized coordinates for those lookups.")
+                        .font(.subheadline)
                         .foregroundStyle(.secondary)
-                }
-
-                VStack(alignment: .leading, spacing: 14) {
-                    ForEach(LocationLabelingPreference.allCases) { preference in
-                        LocationLabelingChoiceCard(
-                            title: preference.title,
-                            summary: preference.summary,
-                            isSelected: settings.choice == preference,
-                            actionTitle: settings.choice == preference ? "Selected" : "Use This Option"
-                        ) {
-                            settings.setChoice(preference)
-                        }
-                    }
-                }
-
-                GroupBox("Notes") {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("- You can change this at any time.")
-                        Text("- The setting affects future timeline imports and any location matching that is re-run later.")
-                        Text("- Review map tiles and iCloud-backed photo previews are controlled separately from rich place-label lookups.")
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.vertical, 4)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            .padding(24)
+            .toggleStyle(.switch)
             .frame(maxWidth: .infinity, alignment: .topLeading)
         }
-        .frame(minWidth: 720, minHeight: 440)
+        .padding(24)
+        .frame(minWidth: 420, minHeight: 160, alignment: .topLeading)
+    }
+
+    private var richPlaceLabelsBinding: Binding<Bool> {
+        Binding(
+            get: {
+                settings.effectiveChoice() == .allowAppleGeocoding
+            },
+            set: { isEnabled in
+                settings.setChoice(isEnabled ? .allowAppleGeocoding : .localCoordinatesOnly)
+            }
+        )
     }
 }
 
