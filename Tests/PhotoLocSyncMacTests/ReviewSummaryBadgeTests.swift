@@ -16,27 +16,27 @@ final class ReviewSummaryBadgeTests: XCTestCase {
                     value: 12,
                     helpText: """
                     Reviewable photos from the selected timeline.
-                    Includes Auto and Ambiguous items. Excludes No match.
+                    Includes Auto-suggested and Needs review items. Excludes No match.
                     """
                 ),
                 ReviewSummaryBadge(
-                    title: "Auto",
+                    title: MatchDisposition.autoSuggested.reviewStatusTitle,
                     value: 7,
                     helpText: """
-                    Photos with a strong enough timeline match that Photo Loc Sync can prefill a proposed location.
-                    Spot-check these before writing changes to Apple Photos.
+                    Photos with a strong enough time match that Photo Loc Sync prefilled a proposed place.
+                    Usually within 15 minutes, or inside a stationary visit.
                     """
                 ),
                 ReviewSummaryBadge(
-                    title: "Ambiguous",
+                    title: MatchDisposition.ambiguous.reviewStatusTitle,
                     value: 4,
                     helpText: """
-                    Photos that have one or more possible timeline matches, but not enough certainty to auto-suggest one.
-                    Review these manually and choose the right precision before writing.
+                    Photos where a nearby timeline match was found, but the timing was looser.
+                    Review these manually before writing.
                     """
                 ),
                 ReviewSummaryBadge(
-                    title: "No match",
+                    title: MatchDisposition.unmatched.reviewStatusTitle,
                     value: 3,
                     helpText: """
                     Photos that had no usable timeline point near the capture time.
