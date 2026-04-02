@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct ImportView: View {
+    @Environment(\.openWindow) private var openWindow
     @ObservedObject var viewModel: ImportViewModel
 
     var body: some View {
@@ -23,6 +24,10 @@ struct ImportView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.vertical, 4)
+            }
+
+            PrivacySummaryBox {
+                openWindow(id: AppWindowID.privacy)
             }
 
             VStack(alignment: .leading, spacing: 16) {

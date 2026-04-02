@@ -8,7 +8,7 @@ struct AppDI {
         let reader = PhotoKitLibraryReader()
         let reviewItemFilter = PhotoKitImportedReviewItemFilter()
         let reviewSuppressionStore = ReviewSuppressionStore()
-        let geocoder = CLGeocoderAdapter()
+        let geocoder = OfflineReverseGeocoder()
         let writer = PhotoKitLibraryWriter()
         let pipeline = ProcessingPipeline(importer: importer, reader: reader, geocoder: geocoder)
         let coordinator = SyncCoordinator(pipeline: pipeline, writer: writer)

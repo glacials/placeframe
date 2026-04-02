@@ -13,7 +13,7 @@ struct ProcessingViewModel {
         case .matchingLocations:
             "Calculating the best deterministic timeline matches for each candidate photo."
         case .reverseGeocodingPlaces:
-            "Resolving proposed coordinates into readable place labels for review."
+            "Formatting readable on-device coordinate labels without contacting any external service."
         case .preparingReview:
             "Preparing thumbnails and review models before any write occurs."
         }

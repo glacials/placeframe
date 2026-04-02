@@ -2,12 +2,18 @@
 
 Photo Location Sync is a macOS SwiftUI app plus a reusable Swift package for matching Google Maps Timeline export data to Apple Photos assets that are missing location metadata.
 
+## Privacy posture
+
+Photo Location Sync does not send your timeline file, coordinates, thumbnails, or other personal data to external servers. Matching, coordinate labeling, and spatial review run locally on your Mac, and the app avoids online geocoding, remote map tiles, analytics, and crash-reporting services.
+
+One caveat remains outside the app: when you approve an update, the app writes metadata into Apple Photos locally. If you use iCloud Photos, Apple may sync those approved library changes through Photos after the local write.
+
 ## Repository structure
 
 - `Package.swift` — SwiftPM manifest for the reusable modules and the macOS app target
 - `App/PhotoLocSyncMac/` — SwiftUI macOS app shell
 - `Sources/PhotoLocSyncCore/` — domain models, matching, and workflow orchestration
-- `Sources/PhotoLocSyncAdapters/` — Timeline parsing, PhotoKit, geocoding, and security-scoped file access
+- `Sources/PhotoLocSyncAdapters/` — Timeline parsing, PhotoKit, local coordinate labeling, and security-scoped file access
 - `Tests/` — importer, matcher, pipeline, and manual verification coverage
 - `Configuration/` — app bundle metadata used by Xcode and the local bundle-build script
 - `Docs/` — migration notes for future iPhone and iPad shells

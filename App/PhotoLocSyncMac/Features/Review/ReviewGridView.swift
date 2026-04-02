@@ -402,7 +402,7 @@ private struct ReviewListItemView: View {
                 .disabled(!canPasteCopiedLocation)
 
                 if hasLocation {
-                    Button("See on map") {
+                    Button("Show in plot") {
                         showOnMap(entry.item)
                     }
                 }

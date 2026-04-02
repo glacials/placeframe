@@ -20,11 +20,6 @@ private struct FakeGeocoder: ReverseGeocoding {
                     precision: .exact,
                     coordinate: coordinate,
                     label: "Label \(coordinate.latitude),\(coordinate.longitude)"
-                ),
-                LocationOption(
-                    precision: .city,
-                    coordinate: GeoCoordinate(latitude: coordinate.latitude + 0.5, longitude: coordinate.longitude + 0.5),
-                    label: "City \(coordinate.latitude),\(coordinate.longitude)"
                 )
             ]
         )
@@ -80,7 +75,7 @@ final class ProcessingPipelineTests: XCTestCase {
         XCTAssertNotNil(prepared.items[0].suggestedDecision)
         XCTAssertNotNil(prepared.items[1].suggestedDecision)
         XCTAssertTrue(prepared.items[0].locationLabel.contains("Label"))
-        XCTAssertEqual(prepared.items[0].availableLocationOptions.map(\.precision), [.exact, .city])
+        XCTAssertEqual(prepared.items[0].availableLocationOptions.map(\.precision), [.exact])
         XCTAssertEqual(prepared.items[0].suggestedDecision?.precision, .exact)
     }
 

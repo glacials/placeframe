@@ -25,6 +25,12 @@ This repository expects agents to leave a clean, reviewable git history.
 - Never commit generated build output or local tool state such as `.build/` or `.omx/`.
 - Never commit raw Google Timeline exports, local secrets, or other machine-specific artifacts.
 
+## Privacy & PII
+
+- Never send a user's location history, coordinates, photo metadata, thumbnails, or other PII to any external server or network-backed service by default.
+- Any exception requires the user's explicit permission for that specific transfer before the code path is introduced or used.
+- Prefer fully local processing and local-only platform APIs. If a platform integration can cause data to sync outside the app, disclose that caveat before making user-facing privacy guarantees.
+
 ## Verification
 
 - Run the smallest useful verification for the change before committing.

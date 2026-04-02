@@ -1,4 +1,3 @@
-import MapKit
 import XCTest
 @testable import PhotoLocSyncCore
 @testable import PhotoLocSyncMac
@@ -56,55 +55,43 @@ final class ReviewMapViewTests: XCTestCase {
         XCTAssertFalse(clusters.first?.isSelected ?? true)
     }
 
-    func testViewportSnapshotIgnoresMinorCameraDrift() {
-        let expected = ReviewMapViewportSnapshot(
-            region: MKCoordinateRegion(
-                center: CLLocationCoordinate2D(latitude: 35.6895, longitude: 139.6917),
-                span: MKCoordinateSpan(latitudeDelta: 0.015, longitudeDelta: 0.015)
-            )
-        )
-        let current = ReviewMapViewportSnapshot(
-            region: MKCoordinateRegion(
-                center: CLLocationCoordinate2D(latitude: 35.6901, longitude: 139.6921),
-                span: MKCoordinateSpan(latitudeDelta: 0.016, longitudeDelta: 0.0158)
-            )
+    func testPlotLayoutCentersSingleCoordinate() {
+        let cluster = makeCluster(
+            id: "tokyo",
+            coordinate: GeoCoordinate(latitude: 35.6895, longitude: 139.6917)
         )
 
-        XCTAssertFalse(current.isMeaningfullyDifferent(from: expected))
+        let layout = ReviewMapPlotLayout.make(
+            clusters: [cluster],
+            selectionTargets: [],
+            in: CGSize(width: 400, height: 300)
+        )
+
+        XCTAssertEqual(layout.clusterPoints.count, 1)
+        XCTAssertEqual(layout.clusterPoints[0].x, 200, accuracy: 0.001)
+        XCTAssertEqual(layout.clusterPoints[0].y, 150, accuracy: 0.001)
     }
 
-    func testViewportSnapshotDetectsMeaningfulPanAway() {
-        let expected = ReviewMapViewportSnapshot(
-            region: MKCoordinateRegion(
-                center: CLLocationCoordinate2D(latitude: 35.6895, longitude: 139.6917),
-                span: MKCoordinateSpan(latitudeDelta: 0.015, longitudeDelta: 0.015)
-            )
+    func testPlotLayoutPlacesHigherLatitudeNearTopAndHigherLongitudeToTheRight() {
+        let southwest = makeCluster(
+            id: "southwest",
+            coordinate: GeoCoordinate(latitude: 34.0, longitude: 135.0)
         )
-        let current = ReviewMapViewportSnapshot(
-            region: MKCoordinateRegion(
-                center: CLLocationCoordinate2D(latitude: 35.6955, longitude: 139.6995),
-                span: MKCoordinateSpan(latitudeDelta: 0.015, longitudeDelta: 0.015)
-            )
+        let northeast = makeCluster(
+            id: "northeast",
+            coordinate: GeoCoordinate(latitude: 36.0, longitude: 140.0)
         )
 
-        XCTAssertTrue(current.isMeaningfullyDifferent(from: expected))
-    }
-
-    func testViewportSnapshotDetectsMeaningfulZoomChange() {
-        let expected = ReviewMapViewportSnapshot(
-            region: MKCoordinateRegion(
-                center: CLLocationCoordinate2D(latitude: 34.6937, longitude: 135.5023),
-                span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
-            )
+        let layout = ReviewMapPlotLayout.make(
+            clusters: [southwest, northeast],
+            selectionTargets: [],
+            in: CGSize(width: 400, height: 300)
         )
-        let current = ReviewMapViewportSnapshot(
-            region: MKCoordinateRegion(
-                center: CLLocationCoordinate2D(latitude: 34.6937, longitude: 135.5023),
-                span: MKCoordinateSpan(latitudeDelta: 0.0185, longitudeDelta: 0.0185)
-            )
-        )
+        let southwestPoint = layout.clusterPoints.first { $0.id == southwest.id }!
+        let northeastPoint = layout.clusterPoints.first { $0.id == northeast.id }!
 
-        XCTAssertTrue(current.isMeaningfullyDifferent(from: expected))
+        XCTAssertLessThan(southwestPoint.x, northeastPoint.x)
+        XCTAssertGreaterThan(southwestPoint.y, northeastPoint.y)
     }
 
     private func makeReviewSelection(
@@ -125,5 +112,16 @@ final class ReviewMapViewTests: XCTestCase {
         )
 
         return ReviewSelection(id: assetID, item: item, copiedFromAssetID: nil)
+    }
+
+    private func makeCluster(id: String, coordinate: GeoCoordinate) -> ReviewMapCluster {
+        ReviewMapCluster(
+            id: id,
+            coordinate: coordinate,
+            count: 1,
+            sampleLabel: id,
+            sampleAsset: PhotoAsset(id: id, creationDate: Date(timeIntervalSince1970: 1_700_000_000), hasLocation: false),
+            isSelected: false
+        )
     }
 }

@@ -49,11 +49,7 @@ public final class PhotoThumbnailProvider: ThumbnailProviding, @unchecked Sendab
         let results = PHAsset.fetchAssets(withLocalIdentifiers: [asset.id], options: nil)
         guard let phAsset = results.firstObject else { return nil }
         let targetSize = CGSize(width: maxPixelSize, height: maxPixelSize)
-        let options = PHImageRequestOptions()
-        options.deliveryMode = .highQualityFormat
-        options.resizeMode = .fast
-        options.isSynchronous = false
-        options.isNetworkAccessAllowed = true
+        let options = Self.makeThumbnailRequestOptions()
 
         return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<CGImage?, Error>) in
             let lockedContinuation = LockedContinuation(continuation)
@@ -93,8 +89,7 @@ public final class PhotoThumbnailProvider: ThumbnailProviding, @unchecked Sendab
             return destinationURL
         }
 
-        let options = PHAssetResourceRequestOptions()
-        options.isNetworkAccessAllowed = true
+        let options = Self.makePreviewRequestOptions()
 
         return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<URL?, Error>) in
             let lockedContinuation = LockedContinuation(continuation)
@@ -140,5 +135,20 @@ public final class PhotoThumbnailProvider: ThumbnailProviding, @unchecked Sendab
         }
 
         return "\(safeAssetID)-\(resource.originalFilename)"
+    }
+
+    static func makeThumbnailRequestOptions() -> PHImageRequestOptions {
+        let options = PHImageRequestOptions()
+        options.deliveryMode = .highQualityFormat
+        options.resizeMode = .fast
+        options.isSynchronous = false
+        options.isNetworkAccessAllowed = false
+        return options
+    }
+
+    static func makePreviewRequestOptions() -> PHAssetResourceRequestOptions {
+        let options = PHAssetResourceRequestOptions()
+        options.isNetworkAccessAllowed = false
+        return options
     }
 }
