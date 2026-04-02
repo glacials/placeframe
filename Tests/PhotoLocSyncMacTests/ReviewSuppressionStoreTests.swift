@@ -62,6 +62,31 @@ final class ReviewSuppressionStoreTests: XCTestCase {
         XCTAssertNil(records.first?.selectedPrecision)
     }
 
+    func testUnsuppressMakesPhotoVisibleAgain() async throws {
+        let suiteName = "ReviewSuppressionStoreTests.\(UUID().uuidString)"
+        guard let defaults = UserDefaults(suiteName: suiteName) else {
+            XCTFail("Expected isolated test defaults")
+            return
+        }
+        defaults.removePersistentDomain(forName: suiteName)
+        defer {
+            defaults.removePersistentDomain(forName: suiteName)
+        }
+
+        let store = ReviewSuppressionStore(suiteName: suiteName, key: "suppressed")
+        let firstItem = makeReviewItem(assetID: "first-photo")
+        let secondItem = makeReviewItem(assetID: "second-photo")
+
+        await store.suppress(firstItem)
+        await store.unsuppress([firstItem.id])
+
+        let visibleItems = await store.filterVisibleItems([firstItem, secondItem])
+        let records = await store.suppressedRecords()
+
+        XCTAssertEqual(visibleItems.map(\.id), [firstItem.id, secondItem.id])
+        XCTAssertTrue(records.isEmpty)
+    }
+
     private func makeReviewItem(
         assetID: String,
         options: [LocationOption]? = nil,

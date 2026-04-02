@@ -6,8 +6,10 @@ struct AppView: View {
     var body: some View {
         Group {
             switch appState.flowState {
-            case .idle, .importing:
+            case .idle:
                 ImportView(viewModel: appState.importViewModel)
+            case .importing:
+                ProcessingView(viewModel: .importing)
             case .processing(let stage):
                 ProcessingView(viewModel: ProcessingViewModel(stage: stage))
             case .review:

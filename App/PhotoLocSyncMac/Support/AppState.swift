@@ -103,7 +103,17 @@ final class AppState: ObservableObject {
     }
 
     func apply(decision: MatchDecision) async throws {
-        _ = try await coordinator.apply([decision])
+        try await requireSuccessfulApplySummary(
+            { try await coordinator.apply([decision]) },
+            failureTitle: "Apply Failed"
+        )
+    }
+
+    func clearLocations(for assetIDs: [String]) async throws {
+        try await requireSuccessfulApplySummary(
+            { try await coordinator.clearLocations(for: assetIDs) },
+            failureTitle: "Undo Failed"
+        )
     }
 
     func deletePhoto(assetID: String) async throws {
@@ -142,9 +152,18 @@ final class AppState: ObservableObject {
                 guard let self else { return }
                 try await self.apply(decision: decision)
             },
+            onUndoAppliedDecisions: { [weak self] decisions in
+                guard let self else { return }
+                try await self.clearLocations(for: decisions.map(\.assetID))
+            },
             onDismissPermanently: { [weak self] item in
                 guard let self else { return }
                 await self.reviewSuppressionStore.suppress(item)
+                await self.leftBlankHistoryViewModel.refresh()
+            },
+            onUndoDismissPermanently: { [weak self] assetIDs in
+                guard let self else { return }
+                await self.reviewSuppressionStore.unsuppress(assetIDs)
                 await self.leftBlankHistoryViewModel.refresh()
             },
             onDeletePhoto: { [weak self] assetID in
@@ -235,5 +254,26 @@ final class AppState: ObservableObject {
         })
 
         return captureTimeOffsetsByDayStart.filter { visibleDayStarts.contains($0.key) }
+    }
+
+    private func requireSuccessfulApplySummary(
+        _ operation: () async throws -> ApplySummary,
+        failureTitle: String
+    ) async throws {
+        let summary = try await operation()
+
+        if let failure = summary.failures.first {
+            throw UserPresentableError(
+                title: failureTitle,
+                message: failure.message ?? "Apple Photos did not confirm the change."
+            )
+        }
+
+        if summary.skipped > 0 {
+            throw UserPresentableError(
+                title: failureTitle,
+                message: "Apple Photos skipped one or more selected photos."
+            )
+        }
     }
 }

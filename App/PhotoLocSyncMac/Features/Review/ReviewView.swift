@@ -66,7 +66,7 @@ struct ReviewView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .padding(24)
         .background {
-            selectAllShortcut
+            keyboardShortcuts
         }
         .alert(item: $viewModel.presentedError) { error in
             Alert(
@@ -179,15 +179,53 @@ struct ReviewView: View {
             .buttonStyle(.bordered)
 
             Spacer()
+
+            Button {
+                Task {
+                    await viewModel.undoLastAction()
+                }
+            } label: {
+                Label(viewModel.undoTitle, systemImage: "arrow.uturn.backward.circle")
+            }
+            .buttonStyle(.bordered)
+            .disabled(!viewModel.canUndo)
+
+            Button {
+                Task {
+                    await viewModel.redoLastAction()
+                }
+            } label: {
+                Label(viewModel.redoTitle, systemImage: "arrow.uturn.forward.circle")
+            }
+            .buttonStyle(.bordered)
+            .disabled(!viewModel.canRedo)
         }
     }
 
-    private var selectAllShortcut: some View {
-        Button("Select All Photos on Current Day") {
-            viewModel.selectAllPhotosOnCurrentDay()
+    private var keyboardShortcuts: some View {
+        VStack {
+            Button("Select All Photos on Current Day") {
+                viewModel.selectAllPhotosOnCurrentDay()
+            }
+            .keyboardShortcut("a", modifiers: .command)
+            .disabled(viewModel.currentDaySection == nil)
+
+            Button(viewModel.undoTitle) {
+                Task {
+                    await viewModel.undoLastAction()
+                }
+            }
+            .keyboardShortcut("z", modifiers: .command)
+            .disabled(!viewModel.canUndo)
+
+            Button(viewModel.redoTitle) {
+                Task {
+                    await viewModel.redoLastAction()
+                }
+            }
+            .keyboardShortcut("z", modifiers: [.command, .shift])
+            .disabled(!viewModel.canRedo)
         }
-        .keyboardShortcut("a", modifiers: .command)
-        .disabled(viewModel.currentDaySection == nil)
         .opacity(0)
         .frame(width: 0, height: 0)
         .accessibilityHidden(true)

@@ -35,6 +35,31 @@ public final class PhotoKitLibraryWriter: PhotoLibraryWriting, @unchecked Sendab
         return results
     }
 
+    public func clearLocations(for assetIDs: [String]) async throws -> [WriteResult] {
+        try await authorization.requestReadWriteAccess()
+        var results: [WriteResult] = []
+        results.reserveCapacity(assetIDs.count)
+
+        for assetID in assetIDs {
+            let fetchResult = await MainActor.run {
+                PHAsset.fetchAssets(withLocalIdentifiers: [assetID], options: nil)
+            }
+            guard let asset = await MainActor.run(body: { fetchResult.firstObject }) else {
+                results.append(WriteResult(assetID: assetID, outcome: .skipped, message: "Asset no longer exists in Photos."))
+                continue
+            }
+
+            do {
+                try await updateLocation(for: asset, coordinate: nil)
+                results.append(WriteResult(assetID: assetID, outcome: .updated, message: "Cleared location metadata."))
+            } catch {
+                results.append(WriteResult(assetID: assetID, outcome: .failed, message: error.localizedDescription))
+            }
+        }
+
+        return results
+    }
+
     public func deleteAsset(withID assetID: String) async throws {
         try await authorization.requestReadWriteAccess()
 
@@ -70,8 +95,8 @@ public final class PhotoKitLibraryWriter: PhotoLibraryWriting, @unchecked Sendab
         }
     }
 
-    private func updateLocation(for asset: PHAsset, coordinate: GeoCoordinate) async throws {
-        let location = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
+    private func updateLocation(for asset: PHAsset, coordinate: GeoCoordinate?) async throws {
+        let location = coordinate.map { CLLocation(latitude: $0.latitude, longitude: $0.longitude) }
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             PHPhotoLibrary.shared().performChanges {
                 let request = PHAssetChangeRequest(for: asset)

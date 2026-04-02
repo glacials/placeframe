@@ -614,6 +614,99 @@ final class ReviewViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.summary.ambiguous, 1)
     }
 
+    func testUndoApplyRestoresPhotoAndClearsWrittenLocation() async {
+        let applyRecorder = ApplyRecorder()
+        let undoRecorder = DecisionBatchRecorder()
+        let firstItem = makeReviewItem(
+            assetID: "first-photo",
+            coordinate: GeoCoordinate(latitude: 35.6895, longitude: 139.6917),
+            label: "Tokyo",
+            confidence: .excellent,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_000)
+        )
+        let secondItem = makeReviewItem(
+            assetID: "second-photo",
+            coordinate: GeoCoordinate(latitude: 34.6937, longitude: 135.5023),
+            label: "Osaka",
+            confidence: .acceptable,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_060)
+        )
+        let viewModel = makeViewModel(
+            items: [firstItem, secondItem],
+            onApplyDecision: { decision in
+                await applyRecorder.record(decision)
+            },
+            onUndoAppliedDecisions: { decisions in
+                await undoRecorder.record(decisions)
+            }
+        )
+
+        await viewModel.applyChange(for: firstItem.id)
+
+        XCTAssertTrue(viewModel.canUndo)
+        XCTAssertEqual(viewModel.undoTitle, "Undo Apply")
+        XCTAssertEqual(viewModel.selectedPhotoIDs, [secondItem.id])
+
+        await viewModel.undoLastAction()
+
+        let appliedAssetIDs = await applyRecorder.appliedAssetIDs()
+        let undoneAssetIDs = await undoRecorder.recordedAssetIDs()
+
+        XCTAssertEqual(appliedAssetIDs, [firstItem.id])
+        XCTAssertEqual(undoneAssetIDs, [firstItem.id])
+        XCTAssertEqual(viewModel.selections.map(\.id), [firstItem.id, secondItem.id])
+        XCTAssertTrue(viewModel.selectedPhotoIDs.isEmpty)
+        XCTAssertEqual(viewModel.summary.totalAssets, 2)
+        XCTAssertTrue(viewModel.canRedo)
+        XCTAssertEqual(viewModel.redoTitle, "Redo Apply")
+    }
+
+    func testRedoApplyReappliesDecisionAndRestoresPostApplyFocus() async {
+        let applyRecorder = ApplyRecorder()
+        let undoRecorder = DecisionBatchRecorder()
+        let firstItem = makeReviewItem(
+            assetID: "first-photo",
+            coordinate: GeoCoordinate(latitude: 35.6895, longitude: 139.6917),
+            label: "Tokyo",
+            confidence: .excellent,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_000)
+        )
+        let secondItem = makeReviewItem(
+            assetID: "second-photo",
+            coordinate: GeoCoordinate(latitude: 34.6937, longitude: 135.5023),
+            label: "Osaka",
+            confidence: .acceptable,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_060)
+        )
+        let viewModel = makeViewModel(
+            items: [firstItem, secondItem],
+            onApplyDecision: { decision in
+                await applyRecorder.record(decision)
+            },
+            onUndoAppliedDecisions: { decisions in
+                await undoRecorder.record(decisions)
+            }
+        )
+
+        await viewModel.applyChange(for: firstItem.id)
+        await viewModel.undoLastAction()
+        await viewModel.redoLastAction()
+
+        let appliedAssetIDs = await applyRecorder.appliedAssetIDs()
+        let undoneAssetIDs = await undoRecorder.recordedAssetIDs()
+
+        XCTAssertEqual(appliedAssetIDs, [firstItem.id, firstItem.id])
+        XCTAssertEqual(undoneAssetIDs, [firstItem.id])
+        XCTAssertEqual(viewModel.selections.map(\.id), [secondItem.id])
+        XCTAssertEqual(viewModel.selectedPhotoIDs, [secondItem.id])
+        XCTAssertTrue(viewModel.canUndo)
+        XCTAssertFalse(viewModel.canRedo)
+    }
+
     func testSkipForNowOnLastPhotoOfDayAdvancesToFirstPhotoOfNextDay() {
         let firstDayItem = makeReviewItem(
             assetID: "first-day-photo",
@@ -692,6 +785,43 @@ final class ReviewViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.summary.ambiguous, 0)
     }
 
+    func testUndoAndRedoSkipForNowRestoreThenRemovePhoto() async {
+        let firstItem = makeReviewItem(
+            assetID: "first-photo",
+            coordinate: GeoCoordinate(latitude: 35.6895, longitude: 139.6917),
+            label: "Tokyo",
+            confidence: .excellent,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_000)
+        )
+        let secondItem = makeReviewItem(
+            assetID: "second-photo",
+            coordinate: GeoCoordinate(latitude: 34.6937, longitude: 135.5023),
+            label: "Osaka",
+            confidence: .acceptable,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_060)
+        )
+        let viewModel = makeViewModel(items: [firstItem, secondItem])
+
+        viewModel.skipForNow(firstItem.id)
+
+        XCTAssertEqual(viewModel.undoTitle, "Undo Leave Blank")
+        XCTAssertEqual(viewModel.selections.map(\.id), [secondItem.id])
+
+        await viewModel.undoLastAction()
+
+        XCTAssertEqual(viewModel.selections.map(\.id), [firstItem.id, secondItem.id])
+        XCTAssertTrue(viewModel.selectedPhotoIDs.isEmpty)
+        XCTAssertTrue(viewModel.canRedo)
+
+        await viewModel.redoLastAction()
+
+        XCTAssertEqual(viewModel.selections.map(\.id), [secondItem.id])
+        XCTAssertEqual(viewModel.selectedPhotoIDs, [secondItem.id])
+        XCTAssertFalse(viewModel.canRedo)
+    }
+
     func testDismissPermanentlyRecordsSuppressedPhotoAndAdvancesSelection() async {
         let recorder = SuppressionRecorder()
         let firstItem = makeReviewItem(
@@ -721,6 +851,96 @@ final class ReviewViewModelTests: XCTestCase {
         XCTAssertEqual(suppressedAssetIDs, [firstItem.id])
         XCTAssertEqual(viewModel.selections.map { $0.id }, [secondItem.id])
         XCTAssertEqual(viewModel.selectedPhotoIDs, [secondItem.id])
+    }
+
+    func testUndoAndRedoDismissPermanentlyRestoreAndResuppressPhoto() async {
+        let suppressionRecorder = SuppressionRecorder()
+        let unsuppressionRecorder = AssetBatchRecorder()
+        let firstItem = makeReviewItem(
+            assetID: "first-photo",
+            coordinate: GeoCoordinate(latitude: 35.6895, longitude: 139.6917),
+            label: "Tokyo",
+            confidence: .excellent,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_000)
+        )
+        let secondItem = makeReviewItem(
+            assetID: "second-photo",
+            coordinate: GeoCoordinate(latitude: 34.6937, longitude: 135.5023),
+            label: "Osaka",
+            confidence: .acceptable,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_060)
+        )
+        let viewModel = makeViewModel(
+            items: [firstItem, secondItem],
+            onDismissPermanently: { item in
+                await suppressionRecorder.record(item.id)
+            },
+            onUndoDismissPermanently: { assetIDs in
+                await unsuppressionRecorder.record(assetIDs)
+            }
+        )
+
+        await viewModel.dismissPermanently(firstItem.id)
+        await viewModel.undoLastAction()
+        await viewModel.redoLastAction()
+
+        let suppressedAssetIDs = await suppressionRecorder.snapshot()
+        let unsuppressedAssetIDs = await unsuppressionRecorder.snapshot()
+
+        XCTAssertEqual(suppressedAssetIDs, [firstItem.id, firstItem.id])
+        XCTAssertEqual(unsuppressedAssetIDs, [firstItem.id])
+        XCTAssertEqual(viewModel.selections.map(\.id), [secondItem.id])
+        XCTAssertEqual(viewModel.selectedPhotoIDs, [secondItem.id])
+    }
+
+    func testNewActionClearsRedoHistory() async {
+        let applyRecorder = ApplyRecorder()
+        let undoRecorder = DecisionBatchRecorder()
+        let firstItem = makeReviewItem(
+            assetID: "first-photo",
+            coordinate: GeoCoordinate(latitude: 35.6895, longitude: 139.6917),
+            label: "Tokyo",
+            confidence: .excellent,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_000)
+        )
+        let secondItem = makeReviewItem(
+            assetID: "second-photo",
+            coordinate: GeoCoordinate(latitude: 34.6937, longitude: 135.5023),
+            label: "Osaka",
+            confidence: .acceptable,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_060)
+        )
+        let thirdItem = makeReviewItem(
+            assetID: "third-photo",
+            coordinate: GeoCoordinate(latitude: 43.0642, longitude: 141.3469),
+            label: "Sapporo",
+            confidence: .maybe,
+            disposition: .ambiguous,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_120)
+        )
+        let viewModel = makeViewModel(
+            items: [firstItem, secondItem, thirdItem],
+            onApplyDecision: { decision in
+                await applyRecorder.record(decision)
+            },
+            onUndoAppliedDecisions: { decisions in
+                await undoRecorder.record(decisions)
+            }
+        )
+
+        await viewModel.applyChange(for: firstItem.id)
+        await viewModel.undoLastAction()
+
+        XCTAssertTrue(viewModel.canRedo)
+
+        viewModel.skipForNow(thirdItem.id)
+
+        XCTAssertFalse(viewModel.canRedo)
+        XCTAssertEqual(viewModel.selections.map(\.id), [firstItem.id, secondItem.id])
     }
 
     func testDismissPhotosPermanentlySuppressesBatchInReviewOrderAndAdvancesSelection() async {
@@ -921,6 +1141,8 @@ final class ReviewViewModelTests: XCTestCase {
         captureTimeOffsetAnalysesByDay: [Date: CaptureTimeOffsetAnalysis] = [:],
         onApplyDecision: @escaping @Sendable (MatchDecision) async throws -> Void = { _ in },
         onDismissPermanently: @escaping @Sendable (ReviewItem) async -> Void = { _ in },
+        onUndoAppliedDecisions: @escaping @Sendable ([MatchDecision]) async throws -> Void = { _ in },
+        onUndoDismissPermanently: @escaping @Sendable ([String]) async -> Void = { _ in },
         onDeletePhoto: @escaping @Sendable (String) async throws -> Void = { _ in },
         onApplyCaptureTimeOffset: @escaping @Sendable (Date, TimeInterval, Set<String>) async -> Void = { _, _, _ in },
         onCancel: @escaping @Sendable () -> Void = {}
@@ -939,8 +1161,14 @@ final class ReviewViewModelTests: XCTestCase {
             onApplyDecision: { decision in
                 try await onApplyDecision(decision)
             },
+            onUndoAppliedDecisions: { decisions in
+                try await onUndoAppliedDecisions(decisions)
+            },
             onDismissPermanently: { item in
                 await onDismissPermanently(item)
+            },
+            onUndoDismissPermanently: { assetIDs in
+                await onUndoDismissPermanently(assetIDs)
             },
             onDeletePhoto: onDeletePhoto,
             onApplyCaptureTimeOffset: onApplyCaptureTimeOffset,
@@ -1095,11 +1323,35 @@ private actor ApplyRecorder {
     }
 }
 
+private actor DecisionBatchRecorder {
+    private var decisions: [MatchDecision] = []
+
+    func record(_ decisions: [MatchDecision]) {
+        self.decisions.append(contentsOf: decisions)
+    }
+
+    func recordedAssetIDs() -> [String] {
+        decisions.map(\.assetID)
+    }
+}
+
 private actor SuppressionRecorder {
     private var assetIDs: [String] = []
 
     func record(_ assetID: String) {
         assetIDs.append(assetID)
+    }
+
+    func snapshot() -> [String] {
+        assetIDs
+    }
+}
+
+private actor AssetBatchRecorder {
+    private var assetIDs: [String] = []
+
+    func record(_ assetIDs: [String]) {
+        self.assetIDs.append(contentsOf: assetIDs)
     }
 
     func snapshot() -> [String] {
