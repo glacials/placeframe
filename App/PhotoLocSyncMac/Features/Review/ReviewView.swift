@@ -3,8 +3,12 @@ import PhotoLocSyncAdapters
 import PhotoLocSyncCore
 
 struct ReviewView: View {
+    @EnvironmentObject private var appState: AppState
     @ObservedObject var viewModel: ReviewViewModel
     @StateObject private var quickLookController = ReviewQuickLookController()
+    @State private var quickLookRequestID = UUID()
+    @State private var locationMenuRequestID = UUID()
+    @State private var isConfirmingReturnToImport = false
     private let mapPaneLeadingInset: CGFloat = 16
 
     var body: some View {
@@ -17,6 +21,9 @@ struct ReviewView: View {
                     ReviewListView(
                         entries: currentDaySection.entries,
                         selectedPhotoIDs: viewModel.selectedPhotoIDs,
+                        focusedPhotoID: viewModel.focusedPhotoID,
+                        locationMenuRequestID: locationMenuRequestID,
+                        quickLookRequestID: quickLookRequestID,
                         thumbnailProvider: viewModel.thumbnailProvider,
                         selectPhoto: viewModel.selectPhoto(_:mode:),
                         selectLeaveBlank: { viewModel.selectLeaveBlank(for: $0) },
@@ -76,8 +83,21 @@ struct ReviewView: View {
                 dismissButton: .default(Text("OK"))
             )
         }
+        .confirmationDialog(
+            "Return to Import?",
+            isPresented: $isConfirmingReturnToImport,
+            titleVisibility: .visible
+        ) {
+            Button("Discard Review and Return to Import", role: .destructive) {
+                viewModel.cancel()
+            }
+            Button("Stay Here", role: .cancel) {}
+        } message: {
+            Text("Pending review choices and undo history for this session will be discarded.")
+        }
         .sheet(isPresented: $viewModel.isShowingCaptureTimeOffsetSheet) {
             ReviewCaptureTimeOffsetSheet(viewModel: viewModel)
+                .environmentObject(appState)
         }
     }
 
@@ -218,31 +238,11 @@ struct ReviewView: View {
     private var footer: some View {
         HStack {
             Button("Back to Import") {
-                viewModel.cancel()
+                presentReturnToImportConfirmation()
             }
             .buttonStyle(.bordered)
 
             Spacer()
-
-            Button {
-                Task {
-                    await viewModel.undoLastAction()
-                }
-            } label: {
-                Label(viewModel.undoTitle, systemImage: "arrow.uturn.backward.circle")
-            }
-            .buttonStyle(.bordered)
-            .disabled(!viewModel.canUndo)
-
-            Button {
-                Task {
-                    await viewModel.redoLastAction()
-                }
-            } label: {
-                Label(viewModel.redoTitle, systemImage: "arrow.uturn.forward.circle")
-            }
-            .buttonStyle(.bordered)
-            .disabled(!viewModel.canRedo)
         }
     }
 
@@ -252,7 +252,73 @@ struct ReviewView: View {
                 viewModel.selectAllPhotosOnCurrentDay()
             }
             .keyboardShortcut("a", modifiers: .command)
-            .disabled(viewModel.currentDaySection == nil)
+            .disabled(reviewKeyboardShortcutsDisabled || viewModel.currentDaySection == nil)
+
+            Button("Move Selection Down") {
+                viewModel.moveKeyboardSelection(.next)
+            }
+            .keyboardShortcut("j", modifiers: [])
+            .disabled(reviewKeyboardShortcutsDisabled || viewModel.currentDaySection == nil)
+
+            Button("Move Selection Up") {
+                viewModel.moveKeyboardSelection(.previous)
+            }
+            .keyboardShortcut("k", modifiers: [])
+            .disabled(reviewKeyboardShortcutsDisabled || viewModel.currentDaySection == nil)
+
+            Button("Open Quick Look") {
+                guard viewModel.focusedPhotoID != nil else { return }
+                quickLookRequestID = UUID()
+            }
+            .keyboardShortcut(.space, modifiers: [])
+            .disabled(reviewKeyboardShortcutsDisabled || viewModel.focusedPhotoID == nil)
+
+            Button("Apply Focused Photo") {
+                Task {
+                    await viewModel.applyFocusedPhoto()
+                }
+            }
+            .keyboardShortcut(.return, modifiers: [])
+            .disabled(reviewKeyboardShortcutsDisabled || !viewModel.canApplyFocusedPhoto)
+
+            Button("Open Save Location Menu") {
+                guard viewModel.canOpenLocationMenuForFocusedPhoto else { return }
+                locationMenuRequestID = UUID()
+            }
+            .keyboardShortcut("l", modifiers: [])
+            .disabled(reviewKeyboardShortcutsDisabled || !viewModel.canOpenLocationMenuForFocusedPhoto)
+
+            Button("Apply Current Day") {
+                Task {
+                    await viewModel.applyCurrentDay()
+                }
+            }
+            .keyboardShortcut("a", modifiers: .shift)
+            .disabled(reviewKeyboardShortcutsDisabled || !viewModel.canApplyCurrentDay)
+
+            Button("Go to Next Day") {
+                viewModel.goToNextDayAndFocusFirstPhoto()
+            }
+            .keyboardShortcut("n", modifiers: [])
+            .disabled(reviewKeyboardShortcutsDisabled || !viewModel.canGoToNextDay)
+
+            Button("Go to Previous Day") {
+                viewModel.goToPreviousDayAndFocusFirstPhoto()
+            }
+            .keyboardShortcut("p", modifiers: [])
+            .disabled(reviewKeyboardShortcutsDisabled || !viewModel.canGoToPreviousDay)
+
+            Button("Compare Camera Time") {
+                viewModel.presentCaptureTimeOffsetSheet()
+            }
+            .keyboardShortcut("t", modifiers: [])
+            .disabled(reviewKeyboardShortcutsDisabled || !viewModel.canAdjustCaptureTimeOffset)
+
+            Button("Back to Import") {
+                presentReturnToImportConfirmation()
+            }
+            .keyboardShortcut(.escape, modifiers: [])
+            .disabled(reviewKeyboardShortcutsDisabled)
 
             Button(viewModel.undoTitle) {
                 Task {
@@ -260,7 +326,7 @@ struct ReviewView: View {
                 }
             }
             .keyboardShortcut("z", modifiers: .command)
-            .disabled(!viewModel.canUndo)
+            .disabled(reviewKeyboardShortcutsDisabled || !viewModel.canUndo)
 
             Button(viewModel.redoTitle) {
                 Task {
@@ -268,11 +334,24 @@ struct ReviewView: View {
                 }
             }
             .keyboardShortcut("z", modifiers: [.command, .shift])
-            .disabled(!viewModel.canRedo)
+            .disabled(reviewKeyboardShortcutsDisabled || !viewModel.canRedo)
         }
         .opacity(0)
         .frame(width: 0, height: 0)
         .accessibilityHidden(true)
+    }
+
+    private var reviewKeyboardShortcutsDisabled: Bool {
+        appState.isShowingKeyboardShortcuts || isConfirmingReturnToImport || viewModel.isShowingCaptureTimeOffsetSheet
+    }
+
+    private func presentReturnToImportConfirmation() {
+        guard !appState.isShowingKeyboardShortcuts,
+              !viewModel.isShowingCaptureTimeOffsetSheet else {
+            return
+        }
+
+        isConfirmingReturnToImport = true
     }
 
     private func summaryBadge(_ badge: ReviewSummaryBadge) -> some View {
@@ -316,6 +395,7 @@ private struct ReviewCaptureTimeOffsetAssumptionBadge: View {
 }
 
 private struct ReviewCaptureTimeOffsetSheet: View {
+    @EnvironmentObject private var appState: AppState
     @ObservedObject var viewModel: ReviewViewModel
 
     private var currentOption: CaptureTimeOffsetOption? {
@@ -475,6 +555,46 @@ private struct ReviewCaptureTimeOffsetSheet: View {
             .padding(.vertical, 18)
         }
         .frame(minWidth: 980, minHeight: 720, alignment: .topLeading)
+        .background {
+            keyboardShortcuts
+        }
+    }
+
+    private var keyboardShortcuts: some View {
+        VStack {
+            Button("Move Camera Time Selection Down") {
+                viewModel.moveSelectedCaptureTimeOffset(.next)
+            }
+            .keyboardShortcut("j", modifiers: [])
+            .disabled(sheetKeyboardShortcutsDisabled || viewModel.captureTimeOffsetOptions.isEmpty)
+
+            Button("Move Camera Time Selection Up") {
+                viewModel.moveSelectedCaptureTimeOffset(.previous)
+            }
+            .keyboardShortcut("k", modifiers: [])
+            .disabled(sheetKeyboardShortcutsDisabled || viewModel.captureTimeOffsetOptions.isEmpty)
+
+            Button("Apply Selected Camera Time Assumption") {
+                Task {
+                    await viewModel.applySelectedCaptureTimeOffset()
+                }
+            }
+            .keyboardShortcut(.return, modifiers: [])
+            .disabled(sheetKeyboardShortcutsDisabled || !canApplySelectedOption)
+
+            Button("Close Camera Time Preview") {
+                viewModel.dismissCaptureTimeOffsetSheet()
+            }
+            .keyboardShortcut(.escape, modifiers: [])
+            .disabled(sheetKeyboardShortcutsDisabled)
+        }
+        .opacity(0)
+        .frame(width: 0, height: 0)
+        .accessibilityHidden(true)
+    }
+
+    private var sheetKeyboardShortcutsDisabled: Bool {
+        appState.isShowingKeyboardShortcuts || viewModel.isApplyingCaptureTimeOffset
     }
 }
 
