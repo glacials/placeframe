@@ -51,6 +51,51 @@ private struct ReviewPreviewSourceBridge: NSViewRepresentable {
     }
 }
 
+private struct ReviewLocationStatePanel: View {
+    let title: String
+    let value: String
+    let note: String
+    let systemImage: String
+    let tint: Color
+    let extraLines: [String]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label(title, systemImage: systemImage)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            Text(value)
+                .font(.headline)
+                .foregroundStyle(.primary)
+                .lineLimit(3)
+                .truncationMode(.tail)
+                .fixedSize(horizontal: false, vertical: true)
+
+            ForEach(extraLines, id: \.self) { line in
+                Text(line)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+                    .truncationMode(.tail)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Text(note)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(tint.opacity(0.14), in: RoundedRectangle(cornerRadius: 12))
+        .overlay {
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(tint.opacity(0.35), lineWidth: 1)
+        }
+    }
+}
+
 private struct ReviewGridItemView: View {
     let entry: ReviewSelection
     let isPhotoSelected: Bool
@@ -130,7 +175,6 @@ private struct ReviewGridItemView: View {
     var body: some View {
         let hasLocation = entry.item.proposedCoordinate != nil
         let canPasteCopiedLocation = canPasteLocation(contextMenuTargetIDs)
-        let selectedPrecisionTitle = entry.item.selectedPrecision?.title ?? LocationPrecision.exact.title
 
         VStack(alignment: .leading, spacing: 12) {
             ZStack {
@@ -164,21 +208,37 @@ private struct ReviewGridItemView: View {
                 .allowsHitTesting(false)
             }
 
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Timeline suggestion")
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Location")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
 
-                Text(entry.item.locationLabel)
-                    .font(.headline)
-                    .lineLimit(3)
-                    .truncationMode(.tail)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                ReviewLocationStatePanel(
+                    title: "Current in Apple Photos",
+                    value: entry.item.asset.hasLocation ? "Location already saved" : "Blank",
+                    note: entry.item.asset.hasLocation
+                        ? "This photo already has saved location metadata."
+                        : "This photo has no saved location metadata yet.",
+                    systemImage: "circle.dashed",
+                    tint: Color.secondary,
+                    extraLines: []
+                )
 
-                Text(entry.item.asset.hasLocation ? "Apple Photos already has saved location metadata." : "Apple Photos currently has no saved location metadata.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                HStack(spacing: 6) {
+                    Image(systemName: "arrow.down.circle.fill")
+                    Text("Apply saves coordinates for the selected place below.")
+                }
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Color.accentColor)
+
+                ReviewLocationStatePanel(
+                    title: "Apply will save",
+                    value: selectedLocationLabel,
+                    note: locationSourceText,
+                    systemImage: "mappin.and.ellipse",
+                    tint: Color.accentColor,
+                    extraLines: selectedLocationDetailLines
+                )
 
                 Label(captureDateText(entry.item), systemImage: "calendar")
                     .foregroundStyle(.secondary)
@@ -194,36 +254,10 @@ private struct ReviewGridItemView: View {
                 Text(dispositionText(entry.item.disposition))
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(dispositionColor(entry.item.disposition))
-
-                if let coordinate = entry.item.proposedCoordinate {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("What will be written")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                        Text(selectedPrecisionTitle)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        Text(String(format: "%.6f, %.6f", coordinate.latitude, coordinate.longitude))
-                            .font(.caption.monospaced())
-                            .textSelection(.enabled)
-                        if let copiedFromAssetID = entry.copiedFromAssetID {
-                            Text("Copied from: \(copiedFromAssetID)")
-                                .font(.caption2.monospaced())
-                                .foregroundStyle(.tertiary)
-                                .lineLimit(1)
-                                .truncationMode(.middle)
-                        } else {
-                            Text("Source: this photo's timeline match")
-                                .font(.caption2)
-                                .foregroundStyle(.tertiary)
-                        }
-                    }
-                    .padding(.top, 2)
-                }
             }
 
             VStack(alignment: .leading, spacing: 8) {
-                Text("Does this suggested location look right?")
+                Text("Review action")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
 
@@ -233,18 +267,41 @@ private struct ReviewGridItemView: View {
                             setLocationPrecision([entry.id], option.precision)
                         } label: {
                             if entry.item.selectedPrecision == option.precision {
-                                Label(option.precision.title, systemImage: "checkmark")
+                                Label(locationOptionMenuTitle(for: option), systemImage: "checkmark")
                             } else {
-                                Text(option.precision.title)
+                                Text(locationOptionMenuTitle(for: option))
                             }
                         }
                     }
                 } label: {
-                    Label("Precision: \(selectedPrecisionTitle)", systemImage: "slider.horizontal.3")
+                    HStack(alignment: .top, spacing: 8) {
+                        Image(systemName: "slider.horizontal.3")
+                            .foregroundStyle(.secondary)
+                            .padding(.top, 2)
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Save as")
+                                .font(.subheadline.weight(.semibold))
+                            Text(selectedLocationMenuLabel)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(2)
+                                .truncationMode(.tail)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+
+                        Spacer(minLength: 8)
+
+                        Image(systemName: "chevron.down")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .padding(.top, 4)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .buttonStyle(.bordered)
 
-                Button("This Looks Correct") {
+                Button("Apply") {
                     Task {
                         await applyChange(entry.id)
                     }
@@ -252,12 +309,12 @@ private struct ReviewGridItemView: View {
                 .buttonStyle(.borderedProminent)
                 .disabled(entry.item.suggestedDecision == nil)
 
-                Menu("This Looks Wrong") {
-                    Button("Skip for Now") {
+                Menu("Leave Blank") {
+                    Button("This Time") {
                         skipForNow(entry.id)
                     }
 
-                    Button("Never Show Again") {
+                    Button("Every Time") {
                         Task {
                             await dismissPermanently(entry.id)
                         }
@@ -291,9 +348,9 @@ private struct ReviewGridItemView: View {
                             setLocationPrecision(contextMenuTargetIDs, precision)
                         } label: {
                             if selectedContextMenuPrecision == precision {
-                                Label(precision.title, systemImage: "checkmark")
+                                Label(contextMenuPrecisionTitle(for: precision), systemImage: "checkmark")
                             } else {
-                                Text(precision.title)
+                                Text(contextMenuPrecisionTitle(for: precision))
                             }
                         }
                     }
@@ -307,7 +364,7 @@ private struct ReviewGridItemView: View {
             }
             .disabled(!canApplyContextMenuTargets)
 
-            Menu(incorrectContextMenuTitle) {
+            Menu(leaveBlankContextMenuTitle) {
                 Button(skipContextMenuTitle) {
                     skipPhotosForNow(contextMenuTargetIDs)
                 }
@@ -356,23 +413,23 @@ private struct ReviewGridItemView: View {
     }
 
     private var applyContextMenuTitle: String {
-        appliesToMultiplePhotos ? "These Look Correct (\(contextMenuTargetIDs.count))" : "This Looks Correct"
+        appliesToMultiplePhotos ? "Apply Selected (\(contextMenuTargetIDs.count))" : "Apply"
     }
 
-    private var incorrectContextMenuTitle: String {
-        appliesToMultiplePhotos ? "These Look Wrong (\(contextMenuTargetIDs.count))" : "This Looks Wrong"
+    private var leaveBlankContextMenuTitle: String {
+        appliesToMultiplePhotos ? "Leave Selected Blank (\(contextMenuTargetIDs.count))" : "Leave Blank"
     }
 
     private var skipContextMenuTitle: String {
-        appliesToMultiplePhotos ? "Skip Selected for Now (\(contextMenuTargetIDs.count))" : "Skip for Now"
+        "This Time"
     }
 
     private var dismissContextMenuTitle: String {
-        appliesToMultiplePhotos ? "Never Show Selected Again (\(contextMenuTargetIDs.count))" : "Never Show Again"
+        "Every Time"
     }
 
     private var precisionContextMenuTitle: String {
-        appliesToMultiplePhotos ? "Choose Precision (\(contextMenuTargetIDs.count))" : "Choose Precision"
+        appliesToMultiplePhotos ? "Save Selected As (\(contextMenuTargetIDs.count))" : "Save As"
     }
 
     private var selectionMode: ReviewPhotoSelectionMode {
@@ -406,8 +463,8 @@ private struct ReviewGridItemView: View {
 
     private func dispositionText(_ disposition: MatchDisposition) -> String {
         switch disposition {
-        case .autoSuggested: "Auto-suggested"
-        case .ambiguous: "Needs review"
+        case .autoSuggested: "Timeline match"
+        case .ambiguous: "Timeline match needs review"
         case .unmatched: "Unmatched"
         }
     }
@@ -418,6 +475,59 @@ private struct ReviewGridItemView: View {
         case .ambiguous: .orange
         case .unmatched: .secondary
         }
+    }
+
+    private var selectedLocationOption: LocationOption? {
+        if let selectedPrecision = entry.item.selectedPrecision,
+           let option = entry.item.locationOption(for: selectedPrecision) {
+            return option
+        }
+        return entry.item.availableLocationOptions.first
+    }
+
+    private var selectedLocationLabel: String {
+        selectedLocationOption?.label ?? entry.item.locationLabel
+    }
+
+    private var selectedLocationMenuLabel: String {
+        truncatedLocationLabel(selectedLocationLabel, maxLength: 72)
+    }
+
+    private var selectedLocationDetailLines: [String] {
+        guard let coordinate = entry.item.proposedCoordinate else { return [] }
+
+        return [
+            selectedLocationOption?.precision.title ?? "",
+            String(format: "%.6f, %.6f", coordinate.latitude, coordinate.longitude)
+        ]
+        .filter { !$0.isEmpty }
+    }
+
+    private var locationSourceText: String {
+        if let copiedFromAssetID = entry.copiedFromAssetID {
+            return "Source: copied from \(copiedFromAssetID)"
+        }
+        return "Source: matched from this photo's timeline data"
+    }
+
+    private func locationOptionMenuTitle(for option: LocationOption) -> String {
+        let subtitle = option.precision.title
+        return "\(truncatedLocationLabel(option.label)) (\(subtitle))"
+    }
+
+    private func contextMenuPrecisionTitle(for precision: LocationPrecision) -> String {
+        guard contextMenuTargetIDs.count == 1,
+              let option = entry.item.locationOption(for: precision) else {
+            return precision.title
+        }
+
+        return locationOptionMenuTitle(for: option)
+    }
+
+    private func truncatedLocationLabel(_ label: String, maxLength: Int = 56) -> String {
+        guard label.count > maxLength else { return label }
+        let prefix = label.prefix(maxLength - 1)
+        return String(prefix).trimmingCharacters(in: .whitespacesAndNewlines) + "..."
     }
 }
 
@@ -455,7 +565,7 @@ struct ReviewGridView: View {
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Each photo shows a timeline suggestion, not existing metadata from Apple Photos. Click a photo to focus the map. Command-click toggles photos. Shift-click selects the range between photos. Command-A selects every photo on the current day. Right-click a selected group to change precision or mark it correct or incorrect together.")
+                    Text("Each card compares the photo's current Apple Photos location with the place Apply will save. Command-click toggles photos. Shift-click selects the range between photos. Command-A selects every photo on the current day. Right-click selected photos to leave them blank or change the saved place together.")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
 

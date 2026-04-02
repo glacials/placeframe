@@ -10,9 +10,9 @@ public enum LocationPrecision: Int, CaseIterable, Codable, Hashable, Sendable, I
 
     public var title: String {
         switch self {
-        case .exact: "Exact place"
+        case .exact: "Specific match"
         case .city: "City"
-        case .region: "State / region"
+        case .region: "State or region"
         case .country: "Country"
         }
     }

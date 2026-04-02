@@ -78,7 +78,7 @@ struct ReviewView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Review Proposed Locations")
                 .font(.largeTitle.bold())
-            Text("Each card shows a timeline-based suggestion for a photo that currently has no saved location in Apple Photos. Review one day at a time and choose how precise the saved place should be before writing it.")
+            Text("Each card shows what Apple Photos has now and what Apply will save from the timeline match. Review one day at a time and choose the place you want to save before applying it.")
                 .foregroundStyle(.secondary)
 
             HStack(spacing: 12) {
@@ -118,7 +118,7 @@ struct ReviewView: View {
                     await viewModel.applyCurrentDay()
                 }
             } label: {
-                Label(viewModel.isApplyingCurrentDay ? "Writing..." : "Write Day", systemImage: "checkmark.circle")
+                Label(viewModel.isApplyingCurrentDay ? "Applying..." : "Apply Day", systemImage: "checkmark.circle")
             }
             .buttonStyle(.borderedProminent)
             .disabled(!viewModel.canApplyCurrentDay)
@@ -141,7 +141,7 @@ struct ReviewView: View {
 
             Spacer()
 
-            Text("Mark a suggestion correct to write it, or incorrect to skip or hide it. Right-click selected photos to change precision or act on them together.")
+            Text("Apply writes the selected place choice. Leave Blank keeps the photo unchanged for this review or hides it from future reviews. Right-click selected photos to batch-apply either action.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
