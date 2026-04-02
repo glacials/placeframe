@@ -122,6 +122,7 @@ private struct ReviewGridItemView: View {
 
     @StateObject private var thumbnailLoader: ReviewThumbnailLoader
     @StateObject private var previewSourceAnchor = ReviewPreviewSourceAnchor()
+    @State private var isShowingStatusInfo = false
     init(
         entry: ReviewSelection,
         isPhotoSelected: Bool,
@@ -175,6 +176,7 @@ private struct ReviewGridItemView: View {
     var body: some View {
         let hasLocation = entry.item.proposedCoordinate != nil
         let canPasteCopiedLocation = canPasteLocation(contextMenuTargetIDs)
+        let status = ReviewSuggestionStatusDescriptor(item: entry.item)
 
         VStack(alignment: .leading, spacing: 12) {
             ZStack {
@@ -243,17 +245,40 @@ private struct ReviewGridItemView: View {
                 Label(captureDateText(entry.item), systemImage: "calendar")
                     .foregroundStyle(.secondary)
 
-                HStack {
-                    Label(entry.item.confidence.rawValue.capitalized, systemImage: confidenceSymbol(for: entry.item.confidence))
-                    Spacer()
-                    Text("Δ \(timeDeltaText(entry.item))")
-                }
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+                HStack(alignment: .top, spacing: 8) {
+                    Label(status.title, systemImage: status.symbolName)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(status.tone.color)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(status.tone.backgroundColor, in: Capsule())
 
-                Text(dispositionText(entry.item.disposition))
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(dispositionColor(entry.item.disposition))
+                    Button {
+                        isShowingStatusInfo.toggle()
+                    } label: {
+                        Image(systemName: "info.circle")
+                            .font(.subheadline)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Explain this status")
+
+                    Spacer()
+                }
+                .foregroundStyle(.secondary)
+                .popover(isPresented: $isShowingStatusInfo, arrowEdge: .top) {
+                    ReviewSuggestionStatusHelpView(currentDisposition: entry.item.disposition)
+                        .padding()
+                }
+
+                Text(status.shortDescription)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+
+                if entry.item.timeDelta != nil {
+                    Text("Timeline time offset: \(timeDeltaText(entry.item))")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
             }
 
             VStack(alignment: .leading, spacing: 8) {
@@ -450,31 +475,6 @@ private struct ReviewGridItemView: View {
 
     private func triggerQuickLook() {
         quickLook(entry.item, previewSourceAnchor.view, thumbnailLoader.image)
-    }
-
-    private func confidenceSymbol(for confidence: MatchConfidence) -> String {
-        switch confidence {
-        case .excellent: "checkmark.seal.fill"
-        case .acceptable: "checkmark.seal"
-        case .maybe: "questionmark.diamond"
-        case .rejected: "xmark.octagon"
-        }
-    }
-
-    private func dispositionText(_ disposition: MatchDisposition) -> String {
-        switch disposition {
-        case .autoSuggested: "Timeline match"
-        case .ambiguous: "Timeline match needs review"
-        case .unmatched: "Unmatched"
-        }
-    }
-
-    private func dispositionColor(_ disposition: MatchDisposition) -> Color {
-        switch disposition {
-        case .autoSuggested: .green
-        case .ambiguous: .orange
-        case .unmatched: .secondary
-        }
     }
 
     private var selectedLocationOption: LocationOption? {
