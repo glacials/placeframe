@@ -86,26 +86,9 @@ struct ReviewMapView: View {
             ContentUnavailableView("No Proposed Coordinates", systemImage: "map", description: Text("Only matched photos appear on the map."))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
-            VStack(alignment: .leading, spacing: 12) {
-                Text(mapSummaryText)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-
-                ReviewMapNativeView(clusters: clusters, selectionTargets: selectionTargets)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            ReviewMapNativeView(clusters: clusters, selectionTargets: selectionTargets)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
-    }
-
-    private var mapSummaryText: String {
-        let matchedPhotoCount = entries.filter { $0.item.proposedCoordinate != nil }.count
-
-        guard !selectionTargets.isEmpty else {
-            return "Showing \(clusters.count) map \(clusters.count == 1 ? "cluster" : "clusters") for \(matchedPhotoCount) matched photos."
-        }
-
-        let noun = selectionTargets.count == 1 ? "photo" : "photos"
-        return "Map focused on \(selectionTargets.count) selected \(noun) out of \(matchedPhotoCount) matched photos."
     }
 }
 

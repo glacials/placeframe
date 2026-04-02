@@ -141,16 +141,12 @@ struct ReviewView: View {
 
     private var footer: some View {
         HStack {
-            Button("Cancel") {
+            Button("Back to Import") {
                 viewModel.cancel()
             }
             .buttonStyle(.bordered)
 
             Spacer()
-
-            Text("Apply writes the selected place choice. Leave Blank keeps the photo unchanged for this review or hides it from future reviews. Right-click selected photos to batch-apply either action.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
         }
     }
 

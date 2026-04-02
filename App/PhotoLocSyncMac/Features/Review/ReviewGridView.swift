@@ -564,44 +564,38 @@ struct ReviewGridView: View {
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Each card compares the photo's current Apple Photos location with the place Apply will save. Command-click toggles photos. Shift-click selects the range between photos. Command-A selects every photo on the current day. Right-click selected photos to leave them blank or change the saved place together.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-
-                    LazyVGrid(columns: columns, alignment: .leading, spacing: 16) {
-                        ForEach(entries) { entry in
-                            let contextMenuTargetIDs = contextMenuTargetIDs(for: entry)
-                            ReviewGridItemView(
-                                entry: entry,
-                                isPhotoSelected: selectedPhotoIDs.contains(entry.id),
-                                contextMenuTargetIDs: contextMenuTargetIDs,
-                                canApplyContextMenuTargets: canApply(to: contextMenuTargetIDs),
-                                contextMenuPrecisions: contextMenuPrecisions(for: contextMenuTargetIDs),
-                                selectedContextMenuPrecision: selectedPrecision(for: contextMenuTargetIDs),
-                                thumbnailProvider: thumbnailProvider,
-                                selectPhoto: selectPhoto,
-                                setLocationPrecision: setLocationPrecision,
-                                applyChange: applyChange,
-                                applyChanges: applyChanges,
-                                skipForNow: skipForNow,
-                                skipPhotosForNow: skipPhotosForNow,
-                                dismissPermanently: dismissPermanently,
-                                dismissPhotosPermanently: dismissPhotosPermanently,
-                                copyLocation: copyLocation,
-                                pasteLocation: pasteLocation,
-                                canPasteLocation: canPasteLocation,
-                                deletePhoto: deletePhoto,
-                                showOnMap: showOnMap,
-                                quickLook: quickLook,
-                                captureDateText: captureDateText,
-                                timeDeltaText: timeDeltaText
-                            )
-                            .id(entry.id)
-                        }
+                LazyVGrid(columns: columns, alignment: .leading, spacing: 16) {
+                    ForEach(entries) { entry in
+                        let contextMenuTargetIDs = contextMenuTargetIDs(for: entry)
+                        ReviewGridItemView(
+                            entry: entry,
+                            isPhotoSelected: selectedPhotoIDs.contains(entry.id),
+                            contextMenuTargetIDs: contextMenuTargetIDs,
+                            canApplyContextMenuTargets: canApply(to: contextMenuTargetIDs),
+                            contextMenuPrecisions: contextMenuPrecisions(for: contextMenuTargetIDs),
+                            selectedContextMenuPrecision: selectedPrecision(for: contextMenuTargetIDs),
+                            thumbnailProvider: thumbnailProvider,
+                            selectPhoto: selectPhoto,
+                            setLocationPrecision: setLocationPrecision,
+                            applyChange: applyChange,
+                            applyChanges: applyChanges,
+                            skipForNow: skipForNow,
+                            skipPhotosForNow: skipPhotosForNow,
+                            dismissPermanently: dismissPermanently,
+                            dismissPhotosPermanently: dismissPhotosPermanently,
+                            copyLocation: copyLocation,
+                            pasteLocation: pasteLocation,
+                            canPasteLocation: canPasteLocation,
+                            deletePhoto: deletePhoto,
+                            showOnMap: showOnMap,
+                            quickLook: quickLook,
+                            captureDateText: captureDateText,
+                            timeDeltaText: timeDeltaText
+                        )
+                        .id(entry.id)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.vertical, 8)
             }
             .onAppear {

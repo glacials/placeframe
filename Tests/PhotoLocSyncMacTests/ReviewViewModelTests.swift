@@ -6,6 +6,25 @@ import XCTest
 
 @MainActor
 final class ReviewViewModelTests: XCTestCase {
+    func testCancelInvokesExitAction() {
+        let item = makeReviewItem(
+            assetID: "review-photo",
+            coordinate: GeoCoordinate(latitude: 35.6895, longitude: 139.6917),
+            label: "Shinjuku, Tokyo",
+            confidence: .excellent,
+            disposition: .autoSuggested
+        )
+        let cancellationFlag = CancellationFlag()
+        let viewModel = makeViewModel(
+            items: [item],
+            onCancel: { cancellationFlag.didCancel = true }
+        )
+
+        viewModel.cancel()
+
+        XCTAssertTrue(cancellationFlag.didCancel)
+    }
+
     func testCopyAndPasteLocationReplacesPendingDecisionAndSelectsTarget() throws {
         let sourceCoordinate = GeoCoordinate(latitude: 35.6895, longitude: 139.6917)
         let targetCoordinate = GeoCoordinate(latitude: 34.6937, longitude: 135.5023)
@@ -832,7 +851,8 @@ final class ReviewViewModelTests: XCTestCase {
         items: [ReviewItem],
         onApplyDecision: @escaping @Sendable (MatchDecision) async throws -> Void = { _ in },
         onDismissPermanently: @escaping @Sendable (String) async -> Void = { _ in },
-        onDeletePhoto: @escaping @Sendable (String) async throws -> Void = { _ in }
+        onDeletePhoto: @escaping @Sendable (String) async throws -> Void = { _ in },
+        onCancel: @escaping @Sendable () -> Void = {}
     ) -> ReviewViewModel {
         ReviewViewModel(
             summary: ReviewSummary(
@@ -850,7 +870,7 @@ final class ReviewViewModelTests: XCTestCase {
                 await onDismissPermanently(assetID)
             },
             onDeletePhoto: onDeletePhoto,
-            onCancel: {}
+            onCancel: onCancel
         )
     }
 
@@ -893,6 +913,10 @@ final class ReviewViewModelTests: XCTestCase {
             availableLocationOptions: resolvedOptions
         )
     }
+}
+
+private final class CancellationFlag: @unchecked Sendable {
+    var didCancel = false
 }
 
 private actor DeletionRecorder {
