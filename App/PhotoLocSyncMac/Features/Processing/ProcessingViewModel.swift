@@ -73,7 +73,7 @@ enum ProcessingProgressPhase: String, CaseIterable {
         case .scanningPhotosLibrary:
             "Scanning your Photos library"
         case .matchingLocations:
-            "Placing photos onto your route"
+            "Matching photos to your timeline"
         case .reverseGeocodingPlaces:
             "Preparing location labels"
         case .preparingReview:
@@ -90,7 +90,7 @@ enum ProcessingProgressPhase: String, CaseIterable {
         case .scanningPhotosLibrary:
             "Using read-only Photos access to find image assets that still need location metadata."
         case .matchingLocations:
-            "Comparing capture times against Timeline visits and motion points so each candidate can land on the map."
+            "Comparing capture times against Timeline visits and motion points while the background photo wall fills in behind the loading state."
         case .reverseGeocodingPlaces:
             "Formatting coordinates for review, or asking Apple for rich place labels if you enabled that option."
         case .preparingReview:
@@ -107,7 +107,7 @@ enum ProcessingProgressPhase: String, CaseIterable {
         case .scanningPhotosLibrary:
             "Photo candidates loading"
         case .matchingLocations:
-            "Map placement underway"
+            "Photo wall filling in"
         case .reverseGeocodingPlaces:
             "Labels resolving"
         case .preparingReview:
@@ -155,7 +155,7 @@ enum ProcessingProgressPhase: String, CaseIterable {
         case .matchingLocations:
             [
                 "Deterministic time matching",
-                "Tiling photos into the map",
+                "Photo wall filling in",
                 "Still read-only"
             ]
         case .reverseGeocodingPlaces:
@@ -214,13 +214,17 @@ enum ProcessingProgressPhase: String, CaseIterable {
     var visibleTileCount: Int {
         switch self {
         case .importingFile:
-            3
+            0
         case .readingTimeline:
-            4
+            12
         case .scanningPhotosLibrary:
-            6
-        case .matchingLocations, .reverseGeocodingPlaces, .preparingReview:
-            8
+            36
+        case .matchingLocations:
+            72
+        case .reverseGeocodingPlaces:
+            104
+        case .preparingReview:
+            140
         }
     }
 

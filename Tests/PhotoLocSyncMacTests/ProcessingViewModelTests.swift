@@ -10,7 +10,7 @@ final class ProcessingViewModelTests: XCTestCase {
         XCTAssertTrue(viewModel.assurance.contains("Nothing is written to Photos"))
         XCTAssertEqual(viewModel.steps.first?.state, .current)
         XCTAssertEqual(viewModel.steps.dropFirst().allSatisfy { $0.state == .upcoming }, true)
-        XCTAssertEqual(viewModel.visibleTileCount, 3)
+        XCTAssertEqual(viewModel.visibleTileCount, 0)
         XCTAssertEqual(viewModel.visiblePinCount, 0)
     }
 
@@ -21,8 +21,9 @@ final class ProcessingViewModelTests: XCTestCase {
             viewModel.steps.map(\.state),
             [.complete, .complete, .complete, .current, .upcoming, .upcoming]
         )
-        XCTAssertEqual(viewModel.mapHeadline, "Live placement")
+        XCTAssertEqual(viewModel.title, "Matching photos to your timeline")
         XCTAssertGreaterThan(viewModel.tilePlacementProgress, 0.4)
+        XCTAssertGreaterThan(viewModel.visibleTileCount, 60)
         XCTAssertEqual(viewModel.visiblePinCount, 3)
     }
 
@@ -30,7 +31,7 @@ final class ProcessingViewModelTests: XCTestCase {
         let viewModel = ProcessingViewModel(stage: .preparingReview)
 
         XCTAssertEqual(viewModel.steps.last?.state, .current)
-        XCTAssertEqual(viewModel.visibleTileCount, 8)
+        XCTAssertEqual(viewModel.visibleTileCount, 140)
         XCTAssertEqual(viewModel.visiblePinCount, 6)
         XCTAssertEqual(viewModel.progressValue, 1, accuracy: 0.0001)
     }
