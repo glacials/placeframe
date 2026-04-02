@@ -8,6 +8,16 @@ struct ReviewSelection: Identifiable {
     let id: String
     var item: ReviewItem
     var copiedFromAssetID: String?
+    var saveChoice: ReviewSaveChoice
+
+    var canApplyChoice: Bool {
+        saveChoice == .leaveBlank || item.suggestedDecision != nil
+    }
+}
+
+enum ReviewSaveChoice: Equatable {
+    case location
+    case leaveBlank
 }
 
 struct ReviewDaySection: Identifiable {
@@ -49,12 +59,13 @@ private struct ReviewStateSnapshot {
 
 private enum ReviewHistoryAction {
     case apply(decisions: [MatchDecision])
+    case applyChoices(decisions: [MatchDecision], blankItems: [ReviewItem])
     case leaveBlankThisTime(assetIDs: [String])
     case leaveBlankEveryTime(items: [ReviewItem])
 
     var undoTitle: String {
         switch self {
-        case .apply:
+        case .apply, .applyChoices:
             return "Undo Apply"
         case .leaveBlankThisTime, .leaveBlankEveryTime:
             return "Undo Leave Blank"
@@ -63,7 +74,7 @@ private enum ReviewHistoryAction {
 
     var redoTitle: String {
         switch self {
-        case .apply:
+        case .apply, .applyChoices:
             return "Redo Apply"
         case .leaveBlankThisTime, .leaveBlankEveryTime:
             return "Redo Leave Blank"
@@ -131,7 +142,8 @@ final class ReviewViewModel: ObservableObject {
             ReviewSelection(
                 id: $0.id,
                 item: $0,
-                copiedFromAssetID: nil
+                copiedFromAssetID: nil,
+                saveChoice: $0.suggestedDecision == nil ? .leaveBlank : .location
             )
         }
         self.dayCaptureTimeOffsets = dayCaptureTimeOffsets
@@ -219,7 +231,7 @@ final class ReviewViewModel: ObservableObject {
             return false
         }
 
-        return !hasInFlightReviewMutation && currentDayEntries.allSatisfy { $0.item.suggestedDecision != nil }
+        return !hasInFlightReviewMutation && currentDayEntries.allSatisfy(\.canApplyChoice)
     }
 
     var mapSelectionTargets: [ReviewMapSelectionTarget] {
@@ -253,20 +265,62 @@ final class ReviewViewModel: ObservableObject {
         currentDayCaptureTimeOffsetAnalysis?.option(for: selectedCaptureTimeOffset) ?? currentCaptureTimeOffsetOption
     }
 
-    var captureTimeOffsetButtonTitle: String {
-        currentDayCaptureTimeOffset == 0
-            ? "Fix Camera Time for Day"
-            : "Camera Time \(formattedOffset(currentDayCaptureTimeOffset))"
+    var captureTimeOffsetNeedsAttention: Bool {
+        captureTimeOffsetSuggestedAssumptionOffset != nil
     }
 
-    var captureTimeOffsetStatusText: String? {
-        if currentDayCaptureTimeOffset != 0,
-           let totalAssets = currentCaptureTimeOffsetOption?.metrics.totalAssets {
-            return "Using a \(formattedOffset(currentDayCaptureTimeOffset)) camera-time adjustment for \(totalAssets) photos on this day."
+    var captureTimeOffsetBannerTitle: String {
+        if let suggestedOffset = captureTimeOffsetSuggestedAssumptionOffset {
+            return looksLikeTimeZoneShift(suggestedOffset)
+                ? "Camera Time Zone May Be Wrong"
+                : "Camera Clock May Be Off"
         }
 
-        guard let recommendedCaptureTimeOffsetOption else { return nil }
-        return "A \(formattedOffset(recommendedCaptureTimeOffsetOption.offset)) adjustment looks likely for this day."
+        if currentDayCaptureTimeOffset != 0 {
+            return "Adjusted Camera Time in Use"
+        }
+
+        return "Compare Camera Time Assumptions"
+    }
+
+    var captureTimeOffsetCurrentAssumptionLabel: String {
+        captureTimeOffsetAssumptionLabel(for: currentDayCaptureTimeOffset)
+    }
+
+    var captureTimeOffsetSuggestedAssumptionLabel: String? {
+        guard let suggestedOffset = captureTimeOffsetSuggestedAssumptionOffset else {
+            return nil
+        }
+
+        return captureTimeOffsetAssumptionLabel(for: suggestedOffset)
+    }
+
+    var captureTimeOffsetButtonTitle: String {
+        if let suggestedOffset = captureTimeOffsetSuggestedAssumptionOffset {
+            return "Preview \(captureTimeOffsetActionLabel(for: suggestedOffset))"
+        }
+
+        if currentDayCaptureTimeOffset != 0 {
+            return "Review \(captureTimeOffsetActionLabel(for: currentDayCaptureTimeOffset))"
+        }
+
+        return "Compare Camera Time"
+    }
+
+    var captureTimeOffsetSheetTitle: String {
+        captureTimeOffsetNeedsAttention ? captureTimeOffsetBannerTitle : "Adjust Camera Time for This Day"
+    }
+
+    var captureTimeOffsetSheetSubtitle: String {
+        if let suggestedLabel = captureTimeOffsetSuggestedAssumptionLabel {
+            return "Preview how this day changes if you switch from \(captureTimeOffsetCurrentAssumptionLabel) to \(suggestedLabel)."
+        }
+
+        if currentDayCaptureTimeOffset != 0 {
+            return "Preview how this day changes if you replace \(captureTimeOffsetCurrentAssumptionLabel) with a different assumption."
+        }
+
+        return "Compare the strongest camera-time assumptions for this day before changing the matches below."
     }
 
     func selectPhoto(_ assetID: String, mode: ReviewPhotoSelectionMode) {
@@ -327,6 +381,7 @@ final class ReviewViewModel: ObservableObject {
 
             selections[index].item = reviewItem(for: selection, using: copiedLocation)
             selections[index].copiedFromAssetID = copiedLocation.sourceAssetID
+            selections[index].saveChoice = .location
         }
     }
 
@@ -365,6 +420,21 @@ final class ReviewViewModel: ObservableObject {
                 selectedPrecision: precision,
                 confidence: selection.item.confidence
             )
+            selections[index].saveChoice = .location
+        }
+    }
+
+    func selectLeaveBlank(for assetID: String) {
+        selectLeaveBlank(for: [assetID])
+    }
+
+    func selectLeaveBlank(for assetIDs: [String]) {
+        for selection in orderedSelections(for: assetIDs) {
+            guard let index = selections.firstIndex(where: { $0.id == selection.id }) else {
+                continue
+            }
+
+            selections[index].saveChoice = .leaveBlank
         }
     }
 
@@ -435,6 +505,32 @@ final class ReviewViewModel: ObservableObject {
         return prefix + magnitude
     }
 
+    func captureTimeOffsetOptionTitle(for option: CaptureTimeOffsetOption) -> String {
+        if option.offset == currentDayCaptureTimeOffset {
+            return "Keep \(captureTimeOffsetAssumptionLabel(for: option.offset))"
+        }
+
+        return "Use \(captureTimeOffsetAssumptionLabel(for: option.offset))"
+    }
+
+    func captureTimeOffsetPreviewTitle(for option: CaptureTimeOffsetOption) -> String {
+        option.offset == currentDayCaptureTimeOffset
+            ? "Current Matches"
+            : "Preview with \(captureTimeOffsetActionLabel(for: option.offset))"
+    }
+
+    func captureTimeOffsetApplyButtonTitle(for option: CaptureTimeOffsetOption?) -> String {
+        if isApplyingCaptureTimeOffset {
+            return "Applying..."
+        }
+
+        guard let option else {
+            return "Apply to This Day"
+        }
+
+        return "Use \(captureTimeOffsetActionLabel(for: option.offset))"
+    }
+
     func captureTimeOffsetOptionSummary(for option: CaptureTimeOffsetOption) -> String {
         let metrics = option.metrics
         let medianText = metrics.medianAbsoluteTimeDelta.map { formattedTimeInterval($0) } ?? "—"
@@ -497,7 +593,12 @@ final class ReviewViewModel: ObservableObject {
                 suggestedDecision: nil,
                 availableLocationOptions: []
             )
-            return ReviewSelection(id: match.asset.id, item: previewItem, copiedFromAssetID: nil)
+            return ReviewSelection(
+                id: match.asset.id,
+                item: previewItem,
+                copiedFromAssetID: nil,
+                saveChoice: .location
+            )
         }
     }
 
@@ -553,22 +654,32 @@ final class ReviewViewModel: ObservableObject {
             return
         }
 
-        let applicableSelections = orderedSelections(for: assetIDs).filter { $0.item.suggestedDecision != nil }
+        let applicableSelections = orderedSelections(for: assetIDs).filter(\.canApplyChoice)
         let applicableAssetIDs = reserveActionAssetIDs(applicableSelections.map(\.id))
         guard !applicableAssetIDs.isEmpty else { return }
 
         let stateBeforeChange = snapshot()
         let nextAssetIDAfterAllApplies = nextAssetIDAfterApplying(applicableAssetIDs)
         var appliedDecisions: [MatchDecision] = []
+        var blankItems: [ReviewItem] = []
 
         defer {
             applicableAssetIDs.forEach { actionAssetIDs.remove($0) }
         }
 
         for assetID in applicableAssetIDs {
-            guard let decision = selections.first(where: { $0.id == assetID })?.item.suggestedDecision else {
+            guard let selection = selections.first(where: { $0.id == assetID }) else {
                 continue
             }
+
+            if selection.saveChoice == .leaveBlank {
+                await onDismissPermanently(selection.item)
+                blankItems.append(selection.item)
+                removeSelection(withID: assetID)
+                continue
+            }
+
+            guard let decision = selection.item.suggestedDecision else { continue }
 
             do {
                 try await onApplyDecision(decision)
@@ -577,17 +688,21 @@ final class ReviewViewModel: ObservableObject {
             } catch {
                 presentedError = errorPresenter.userPresentableError(for: error)
                 focusPhoto(withID: assetID)
-                if !appliedDecisions.isEmpty {
-                    recordHistory(action: .apply(decisions: appliedDecisions), before: stateBeforeChange)
-                }
+                recordApplyHistory(
+                    appliedDecisions: appliedDecisions,
+                    blankItems: blankItems,
+                    before: stateBeforeChange
+                )
                 return
             }
         }
 
         focusPhoto(withID: nextAssetIDAfterAllApplies)
-        if !appliedDecisions.isEmpty {
-            recordHistory(action: .apply(decisions: appliedDecisions), before: stateBeforeChange)
-        }
+        recordApplyHistory(
+            appliedDecisions: appliedDecisions,
+            blankItems: blankItems,
+            before: stateBeforeChange
+        )
     }
 
     func skipPhotosForNow(_ assetIDs: [String]) {
@@ -769,6 +884,50 @@ final class ReviewViewModel: ObservableObject {
         )
     }
 
+    private var captureTimeOffsetSuggestedAssumptionOffset: TimeInterval? {
+        guard let recommendedCaptureTimeOffsetOption else { return nil }
+        guard recommendedCaptureTimeOffsetOption.offset != currentDayCaptureTimeOffset else {
+            return nil
+        }
+
+        return recommendedCaptureTimeOffsetOption.offset
+    }
+
+    private func captureTimeOffsetActionLabel(for offset: TimeInterval) -> String {
+        captureTimeOffsetAssumptionLabel(for: offset)
+    }
+
+    private func captureTimeOffsetAssumptionLabel(for offset: TimeInterval) -> String {
+        if offset == 0 {
+            return "No shift"
+        }
+
+        if let utcOffsetLabel = utcOffsetLabel(for: offset) {
+            return utcOffsetLabel
+        }
+
+        return "\(formattedOffset(offset)) drift"
+    }
+
+    private func looksLikeTimeZoneShift(_ offset: TimeInterval) -> Bool {
+        let quarterHours = offset / (15 * 60)
+        let roundedQuarterHours = quarterHours.rounded()
+        return abs(offset) >= 60 * 60 && abs(quarterHours - roundedQuarterHours) < 0.001
+    }
+
+    private func utcOffsetLabel(for offset: TimeInterval) -> String? {
+        guard looksLikeTimeZoneShift(offset) else {
+            return nil
+        }
+
+        let totalMinutes = Int(offset.rounded() / 60)
+        let sign = totalMinutes >= 0 ? "+" : "-"
+        let absoluteMinutes = abs(totalMinutes)
+        let hours = absoluteMinutes / 60
+        let minutes = absoluteMinutes % 60
+        return String(format: "UTC%@%02d:%02d", sign, hours, minutes)
+    }
+
     private func selectPhotoRange(to assetID: String, extendExisting: Bool) {
         let orderedAssetIDs = currentDaySection?.entries.map(\.id) ?? selections.map(\.id)
         guard let targetIndex = orderedAssetIDs.firstIndex(of: assetID) else { return }
@@ -917,10 +1076,33 @@ final class ReviewViewModel: ObservableObject {
         redoHistory.removeAll()
     }
 
+    private func recordApplyHistory(
+        appliedDecisions: [MatchDecision],
+        blankItems: [ReviewItem],
+        before stateBeforeChange: ReviewStateSnapshot
+    ) {
+        switch (appliedDecisions.isEmpty, blankItems.isEmpty) {
+        case (true, true):
+            return
+        case (false, true):
+            recordHistory(action: .apply(decisions: appliedDecisions), before: stateBeforeChange)
+        case (true, false):
+            recordHistory(action: .leaveBlankEveryTime(items: blankItems), before: stateBeforeChange)
+        case (false, false):
+            recordHistory(
+                action: .applyChoices(decisions: appliedDecisions, blankItems: blankItems),
+                before: stateBeforeChange
+            )
+        }
+    }
+
     private func performUndo(for action: ReviewHistoryAction) async throws {
         switch action {
         case .apply(let decisions):
             try await onUndoAppliedDecisions(decisions)
+        case .applyChoices(let decisions, let blankItems):
+            try await onUndoAppliedDecisions(decisions)
+            await onUndoDismissPermanently(blankItems.map(\.id))
         case .leaveBlankThisTime:
             return
         case .leaveBlankEveryTime(let items):
@@ -933,6 +1115,13 @@ final class ReviewViewModel: ObservableObject {
         case .apply(let decisions):
             for decision in decisions {
                 try await onApplyDecision(decision)
+            }
+        case .applyChoices(let decisions, let blankItems):
+            for decision in decisions {
+                try await onApplyDecision(decision)
+            }
+            for item in blankItems {
+                await onDismissPermanently(item)
             }
         case .leaveBlankThisTime:
             return

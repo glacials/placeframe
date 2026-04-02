@@ -111,7 +111,12 @@ final class ReviewMapViewTests: XCTestCase {
             suggestedDecision: nil
         )
 
-        return ReviewSelection(id: assetID, item: item, copiedFromAssetID: nil)
+        return ReviewSelection(
+            id: assetID,
+            item: item,
+            copiedFromAssetID: nil,
+            saveChoice: .location
+        )
     }
 
     private func makeCluster(id: String, coordinate: GeoCoordinate) -> ReviewMapCluster {

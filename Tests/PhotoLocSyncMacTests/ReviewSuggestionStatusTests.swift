@@ -53,7 +53,7 @@ final class ReviewSuggestionStatusTests: XCTestCase {
         )
         XCTAssertEqual(
             content.directionExplanation,
-            "The badge uses the absolute gap only. The \"Timeline time offset\" line below shows whether the timeline point was before (−) or after (+) the photo."
+            "The badge uses the absolute gap only. A positive drift means the matched timeline point was after the photo, and a negative drift means it was before."
         )
         XCTAssertEqual(
             content.colorExplanation,

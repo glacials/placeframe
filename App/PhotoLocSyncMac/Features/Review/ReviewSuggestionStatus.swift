@@ -101,7 +101,7 @@ struct ReviewSuggestionStatusHelpContent {
             let minuteOffset = Int((abs(timeDelta) / 60).rounded())
             let minuteNoun = minuteOffset == 1 ? "minute" : "minutes"
             minuteExplanation = "This \(status.title) badge means the matched Google Timeline point is \(minuteOffset) \(minuteNoun) away from the photo's camera timestamp."
-            directionExplanation = "The badge uses the absolute gap only. The \"Timeline time offset\" line below shows whether the timeline point was before (−) or after (+) the photo."
+            directionExplanation = "The badge uses the absolute gap only. A positive drift means the matched timeline point was after the photo, and a negative drift means it was before."
         } else {
             minuteExplanation = "No usable Google Timeline point was close enough to calculate a minute gap for this photo."
             directionExplanation = "When a timeline point is missing or falls inside a large coverage gap, the app cannot show a minute badge."

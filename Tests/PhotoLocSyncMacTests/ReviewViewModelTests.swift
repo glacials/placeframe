@@ -707,6 +707,51 @@ final class ReviewViewModelTests: XCTestCase {
         XCTAssertFalse(viewModel.canRedo)
     }
 
+    func testApplyChangeLeavesPhotoBlankForeverWhenThatChoiceIsSelected() async {
+        let applyRecorder = ApplyRecorder()
+        let suppressionRecorder = SuppressionRecorder()
+        let firstItem = makeReviewItem(
+            assetID: "first-photo",
+            coordinate: GeoCoordinate(latitude: 35.6895, longitude: 139.6917),
+            label: "Tokyo",
+            confidence: .excellent,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_000)
+        )
+        let secondItem = makeReviewItem(
+            assetID: "second-photo",
+            coordinate: GeoCoordinate(latitude: 34.6937, longitude: 135.5023),
+            label: "Osaka",
+            confidence: .acceptable,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_060)
+        )
+        let viewModel = makeViewModel(
+            items: [firstItem, secondItem],
+            onApplyDecision: { decision in
+                await applyRecorder.record(decision)
+            },
+            onDismissPermanently: { item in
+                await suppressionRecorder.record(item.id)
+            }
+        )
+
+        viewModel.selectLeaveBlank(for: firstItem.id)
+        await viewModel.applyChange(for: firstItem.id)
+
+        let appliedAssetIDs = await applyRecorder.appliedAssetIDs()
+        let suppressedAssetIDs = await suppressionRecorder.snapshot()
+
+        XCTAssertEqual(appliedAssetIDs, [])
+        XCTAssertEqual(suppressedAssetIDs, [firstItem.id])
+        XCTAssertTrue(viewModel.canUndo)
+        XCTAssertEqual(viewModel.undoTitle, "Undo Leave Blank")
+        XCTAssertEqual(viewModel.selections.map(\.id), [secondItem.id])
+        XCTAssertEqual(viewModel.selectedPhotoIDs, [secondItem.id])
+        XCTAssertEqual(viewModel.summary.totalAssets, 1)
+        XCTAssertEqual(viewModel.summary.autoSuggested, 1)
+    }
+
     func testSkipForNowOnLastPhotoOfDayAdvancesToFirstPhotoOfNextDay() {
         let firstDayItem = makeReviewItem(
             assetID: "first-day-photo",
@@ -1086,7 +1131,11 @@ final class ReviewViewModelTests: XCTestCase {
 
         XCTAssertTrue(viewModel.isShowingCaptureTimeOffsetSheet)
         XCTAssertEqual(viewModel.selectedCaptureTimeOffset, 9 * 60 * 60)
-        XCTAssertEqual(viewModel.captureTimeOffsetButtonTitle, "Fix Camera Time for Day")
+        XCTAssertTrue(viewModel.captureTimeOffsetNeedsAttention)
+        XCTAssertEqual(viewModel.captureTimeOffsetBannerTitle, "Camera Time Zone May Be Wrong")
+        XCTAssertEqual(viewModel.captureTimeOffsetCurrentAssumptionLabel, "No shift")
+        XCTAssertEqual(viewModel.captureTimeOffsetSuggestedAssumptionLabel, "UTC+09:00")
+        XCTAssertEqual(viewModel.captureTimeOffsetButtonTitle, "Preview UTC+09:00")
     }
 
     func testApplySelectedCaptureTimeOffsetPassesExcludedAssetIDsAndCurrentDay() async {
