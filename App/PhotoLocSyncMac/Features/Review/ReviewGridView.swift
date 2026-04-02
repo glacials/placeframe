@@ -136,21 +136,20 @@ private struct ReviewGridItemView: View {
             ZStack {
                 RoundedRectangle(cornerRadius: 12)
                     .fill(Color.secondary.opacity(0.08))
-                    .frame(height: 220)
                 if let image = thumbnailLoader.image {
                     Image(nsImage: image)
                         .resizable()
                         .aspectRatio(contentMode: .fill)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 220)
-                        .clipped()
-                        .cornerRadius(12)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     Image(systemName: "photo")
                         .font(.system(size: 40))
                         .foregroundStyle(.secondary)
                 }
             }
+            .frame(maxWidth: .infinity)
+            .frame(height: 220)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
             .task {
                 thumbnailLoader.loadIfNeeded()
             }
@@ -270,6 +269,7 @@ private struct ReviewGridItemView: View {
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(cardBackgroundColor, in: RoundedRectangle(cornerRadius: 16))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
         .overlay {
             RoundedRectangle(cornerRadius: 16)
                 .stroke(isPhotoSelected ? Color.accentColor : Color.clear, lineWidth: 3)
