@@ -72,6 +72,7 @@ final class ProcessingPipelineTests: XCTestCase {
         XCTAssertEqual(prepared.summary.unmatched, 0)
         XCTAssertEqual(prepared.candidateAssets.map(\.id), assets.map(\.id))
         XCTAssertEqual(prepared.captureTimeOffset, 0)
+        XCTAssertNotNil(prepared.captureTimeOffsetAnalysis)
         XCTAssertNotNil(prepared.items[0].suggestedDecision)
         XCTAssertNotNil(prepared.items[1].suggestedDecision)
         XCTAssertTrue(prepared.items[0].locationLabel.contains("Label"))

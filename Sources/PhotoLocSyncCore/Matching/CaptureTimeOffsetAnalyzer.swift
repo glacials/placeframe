@@ -9,7 +9,7 @@ public struct CaptureTimeOffsetAnalyzer: Sendable {
     public init(
         matcher: TimelineMatcher = TimelineMatcher(),
         candidateOffsets: [TimeInterval] = Array(-14...14).map { Double($0) * 60 * 60 },
-        minimumAssetCount: Int = 6,
+        minimumAssetCount: Int = 1,
         displayedOptionCount: Int = 3
     ) {
         self.matcher = matcher
