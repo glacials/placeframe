@@ -19,12 +19,12 @@ struct ReviewView: View {
                         selectedPhotoIDs: viewModel.selectedPhotoIDs,
                         thumbnailProvider: viewModel.thumbnailProvider,
                         selectPhoto: viewModel.selectPhoto(_:mode:),
+                        selectLeaveBlank: { viewModel.selectLeaveBlank(for: $0) },
                         setLocationPrecision: { viewModel.selectLocationPrecision($1, for: $0) },
                         applyChange: viewModel.applyChange(for:),
                         applyChanges: viewModel.applyChanges(for:),
                         skipForNow: viewModel.skipForNow(_:),
                         skipPhotosForNow: viewModel.skipPhotosForNow(_:),
-                        dismissPermanently: viewModel.dismissPermanently(_:),
                         dismissPhotosPermanently: viewModel.dismissPhotosPermanently(_:),
                         copyLocation: viewModel.copyLocation(for:),
                         pasteLocation: { viewModel.pasteLocation(into: $0) },
@@ -85,7 +85,7 @@ struct ReviewView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Review Proposed Locations")
                 .font(.largeTitle.bold())
-            Text("Each card shows what Apple Photos has now and what Apply will save from the timeline match. Review one day at a time and choose the place you want to save before applying it.")
+            Text("Choose the place you want to save for each photo, or mark it to stay blank forever. Review one day at a time, then apply the choices you want to keep.")
                 .foregroundStyle(.secondary)
 
             HStack(spacing: 12) {
@@ -95,25 +95,68 @@ struct ReviewView: View {
             }
 
             if viewModel.canAdjustCaptureTimeOffset {
-                HStack(spacing: 12) {
-                    if let statusText = viewModel.captureTimeOffsetStatusText {
-                        Label(statusText, systemImage: "clock.arrow.circlepath")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack(alignment: .center, spacing: 12) {
+                        Label(
+                            viewModel.captureTimeOffsetBannerTitle,
+                            systemImage: viewModel.captureTimeOffsetNeedsAttention
+                                ? "exclamationmark.triangle.fill"
+                                : "clock.arrow.circlepath"
+                        )
+                        .font(.headline)
+                        .foregroundStyle(viewModel.captureTimeOffsetNeedsAttention ? Color.orange : Color.primary)
+
+                        Spacer()
+
+                        if viewModel.captureTimeOffsetNeedsAttention {
+                            Button {
+                                viewModel.presentCaptureTimeOffsetSheet()
+                            } label: {
+                                Label(viewModel.captureTimeOffsetButtonTitle, systemImage: "clock.arrow.circlepath")
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .tint(.orange)
+                        } else {
+                            Button {
+                                viewModel.presentCaptureTimeOffsetSheet()
+                            } label: {
+                                Label(viewModel.captureTimeOffsetButtonTitle, systemImage: "clock.arrow.circlepath")
+                            }
+                            .buttonStyle(.bordered)
+                        }
                     }
 
-                    Spacer()
+                    HStack(alignment: .center, spacing: 10) {
+                        ReviewCaptureTimeOffsetAssumptionBadge(
+                            title: "Current assumption",
+                            value: viewModel.captureTimeOffsetCurrentAssumptionLabel
+                        )
 
-                    Button {
-                        viewModel.presentCaptureTimeOffsetSheet()
-                    } label: {
-                        Label(viewModel.captureTimeOffsetButtonTitle, systemImage: "clock.arrow.circlepath")
+                        if let suggestedAssumption = viewModel.captureTimeOffsetSuggestedAssumptionLabel {
+                            Image(systemName: "arrow.right")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.secondary)
+
+                            ReviewCaptureTimeOffsetAssumptionBadge(
+                                title: "Preview instead",
+                                value: suggestedAssumption
+                            )
+                        }
                     }
-                    .buttonStyle(.bordered)
                 }
                 .padding(.horizontal, 14)
                 .padding(.vertical, 12)
-                .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 14))
+                .background(
+                    viewModel.captureTimeOffsetNeedsAttention ? Color.orange.opacity(0.10) : Color.secondary.opacity(0.08),
+                    in: RoundedRectangle(cornerRadius: 14)
+                )
+                .overlay {
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(
+                            viewModel.captureTimeOffsetNeedsAttention ? Color.orange.opacity(0.35) : Color.secondary.opacity(0.14),
+                            lineWidth: 1
+                        )
+                }
             }
         }
     }
@@ -211,6 +254,25 @@ struct ReviewView: View {
     }
 }
 
+private struct ReviewCaptureTimeOffsetAssumptionBadge: View {
+    let title: String
+    let value: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+            Text(value)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.primary)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(Color.secondary.opacity(0.10), in: RoundedRectangle(cornerRadius: 12))
+    }
+}
+
 private struct ReviewCaptureTimeOffsetSheet: View {
     @ObservedObject var viewModel: ReviewViewModel
 
@@ -238,16 +300,11 @@ private struct ReviewCaptureTimeOffsetSheet: View {
         VStack(spacing: 0) {
             HStack(alignment: .top, spacing: 16) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Fix Camera Time for This Day")
+                    Text(viewModel.captureTimeOffsetSheetTitle)
                         .font(.largeTitle.bold())
 
-                    if let recommendedOption = viewModel.recommendedCaptureTimeOffsetOption {
-                        Text("A \(viewModel.formattedOffset(recommendedOption.offset)) capture-time adjustment looks like the best fit for the day you are reviewing. Pick an option below to preview how this day’s route and match quality change.")
-                            .foregroundStyle(.secondary)
-                    } else {
-                        Text("No single adjustment stands out yet, but you can still compare the strongest candidates against the current matching result for this day.")
-                            .foregroundStyle(.secondary)
-                    }
+                    Text(viewModel.captureTimeOffsetSheetSubtitle)
+                        .foregroundStyle(.secondary)
                 }
 
                 Spacer(minLength: 0)
@@ -269,7 +326,7 @@ private struct ReviewCaptureTimeOffsetSheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("Offset Options")
+                        Text("Try a Different Assumption")
                             .font(.headline)
 
                         ForEach(viewModel.captureTimeOffsetOptions) { option in
@@ -278,7 +335,7 @@ private struct ReviewCaptureTimeOffsetSheet: View {
                             } label: {
                                 VStack(alignment: .leading, spacing: 8) {
                                     HStack(spacing: 8) {
-                                        Text(option.offset == 0 ? "No adjustment" : viewModel.formattedOffset(option.offset))
+                                        Text(viewModel.captureTimeOffsetOptionTitle(for: option))
                                             .font(.headline)
 
                                         if option.offset == currentOption?.offset {
@@ -316,7 +373,7 @@ private struct ReviewCaptureTimeOffsetSheet: View {
                         }
                     }
 
-                    if let selectedOption {
+                    if let selectedOption, selectedOption.offset != currentOption?.offset {
                         VStack(alignment: .leading, spacing: 12) {
                             Text("Preview")
                                 .font(.headline)
@@ -327,13 +384,13 @@ private struct ReviewCaptureTimeOffsetSheet: View {
 
                             HStack(alignment: .top, spacing: 16) {
                                 ReviewCaptureTimeOffsetPreviewPane(
-                                    title: "Current",
+                                    title: viewModel.captureTimeOffsetPreviewTitle(for: currentOption ?? selectedOption),
                                     entries: currentPreviewEntries,
                                     thumbnailProvider: viewModel.thumbnailProvider
                                 )
 
                                 ReviewCaptureTimeOffsetPreviewPane(
-                                    title: selectedOption.offset == 0 ? "With No Adjustment" : "With \(viewModel.formattedOffset(selectedOption.offset))",
+                                    title: viewModel.captureTimeOffsetPreviewTitle(for: selectedOption),
                                     entries: selectedPreviewEntries,
                                     thumbnailProvider: viewModel.thumbnailProvider
                                 )
@@ -355,7 +412,7 @@ private struct ReviewCaptureTimeOffsetSheet: View {
 
                 Spacer()
 
-                Text("Applying a new offset re-runs location matching only for the photos on this day.")
+                Text("Only this day's matches change when you apply a new assumption.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
 
@@ -365,7 +422,7 @@ private struct ReviewCaptureTimeOffsetSheet: View {
                     }
                 } label: {
                     Label(
-                        viewModel.isApplyingCaptureTimeOffset ? "Applying..." : "Apply to This Day",
+                        viewModel.captureTimeOffsetApplyButtonTitle(for: selectedOption),
                         systemImage: "arrow.triangle.2.circlepath"
                     )
                 }

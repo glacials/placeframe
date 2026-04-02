@@ -51,45 +51,6 @@ private struct ReviewPreviewSourceBridge: NSViewRepresentable {
     }
 }
 
-private struct ReviewLocationChangeBadge: View {
-    let title: String
-    let value: String
-    let systemImage: String
-    let tint: Color
-    let detailLines: [String]
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Label(title, systemImage: systemImage)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-
-            Text(value)
-                .font(.headline)
-                .foregroundStyle(.primary)
-                .lineLimit(3)
-                .truncationMode(.tail)
-                .fixedSize(horizontal: false, vertical: true)
-
-            ForEach(detailLines, id: \.self) { line in
-                Text(line)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-                    .truncationMode(.tail)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(12)
-        .background(tint.opacity(0.14), in: RoundedRectangle(cornerRadius: 12))
-        .overlay {
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(tint.opacity(0.35), lineWidth: 1)
-        }
-    }
-}
-
 private struct ReviewListItemView: View {
     let entry: ReviewSelection
     let isPhotoSelected: Bool
@@ -98,12 +59,12 @@ private struct ReviewListItemView: View {
     let contextMenuPrecisions: [LocationPrecision]
     let selectedContextMenuPrecision: LocationPrecision?
     let selectPhoto: (String, ReviewPhotoSelectionMode) -> Void
+    let selectLeaveBlank: ([String]) -> Void
     let setLocationPrecision: ([String], LocationPrecision) -> Void
     let applyChange: (String) async -> Void
     let applyChanges: ([String]) async -> Void
     let skipForNow: (String) -> Void
     let skipPhotosForNow: ([String]) -> Void
-    let dismissPermanently: (String) async -> Void
     let dismissPhotosPermanently: ([String]) async -> Void
     let copyLocation: (String) -> Void
     let pasteLocation: ([String]) -> Void
@@ -126,12 +87,12 @@ private struct ReviewListItemView: View {
         selectedContextMenuPrecision: LocationPrecision?,
         thumbnailProvider: PhotoThumbnailProvider,
         selectPhoto: @escaping (String, ReviewPhotoSelectionMode) -> Void,
+        selectLeaveBlank: @escaping ([String]) -> Void,
         setLocationPrecision: @escaping ([String], LocationPrecision) -> Void,
         applyChange: @escaping (String) async -> Void,
         applyChanges: @escaping ([String]) async -> Void,
         skipForNow: @escaping (String) -> Void,
         skipPhotosForNow: @escaping ([String]) -> Void,
-        dismissPermanently: @escaping (String) async -> Void,
         dismissPhotosPermanently: @escaping ([String]) async -> Void,
         copyLocation: @escaping (String) -> Void,
         pasteLocation: @escaping ([String]) -> Void,
@@ -149,12 +110,12 @@ private struct ReviewListItemView: View {
         self.contextMenuPrecisions = contextMenuPrecisions
         self.selectedContextMenuPrecision = selectedContextMenuPrecision
         self.selectPhoto = selectPhoto
+        self.selectLeaveBlank = selectLeaveBlank
         self.setLocationPrecision = setLocationPrecision
         self.applyChange = applyChange
         self.applyChanges = applyChanges
         self.skipForNow = skipForNow
         self.skipPhotosForNow = skipPhotosForNow
-        self.dismissPermanently = dismissPermanently
         self.dismissPhotosPermanently = dismissPhotosPermanently
         self.copyLocation = copyLocation
         self.pasteLocation = pasteLocation
@@ -204,91 +165,28 @@ private struct ReviewListItemView: View {
             .frame(width: 168, height: 132)
 
             VStack(alignment: .leading, spacing: 10) {
-                Text("Location")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-
-                HStack(alignment: .center, spacing: 10) {
-                    ReviewLocationChangeBadge(
-                        title: "Now",
-                        value: currentLocationSummary,
-                        systemImage: "circle.dashed",
-                        tint: Color.secondary,
-                        detailLines: []
-                    )
-
-                    Image(systemName: "arrow.right.circle.fill")
-                        .font(.title3)
-                        .foregroundStyle(Color.accentColor)
-
-                    ReviewLocationChangeBadge(
-                        title: "Apply",
-                        value: selectedLocationLabel,
-                        systemImage: "mappin.and.ellipse",
-                        tint: Color.accentColor,
-                        detailLines: selectedLocationDetailLines
-                    )
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-                Text(currentLocationDetailText)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                Text(locationSourceText)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                Label(captureDateText(entry.item), systemImage: "calendar")
-                    .foregroundStyle(.secondary)
-
-                HStack(alignment: .top, spacing: 8) {
-                    Label(status.title, systemImage: status.symbolName)
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(status.tone.color)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(status.tone.backgroundColor, in: Capsule())
-
-                    Button {
-                        isShowingStatusInfo.toggle()
-                    } label: {
-                        Image(systemName: "info.circle")
-                            .font(.subheadline)
-                    }
-                    .buttonStyle(.plain)
-                    .help("Explain this minute badge")
-
-                    Spacer()
-                }
-                .foregroundStyle(.secondary)
-                .popover(isPresented: $isShowingStatusInfo, arrowEdge: .top) {
-                    ReviewSuggestionStatusHelpView(item: entry.item)
-                        .padding()
-                }
-
-                Text(status.shortDescription)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-
-                if entry.item.timeDelta != nil {
-                    Text("Timeline time offset: \(timeDeltaText(entry.item))")
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
-                }
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Review action")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-
+                HStack(alignment: .top, spacing: 10) {
                     Menu {
+                        Button {
+                            selectLeaveBlank([entry.id])
+                        } label: {
+                            if entry.saveChoice == .leaveBlank {
+                                Label("Leave Blank Forever", systemImage: "checkmark")
+                            } else {
+                                Text("Leave Blank Forever")
+                            }
+                        }
+
+                        if !entry.item.availableLocationOptions.isEmpty {
+                            Divider()
+                        }
+
                         ForEach(entry.item.availableLocationOptions) { option in
                             Button {
                                 setLocationPrecision([entry.id], option.precision)
                             } label: {
-                                if entry.item.selectedPrecision == option.precision {
+                                if entry.saveChoice == .location,
+                                   entry.item.selectedPrecision == option.precision {
                                     Label(locationOptionMenuTitle(for: option), systemImage: "checkmark")
                                 } else {
                                     Text(locationOptionMenuTitle(for: option))
@@ -297,14 +195,17 @@ private struct ReviewListItemView: View {
                         }
                     } label: {
                         HStack(alignment: .top, spacing: 8) {
-                            Image(systemName: "slider.horizontal.3")
+                            Image(systemName: selectedMenuSystemImage)
                                 .foregroundStyle(.secondary)
                                 .padding(.top, 2)
 
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("Save as")
+                                Text(selectedMenuTitle)
                                     .font(.subheadline.weight(.semibold))
-                                Text(selectedLocationMenuLabel)
+                                    .lineLimit(2)
+                                    .truncationMode(.tail)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                Text(selectedMenuSubtitle)
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                                     .lineLimit(2)
@@ -323,22 +224,57 @@ private struct ReviewListItemView: View {
                     }
                     .buttonStyle(.bordered)
 
-                    Button("Apply") {
+                    Button(applyButtonTitle) {
                         Task {
                             await applyChange(entry.id)
                         }
                     }
                     .buttonStyle(.borderedProminent)
-                    .disabled(entry.item.suggestedDecision == nil)
-
-                    Button("Leave Blank") {
-                        Task {
-                            await dismissPermanently(entry.id)
-                        }
-                    }
-                    .buttonStyle(.bordered)
+                    .disabled(!entry.canApplyChoice)
                 }
-                .padding(.top, 2)
+
+                HStack(alignment: .center, spacing: 10) {
+                    Label(currentPhotoStateTitle, systemImage: currentPhotoStateSystemImage)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(currentPhotoStateColor)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(currentPhotoStateColor.opacity(0.12), in: Capsule())
+
+                    Label(captureDateText(entry.item), systemImage: "calendar")
+                        .foregroundStyle(.secondary)
+                }
+
+                HStack(alignment: .top, spacing: 8) {
+                    Label(status.title, systemImage: status.symbolName)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(status.tone.color)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(status.tone.backgroundColor, in: Capsule())
+
+                    Button {
+                        isShowingStatusInfo.toggle()
+                    } label: {
+                        Image(systemName: "info.circle")
+                            .font(.subheadline)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Explain this minute badge")
+
+                    if entry.item.timeDelta != nil {
+                        Text(timeDeltaText(entry.item))
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+
+                    Spacer()
+                }
+                .foregroundStyle(.secondary)
+                .popover(isPresented: $isShowingStatusInfo, arrowEdge: .top) {
+                    ReviewSuggestionStatusHelpView(item: entry.item)
+                        .padding()
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -426,7 +362,7 @@ private struct ReviewListItemView: View {
     }
 
     private var applyContextMenuTitle: String {
-        appliesToMultiplePhotos ? "Apply Selected (\(contextMenuTargetIDs.count))" : "Apply"
+        appliesToMultiplePhotos ? "Apply Selected Choices (\(contextMenuTargetIDs.count))" : "Apply Choice"
     }
 
     private var leaveBlankContextMenuTitle: String {
@@ -469,35 +405,40 @@ private struct ReviewListItemView: View {
         selectedLocationOption?.label ?? entry.item.locationLabel
     }
 
-    private var selectedLocationMenuLabel: String {
-        truncatedLocationLabel(selectedLocationLabel, maxLength: 72)
+    private var selectedMenuSystemImage: String {
+        entry.saveChoice == .leaveBlank ? "eye.slash" : "mappin.and.ellipse"
     }
 
-    private var currentLocationSummary: String {
-        entry.item.asset.hasLocation ? "Saved in Photos" : "Blank"
-    }
-
-    private var currentLocationDetailText: String {
-        entry.item.asset.hasLocation
-            ? "This photo already has saved location metadata."
-            : "This photo has no saved location metadata yet."
-    }
-
-    private var selectedLocationDetailLines: [String] {
-        guard let coordinate = entry.item.proposedCoordinate else { return [] }
-
-        return [
-            selectedLocationOption?.precision.title ?? "",
-            String(format: "%.6f, %.6f", coordinate.latitude, coordinate.longitude)
-        ]
-        .filter { !$0.isEmpty }
-    }
-
-    private var locationSourceText: String {
-        if let copiedFromAssetID = entry.copiedFromAssetID {
-            return "Source: copied from \(copiedFromAssetID)"
+    private var selectedMenuTitle: String {
+        if entry.saveChoice == .leaveBlank {
+            return "Leave Blank Forever"
         }
-        return "Source: matched from this photo's timeline data"
+
+        return truncatedLocationLabel(selectedLocationLabel, maxLength: 72)
+    }
+
+    private var selectedMenuSubtitle: String {
+        if entry.saveChoice == .leaveBlank {
+            return "Never ask about this photo again"
+        }
+
+        return selectedLocationOption?.precision.title ?? "Location match"
+    }
+
+    private var applyButtonTitle: String {
+        entry.saveChoice == .leaveBlank ? "Leave Blank" : "Apply"
+    }
+
+    private var currentPhotoStateTitle: String {
+        entry.item.asset.hasLocation ? "Saved in Photos" : "Blank in Photos"
+    }
+
+    private var currentPhotoStateSystemImage: String {
+        entry.item.asset.hasLocation ? "checkmark.circle" : "circle.dashed"
+    }
+
+    private var currentPhotoStateColor: Color {
+        entry.item.asset.hasLocation ? .accentColor : .secondary
     }
 
     private func locationOptionMenuTitle(for option: LocationOption) -> String {
@@ -525,12 +466,12 @@ struct ReviewListView: View {
     let selectedPhotoIDs: Set<String>
     let thumbnailProvider: PhotoThumbnailProvider
     let selectPhoto: (String, ReviewPhotoSelectionMode) -> Void
+    let selectLeaveBlank: ([String]) -> Void
     let setLocationPrecision: ([String], LocationPrecision) -> Void
     let applyChange: (String) async -> Void
     let applyChanges: ([String]) async -> Void
     let skipForNow: (String) -> Void
     let skipPhotosForNow: ([String]) -> Void
-    let dismissPermanently: (String) async -> Void
     let dismissPhotosPermanently: ([String]) async -> Void
     let copyLocation: (String) -> Void
     let pasteLocation: ([String]) -> Void
@@ -561,12 +502,12 @@ struct ReviewListView: View {
                             selectedContextMenuPrecision: selectedPrecision(for: contextMenuTargetIDs),
                             thumbnailProvider: thumbnailProvider,
                             selectPhoto: selectPhoto,
+                            selectLeaveBlank: selectLeaveBlank,
                             setLocationPrecision: setLocationPrecision,
                             applyChange: applyChange,
                             applyChanges: applyChanges,
                             skipForNow: skipForNow,
                             skipPhotosForNow: skipPhotosForNow,
-                            dismissPermanently: dismissPermanently,
                             dismissPhotosPermanently: dismissPhotosPermanently,
                             copyLocation: copyLocation,
                             pasteLocation: pasteLocation,
@@ -621,7 +562,7 @@ struct ReviewListView: View {
 
         return entries
             .filter { targetAssetIDs.contains($0.id) }
-            .allSatisfy { $0.item.suggestedDecision != nil }
+            .allSatisfy(\.canApplyChoice)
     }
 
     private func contextMenuPrecisions(for assetIDs: [String]) -> [LocationPrecision] {
