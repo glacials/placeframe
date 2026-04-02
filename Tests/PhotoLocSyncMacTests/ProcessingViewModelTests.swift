@@ -3,36 +3,21 @@ import XCTest
 import PhotoLocSyncCore
 
 final class ProcessingViewModelTests: XCTestCase {
-    func testImportingPhaseStartsWithTrustMessagingAndCurrentFirstStep() {
+    func testImportingPhaseUsesSingleLineImportMessage() {
         let viewModel = ProcessingViewModel.importing
 
-        XCTAssertEqual(viewModel.title, "Importing your Timeline export")
-        XCTAssertTrue(viewModel.assurance.contains("Nothing is written to Photos"))
-        XCTAssertEqual(viewModel.steps.first?.state, .current)
-        XCTAssertEqual(viewModel.steps.dropFirst().allSatisfy { $0.state == .upcoming }, true)
-        XCTAssertEqual(viewModel.visibleTileCount, 0)
-        XCTAssertEqual(viewModel.visiblePinCount, 0)
+        XCTAssertEqual(viewModel.title, "Importing your Timeline export.")
     }
 
-    func testMatchingStageMarksEarlierWorkCompleteAndMovesTilesTowardMap() {
+    func testMatchingStageUsesSingleLineMatchingMessage() {
         let viewModel = ProcessingViewModel(stage: .matchingLocations)
 
-        XCTAssertEqual(
-            viewModel.steps.map(\.state),
-            [.complete, .complete, .complete, .current, .upcoming, .upcoming]
-        )
-        XCTAssertEqual(viewModel.title, "Matching photos to your timeline")
-        XCTAssertGreaterThan(viewModel.tilePlacementProgress, 0.4)
-        XCTAssertGreaterThan(viewModel.visibleTileCount, 60)
-        XCTAssertEqual(viewModel.visiblePinCount, 3)
+        XCTAssertEqual(viewModel.title, "Matching photos to your timeline.")
     }
 
-    func testPreparingReviewShowsAllPinsAndFinalStepAsCurrent() {
+    func testPreparingReviewUsesSingleLineReviewMessage() {
         let viewModel = ProcessingViewModel(stage: .preparingReview)
 
-        XCTAssertEqual(viewModel.steps.last?.state, .current)
-        XCTAssertEqual(viewModel.visibleTileCount, 140)
-        XCTAssertEqual(viewModel.visiblePinCount, 6)
-        XCTAssertEqual(viewModel.progressValue, 1, accuracy: 0.0001)
+        XCTAssertEqual(viewModel.title, "Building your review.")
     }
 }
