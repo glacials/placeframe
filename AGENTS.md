@@ -8,6 +8,7 @@ This repository expects agents to leave a clean, reviewable git history.
 - Do not perform task work directly on `main`; while an agent is actively working, that work must live on a dedicated branch checked out in a dedicated worktree unless the user explicitly says otherwise.
 - If a user asks an agent to resume or follow up on previously finished work, the agent must recreate a dedicated branch and worktree before making additional changes so the work still happens off `main`.
 - Once an agent has finished and verified its work, it must merge that work back into `main` before concluding unless the user explicitly says not to.
+- If `main` has advanced since the agent branched, the agent must inspect the intervening commit or commits before merging and confirm there is no logical conflict with the branch changes, including behavior or user-experience regressions that Git would merge cleanly without flagging as a textual conflict.
 - After merging verified work back into `main`, the agent must delete the task worktree and remove the task branch before concluding unless the user explicitly says not to.
 - Do not leave verified code or documentation edits unstaged or uncommitted.
 - Keep commits focused. Use one commit per logical change when practical.
