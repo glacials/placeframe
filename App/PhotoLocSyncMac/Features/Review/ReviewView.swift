@@ -44,7 +44,9 @@ struct ReviewView: View {
 
                     ReviewMapView(
                         entries: currentDaySection.entries,
-                        selectionTargets: viewModel.mapSelectionTargets
+                        selectedPhotoIDs: viewModel.selectedPhotoIDs,
+                        selectionTargets: viewModel.mapSelectionTargets,
+                        thumbnailProvider: viewModel.thumbnailProvider
                     )
                         .padding(.leading, mapPaneLeadingInset)
                         .frame(minWidth: 320, idealWidth: 420, maxHeight: .infinity, alignment: .topLeading)

@@ -1,13 +1,27 @@
 import AppKit
 import CoreLocation
 import MapKit
+import PhotoLocSyncAdapters
+import PhotoLocSyncCore
 import SwiftUI
 
-private struct ReviewMapCluster: Identifiable {
+struct ReviewMapCluster: Identifiable, Equatable {
     let id: String
     let coordinate: CLLocationCoordinate2D
     let count: Int
     let sampleLabel: String
+    let sampleAsset: PhotoAsset
+    let isSelected: Bool
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.id == rhs.id
+            && lhs.coordinate.latitude == rhs.coordinate.latitude
+            && lhs.coordinate.longitude == rhs.coordinate.longitude
+            && lhs.count == rhs.count
+            && lhs.sampleLabel == rhs.sampleLabel
+            && lhs.sampleAsset == rhs.sampleAsset
+            && lhs.isSelected == rhs.isSelected
+    }
 }
 
 struct ReviewMapViewportSnapshot: Equatable {
@@ -43,36 +57,48 @@ struct ReviewMapViewportSnapshot: Equatable {
 
 struct ReviewMapView: View {
     let entries: [ReviewSelection]
+    let selectedPhotoIDs: Set<String>
     let selectionTargets: [ReviewMapSelectionTarget]
+    let thumbnailProvider: PhotoThumbnailProvider
 
     private var clusters: [ReviewMapCluster] {
-        var grouped: [String: (coordinate: CLLocationCoordinate2D, count: Int, label: String)] = [:]
+        Self.makeClusters(entries: entries, selectedPhotoIDs: selectedPhotoIDs)
+    }
+
+    nonisolated static func makeClusters(entries: [ReviewSelection], selectedPhotoIDs: Set<String>) -> [ReviewMapCluster] {
+        struct GroupState {
+            let coordinate: CLLocationCoordinate2D
+            var entries: [ReviewSelection]
+        }
+
+        var grouped: [String: GroupState] = [:]
 
         for entry in entries {
             guard let coordinate = entry.item.proposedCoordinate else { continue }
-            let roundedLatitude = (coordinate.latitude * 1_000).rounded() / 1_000
-            let roundedLongitude = (coordinate.longitude * 1_000).rounded() / 1_000
-            let key = "\(roundedLatitude),\(roundedLongitude)"
+            let key = Self.roundedCoordinateKey(for: coordinate)
 
             if var existing = grouped[key] {
-                existing.count += 1
+                existing.entries.append(entry)
                 grouped[key] = existing
             } else {
-                grouped[key] = (
+                grouped[key] = GroupState(
                     coordinate: CLLocationCoordinate2D(latitude: coordinate.latitude, longitude: coordinate.longitude),
-                    count: 1,
-                    label: entry.item.locationLabel
+                    entries: [entry]
                 )
             }
         }
 
         return grouped
             .map { key, value in
-                ReviewMapCluster(
+                let selectedEntries = value.entries.filter { selectedPhotoIDs.contains($0.id) }
+                let representative = selectedEntries.first ?? value.entries.first!
+                return ReviewMapCluster(
                     id: key,
                     coordinate: value.coordinate,
-                    count: value.count,
-                    sampleLabel: value.label
+                    count: value.entries.count,
+                    sampleLabel: representative.item.locationLabel,
+                    sampleAsset: representative.item.asset,
+                    isSelected: !selectedEntries.isEmpty
                 )
             }
             .sorted { lhs, rhs in
@@ -81,13 +107,23 @@ struct ReviewMapView: View {
             }
     }
 
+    private nonisolated static func roundedCoordinateKey(for coordinate: GeoCoordinate) -> String {
+        let roundedLatitude = (coordinate.latitude * 1_000).rounded() / 1_000
+        let roundedLongitude = (coordinate.longitude * 1_000).rounded() / 1_000
+        return "\(roundedLatitude),\(roundedLongitude)"
+    }
+
     var body: some View {
         if clusters.isEmpty {
             ContentUnavailableView("No Proposed Coordinates", systemImage: "map", description: Text("Only matched photos appear on the map."))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
-            ReviewMapNativeView(clusters: clusters, selectionTargets: selectionTargets)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            ReviewMapNativeView(
+                clusters: clusters,
+                selectionTargets: selectionTargets,
+                thumbnailProvider: thumbnailProvider
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
     }
 }
@@ -95,9 +131,10 @@ struct ReviewMapView: View {
 private struct ReviewMapNativeView: NSViewRepresentable {
     let clusters: [ReviewMapCluster]
     let selectionTargets: [ReviewMapSelectionTarget]
+    let thumbnailProvider: PhotoThumbnailProvider
 
     func makeCoordinator() -> Coordinator {
-        Coordinator()
+        Coordinator(thumbnailProvider: thumbnailProvider)
     }
 
     func makeNSView(context: Context) -> MKMapView {
@@ -110,7 +147,6 @@ private struct ReviewMapNativeView: NSViewRepresentable {
         mapView.isPitchEnabled = false
         mapView.pointOfInterestFilter = .excludingAll
         mapView.register(ReviewClusterAnnotationView.self, forAnnotationViewWithReuseIdentifier: Coordinator.clusterReuseIdentifier)
-        mapView.register(MKMarkerAnnotationView.self, forAnnotationViewWithReuseIdentifier: Coordinator.selectionReuseIdentifier)
         context.coordinator.installControls(on: mapView)
         return mapView
     }
@@ -121,8 +157,8 @@ private struct ReviewMapNativeView: NSViewRepresentable {
 
     final class Coordinator: NSObject, MKMapViewDelegate {
         static let clusterReuseIdentifier = "ReviewClusterAnnotation"
-        static let selectionReuseIdentifier = "ReviewSelectionAnnotation"
 
+        private let thumbnailProvider: PhotoThumbnailProvider
         private var annotationSignature = ""
         private var cameraSignature = ""
         private var currentClusters: [ReviewMapCluster] = []
@@ -133,15 +169,19 @@ private struct ReviewMapNativeView: NSViewRepresentable {
         private weak var mapView: MKMapView?
         private weak var recenterButton: NSButton?
 
+        init(thumbnailProvider: PhotoThumbnailProvider) {
+            self.thumbnailProvider = thumbnailProvider
+        }
+
         func update(mapView: MKMapView, clusters: [ReviewMapCluster], selectionTargets: [ReviewMapSelectionTarget]) {
             self.mapView = mapView
             currentClusters = clusters
             currentSelectionTargets = selectionTargets
 
-            let nextAnnotationSignature = Self.makeAnnotationSignature(for: clusters, selectionTargets: selectionTargets)
+            let nextAnnotationSignature = Self.makeAnnotationSignature(for: clusters)
             if nextAnnotationSignature != annotationSignature {
                 mapView.removeAnnotations(mapView.annotations)
-                mapView.addAnnotations(Self.makeAnnotations(clusters: clusters, selectionTargets: selectionTargets))
+                mapView.addAnnotations(Self.makeAnnotations(clusters: clusters))
                 annotationSignature = nextAnnotationSignature
             }
 
@@ -185,32 +225,14 @@ private struct ReviewMapNativeView: NSViewRepresentable {
         }
 
         func mapView(_ mapView: MKMapView, viewFor annotation: any MKAnnotation) -> MKAnnotationView? {
-            if let clusterAnnotation = annotation as? ReviewClusterAnnotation {
-                let view = mapView.dequeueReusableAnnotationView(
-                    withIdentifier: Self.clusterReuseIdentifier,
-                    for: clusterAnnotation
-                ) as? ReviewClusterAnnotationView
-                view?.annotation = clusterAnnotation
-                return view
-            }
+            guard annotation is ReviewClusterAnnotation else { return nil }
 
-            if annotation is ReviewSelectionAnnotation {
-                let view = mapView.dequeueReusableAnnotationView(
-                    withIdentifier: Self.selectionReuseIdentifier,
-                    for: annotation
-                ) as? MKMarkerAnnotationView
-                view?.annotation = annotation
-                view?.markerTintColor = .systemRed
-                view?.glyphImage = NSImage(
-                    systemSymbolName: "mappin.and.ellipse",
-                    accessibilityDescription: annotation.title ?? nil
-                )
-                view?.canShowCallout = false
-                view?.displayPriority = .required
-                return view
-            }
-
-            return nil
+            let view = mapView.dequeueReusableAnnotationView(
+                withIdentifier: Self.clusterReuseIdentifier,
+                for: annotation
+            ) as? ReviewClusterAnnotationView
+            view?.thumbnailProvider = thumbnailProvider
+            return view
         }
 
         func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool) {
@@ -231,20 +253,14 @@ private struct ReviewMapNativeView: NSViewRepresentable {
             setRecenterButtonHidden(!snapshot.isMeaningfullyDifferent(from: expectedViewport))
         }
 
-        private static func makeAnnotations(clusters: [ReviewMapCluster], selectionTargets: [ReviewMapSelectionTarget]) -> [MKAnnotation] {
-            var annotations: [MKAnnotation] = clusters.map { ReviewClusterAnnotation(cluster: $0) }
-            annotations.append(contentsOf: selectionTargets.map(ReviewSelectionAnnotation.init(target:)))
-            return annotations
+        private static func makeAnnotations(clusters: [ReviewMapCluster]) -> [MKAnnotation] {
+            clusters.map(ReviewClusterAnnotation.init(cluster:))
         }
 
-        private static func makeAnnotationSignature(for clusters: [ReviewMapCluster], selectionTargets: [ReviewMapSelectionTarget]) -> String {
-            let clusterSignature = clusters
-                .map { "\($0.id):\($0.count):\($0.sampleLabel)" }
+        private static func makeAnnotationSignature(for clusters: [ReviewMapCluster]) -> String {
+            clusters
+                .map { "\($0.id):\($0.count):\($0.sampleLabel):\($0.sampleAsset.id):\($0.isSelected)" }
                 .joined(separator: "|")
-            let selectionSignature = selectionTargets
-                .map { "\($0.id):\($0.coordinate.latitude):\($0.coordinate.longitude):\($0.label)" }
-                .joined(separator: "|")
-            return clusterSignature + "||" + selectionSignature
         }
 
         private static func makeCameraSignature(for clusters: [ReviewMapCluster], selectionTargets: [ReviewMapSelectionTarget]) -> String {
@@ -334,54 +350,76 @@ private final class ReviewClusterAnnotation: NSObject, MKAnnotation {
     let coordinate: CLLocationCoordinate2D
     let title: String?
     let count: Int
+    let asset: PhotoAsset
+    let isSelected: Bool
 
     init(cluster: ReviewMapCluster) {
         self.coordinate = cluster.coordinate
         self.title = cluster.sampleLabel
         self.count = cluster.count
+        self.asset = cluster.sampleAsset
+        self.isSelected = cluster.isSelected
         super.init()
     }
 }
 
-private final class ReviewSelectionAnnotation: NSObject, MKAnnotation {
-    let coordinate: CLLocationCoordinate2D
-    let title: String?
+@MainActor
+private final class ReviewMapThumbnailCache {
+    static let shared = ReviewMapThumbnailCache()
 
-    init(target: ReviewMapSelectionTarget) {
-        self.coordinate = CLLocationCoordinate2D(
-            latitude: target.coordinate.latitude,
-            longitude: target.coordinate.longitude
-        )
-        self.title = target.label
-        super.init()
+    private var images: [String: CGImage] = [:]
+
+    private init() {}
+
+    func image(for assetID: String) -> CGImage? {
+        images[assetID]
+    }
+
+    func store(_ image: CGImage, for assetID: String) {
+        images[assetID] = image
     }
 }
 
 private final class ReviewClusterAnnotationView: MKAnnotationView {
+    private static let bubbleSide: CGFloat = 64
+    private static let bubbleCornerRadius: CGFloat = 16
+    private static let tailSide: CGFloat = 16
+    private static let tailOverlap: CGFloat = 6
+    private static let horizontalPadding: CGFloat = 6
+    private static let topPadding: CGFloat = 4
+    private static let viewSize = CGSize(
+        width: bubbleSide + (horizontalPadding * 2),
+        height: topPadding + bubbleSide + tailSide - tailOverlap
+    )
+
+    var thumbnailProvider: PhotoThumbnailProvider? {
+        didSet {
+            scheduleRefreshContent()
+        }
+    }
+
+    private let bubbleShadowView = NSView()
+    private let bubbleContentView = NSView()
+    private let imageLayerView = NSView()
+    private let placeholderImageView = NSImageView()
+    private let countBadgeView = NSView()
     private let countLabel = NSTextField(labelWithString: "")
+    private let tailView = NSView()
+    private var loadTask: Task<Void, Never>?
+    private var representedAssetID: String?
 
     override init(annotation: (any MKAnnotation)?, reuseIdentifier: String?) {
         super.init(annotation: annotation, reuseIdentifier: reuseIdentifier)
-        wantsLayer = true
+        frame = CGRect(origin: .zero, size: Self.viewSize)
+        centerOffset = CGPoint(x: 0, y: -(Self.viewSize.height / 2))
         canShowCallout = false
+        collisionMode = .rectangle
+        displayPriority = .required
+        wantsLayer = true
         layer?.masksToBounds = false
 
-        countLabel.alignment = .center
-        countLabel.font = .preferredFont(forTextStyle: .caption2).bold()
-        countLabel.textColor = .white
-        countLabel.backgroundColor = .clear
-        countLabel.isBezeled = false
-        countLabel.isEditable = false
-        countLabel.isSelectable = false
-        countLabel.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(countLabel)
-
-        NSLayoutConstraint.activate([
-            countLabel.leadingAnchor.constraint(equalTo: leadingAnchor),
-            countLabel.trailingAnchor.constraint(equalTo: trailingAnchor),
-            countLabel.topAnchor.constraint(equalTo: topAnchor),
-            countLabel.bottomAnchor.constraint(equalTo: bottomAnchor)
-        ])
+        configureSubviews()
+        scheduleRefreshContent()
     }
 
     @available(*, unavailable)
@@ -389,27 +427,207 @@ private final class ReviewClusterAnnotationView: MKAnnotationView {
         fatalError("init(coder:) has not been implemented")
     }
 
+    deinit {
+        loadTask?.cancel()
+    }
+
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        loadTask?.cancel()
+        loadTask = nil
+        representedAssetID = nil
+        imageLayerView.layer?.contents = nil
+        placeholderImageView.isHidden = false
+        countBadgeView.isHidden = true
+    }
+
     override var annotation: (any MKAnnotation)? {
         didSet {
-            guard let clusterAnnotation = annotation as? ReviewClusterAnnotation else { return }
-
-            let diameter: CGFloat = clusterAnnotation.count > 1 ? 26 : 14
-            frame.size = CGSize(width: diameter, height: diameter)
-            layer?.cornerRadius = diameter / 2
-            layer?.backgroundColor = NSColor.controlAccentColor.cgColor
-            layer?.borderWidth = 2
-            layer?.borderColor = NSColor.white.withAlphaComponent(0.9).cgColor
-            layer?.shadowColor = NSColor.black.withAlphaComponent(0.25).cgColor
-            layer?.shadowOpacity = 1
-            layer?.shadowRadius = 2
-            layer?.shadowOffset = CGSize(width: 0, height: 1)
-
-            countLabel.isHidden = clusterAnnotation.count == 1
-            countLabel.stringValue = clusterAnnotation.count > 1 ? "\(clusterAnnotation.count)" : ""
-            toolTip = clusterAnnotation.count > 1
-                ? "\(clusterAnnotation.count) photos near \(clusterAnnotation.title ?? "Unknown location")"
-                : clusterAnnotation.title
+            scheduleRefreshContent()
         }
+    }
+
+    private func scheduleRefreshContent() {
+        Task { @MainActor [weak self] in
+            self?.refreshContent()
+        }
+    }
+
+    private func configureSubviews() {
+        bubbleShadowView.translatesAutoresizingMaskIntoConstraints = false
+        bubbleShadowView.wantsLayer = true
+        bubbleShadowView.layer?.masksToBounds = false
+        addSubview(bubbleShadowView)
+
+        bubbleContentView.translatesAutoresizingMaskIntoConstraints = false
+        bubbleContentView.wantsLayer = true
+        bubbleContentView.layer?.cornerRadius = Self.bubbleCornerRadius
+        bubbleContentView.layer?.masksToBounds = true
+        bubbleContentView.layer?.borderWidth = 3
+        bubbleContentView.layer?.borderColor = NSColor.white.cgColor
+        bubbleContentView.layer?.backgroundColor = NSColor.controlBackgroundColor.cgColor
+        bubbleShadowView.addSubview(bubbleContentView)
+
+        imageLayerView.translatesAutoresizingMaskIntoConstraints = false
+        imageLayerView.wantsLayer = true
+        imageLayerView.layer?.backgroundColor = NSColor.tertiaryLabelColor.withAlphaComponent(0.35).cgColor
+        imageLayerView.layer?.contentsGravity = .resizeAspectFill
+        imageLayerView.layer?.contentsScale = NSScreen.main?.backingScaleFactor ?? 2
+        bubbleContentView.addSubview(imageLayerView)
+
+        placeholderImageView.translatesAutoresizingMaskIntoConstraints = false
+        placeholderImageView.image = NSImage(
+            systemSymbolName: "photo",
+            accessibilityDescription: "Photo preview unavailable"
+        )
+        placeholderImageView.symbolConfiguration = NSImage.SymbolConfiguration(pointSize: 20, weight: .medium)
+        placeholderImageView.contentTintColor = NSColor.white.withAlphaComponent(0.9)
+        bubbleContentView.addSubview(placeholderImageView)
+
+        countBadgeView.translatesAutoresizingMaskIntoConstraints = false
+        countBadgeView.wantsLayer = true
+        countBadgeView.layer?.cornerRadius = 11
+        countBadgeView.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.74).cgColor
+        countBadgeView.layer?.borderWidth = 1
+        countBadgeView.layer?.borderColor = NSColor.white.withAlphaComponent(0.22).cgColor
+        bubbleContentView.addSubview(countBadgeView)
+
+        countLabel.translatesAutoresizingMaskIntoConstraints = false
+        countLabel.alignment = .center
+        countLabel.font = .preferredFont(forTextStyle: .caption1).bold()
+        countLabel.textColor = .white
+        countLabel.backgroundColor = .clear
+        countLabel.isBezeled = false
+        countLabel.isEditable = false
+        countLabel.isSelectable = false
+        countBadgeView.addSubview(countLabel)
+
+        tailView.translatesAutoresizingMaskIntoConstraints = false
+        tailView.wantsLayer = true
+        tailView.layer?.cornerRadius = 3
+        tailView.layer?.backgroundColor = NSColor.white.cgColor
+        tailView.layer?.transform = CATransform3DMakeRotation(.pi / 4, 0, 0, 1)
+        addSubview(tailView)
+
+        NSLayoutConstraint.activate([
+            bubbleShadowView.topAnchor.constraint(equalTo: topAnchor, constant: Self.topPadding),
+            bubbleShadowView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: Self.horizontalPadding),
+            bubbleShadowView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -Self.horizontalPadding),
+            bubbleShadowView.heightAnchor.constraint(equalToConstant: Self.bubbleSide),
+
+            bubbleContentView.leadingAnchor.constraint(equalTo: bubbleShadowView.leadingAnchor),
+            bubbleContentView.trailingAnchor.constraint(equalTo: bubbleShadowView.trailingAnchor),
+            bubbleContentView.topAnchor.constraint(equalTo: bubbleShadowView.topAnchor),
+            bubbleContentView.bottomAnchor.constraint(equalTo: bubbleShadowView.bottomAnchor),
+
+            imageLayerView.leadingAnchor.constraint(equalTo: bubbleContentView.leadingAnchor),
+            imageLayerView.trailingAnchor.constraint(equalTo: bubbleContentView.trailingAnchor),
+            imageLayerView.topAnchor.constraint(equalTo: bubbleContentView.topAnchor),
+            imageLayerView.bottomAnchor.constraint(equalTo: bubbleContentView.bottomAnchor),
+
+            placeholderImageView.centerXAnchor.constraint(equalTo: bubbleContentView.centerXAnchor),
+            placeholderImageView.centerYAnchor.constraint(equalTo: bubbleContentView.centerYAnchor),
+
+            countBadgeView.leadingAnchor.constraint(equalTo: bubbleContentView.leadingAnchor, constant: 6),
+            countBadgeView.bottomAnchor.constraint(equalTo: bubbleContentView.bottomAnchor, constant: -6),
+            countBadgeView.heightAnchor.constraint(equalToConstant: 22),
+            countBadgeView.widthAnchor.constraint(greaterThanOrEqualToConstant: 22),
+
+            countLabel.leadingAnchor.constraint(equalTo: countBadgeView.leadingAnchor, constant: 7),
+            countLabel.trailingAnchor.constraint(equalTo: countBadgeView.trailingAnchor, constant: -7),
+            countLabel.topAnchor.constraint(equalTo: countBadgeView.topAnchor, constant: 2),
+            countLabel.bottomAnchor.constraint(equalTo: countBadgeView.bottomAnchor, constant: -2),
+
+            tailView.centerXAnchor.constraint(equalTo: bubbleShadowView.centerXAnchor),
+            tailView.topAnchor.constraint(equalTo: bubbleShadowView.bottomAnchor, constant: -Self.tailOverlap),
+            tailView.widthAnchor.constraint(equalToConstant: Self.tailSide),
+            tailView.heightAnchor.constraint(equalTo: tailView.widthAnchor),
+            tailView.bottomAnchor.constraint(equalTo: bottomAnchor)
+        ])
+    }
+
+    @MainActor
+    private func refreshContent() {
+        guard let clusterAnnotation = annotation as? ReviewClusterAnnotation else {
+            loadTask?.cancel()
+            loadTask = nil
+            representedAssetID = nil
+            imageLayerView.layer?.contents = nil
+            placeholderImageView.isHidden = false
+            countBadgeView.isHidden = true
+            toolTip = nil
+            return
+        }
+
+        applySelectionStyle(isSelected: clusterAnnotation.isSelected)
+        countBadgeView.isHidden = clusterAnnotation.count <= 1
+        countLabel.stringValue = clusterAnnotation.count > 1 ? "\(clusterAnnotation.count)" : ""
+        toolTip = clusterAnnotation.count > 1
+            ? "\(clusterAnnotation.count) photos near \(clusterAnnotation.title ?? "Unknown location")"
+            : clusterAnnotation.title
+
+        let asset = clusterAnnotation.asset
+        representedAssetID = asset.id
+        loadTask?.cancel()
+        loadTask = nil
+
+        if let cachedImage = ReviewMapThumbnailCache.shared.image(for: asset.id) {
+            applyImage(cachedImage)
+            return
+        }
+
+        applyImage(nil)
+
+        guard let thumbnailProvider else { return }
+
+        loadTask = Task { @MainActor [weak self] in
+            do {
+                if let cachedImage = ReviewMapThumbnailCache.shared.image(for: asset.id) {
+                    guard let self, self.representedAssetID == asset.id else { return }
+                    self.applyImage(cachedImage)
+                    return
+                }
+
+                guard let cgImage = try await thumbnailProvider.thumbnail(for: asset, maxPixelSize: 220) else {
+                    guard let self, self.representedAssetID == asset.id else { return }
+                    self.applyImage(nil)
+                    return
+                }
+
+                guard !Task.isCancelled else { return }
+                ReviewMapThumbnailCache.shared.store(cgImage, for: asset.id)
+                guard let self, self.representedAssetID == asset.id else { return }
+                self.applyImage(cgImage)
+            } catch {
+                guard let self, self.representedAssetID == asset.id else { return }
+                self.applyImage(nil)
+            }
+        }
+    }
+
+    @MainActor
+    private func applyImage(_ image: CGImage?) {
+        imageLayerView.layer?.contents = image
+        placeholderImageView.isHidden = image != nil
+    }
+
+    @MainActor
+    private func applySelectionStyle(isSelected: Bool) {
+        let shadowColor = isSelected
+            ? NSColor.controlAccentColor.withAlphaComponent(0.6).cgColor
+            : NSColor.black.withAlphaComponent(0.28).cgColor
+        let shadowRadius: CGFloat = isSelected ? 12 : 8
+        let shadowOffset = isSelected ? CGSize(width: 0, height: 0) : CGSize(width: 0, height: 4)
+
+        bubbleShadowView.layer?.shadowColor = shadowColor
+        bubbleShadowView.layer?.shadowOpacity = 1
+        bubbleShadowView.layer?.shadowRadius = shadowRadius
+        bubbleShadowView.layer?.shadowOffset = shadowOffset
+
+        tailView.layer?.shadowColor = shadowColor
+        tailView.layer?.shadowOpacity = 1
+        tailView.layer?.shadowRadius = isSelected ? 6 : 4
+        tailView.layer?.shadowOffset = shadowOffset
     }
 }
 
