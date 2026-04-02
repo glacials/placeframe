@@ -108,16 +108,24 @@ struct ReviewView: View {
 
             Spacer()
 
-            Text("Day \(min(viewModel.currentDayIndex + 1, max(viewModel.daySections.count, 1))) of \(max(viewModel.daySections.count, 1))")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+            VStack(alignment: .trailing, spacing: 2) {
+                Text("Day \(min(viewModel.currentDayIndex + 1, max(viewModel.daySections.count, 1))) of \(max(viewModel.daySections.count, 1))")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+
+                if let currentDaySection = viewModel.currentDaySection {
+                    Text("Apply All writes all \(currentDaySection.entries.count) photos shown for this day.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
 
             Button {
                 Task {
                     await viewModel.applyCurrentDay()
                 }
             } label: {
-                Label(viewModel.isApplyingCurrentDay ? "Applying..." : "Apply Day", systemImage: "checkmark.circle")
+                Label(viewModel.isApplyingCurrentDay ? "Applying All..." : "Apply All", systemImage: "checkmark.circle")
             }
             .buttonStyle(.borderedProminent)
             .disabled(!viewModel.canApplyCurrentDay)
