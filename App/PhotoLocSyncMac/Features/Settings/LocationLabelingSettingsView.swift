@@ -49,12 +49,23 @@ struct LocationLabelingConsentView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             VStack(alignment: .leading, spacing: 10) {
-                Text("Choose How Place Labels Work")
+                Text("Enable Rich Place Labels?")
                     .font(.largeTitle.bold())
-                Text("Rich address labels like street, city, and country names require Apple geocoding. That sends the matched coordinates to Apple for lookup. If you prefer, the app can keep labels local and show coordinates instead.")
+                Text("Should Photo Location Sync display human-readable place names? This requires sending anonymized coordinates to the Apple Maps API.")
                     .foregroundStyle(.secondary)
-                Text("You can change this later in Settings.")
-                    .foregroundStyle(.secondary)
+            }
+
+            GroupBox("Example") {
+                HStack(spacing: 12) {
+                    Text("37.33, -122.03")
+                        .font(.system(.body, design: .monospaced))
+                    Image(systemName: "arrow.right")
+                        .foregroundStyle(.secondary)
+                    Text("Cupertino, California")
+                        .font(.body.weight(.semibold))
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, 4)
             }
 
             VStack(alignment: .leading, spacing: 14) {
@@ -63,12 +74,16 @@ struct LocationLabelingConsentView: View {
                         title: preference.title,
                         summary: preference.summary,
                         isSelected: false,
-                        actionTitle: preference == .allowAppleGeocoding ? "Allow Rich Place Labels" : "Keep Coordinates Local"
+                        actionTitle: preference == .allowAppleGeocoding ? "Enable Rich Labels" : "Keep Coordinates Local"
                     ) {
                         choose(preference)
                     }
                 }
             }
+
+            Text("You can change this later in Settings.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
         }
         .padding(24)
         .frame(minWidth: 760, minHeight: 420, alignment: .topLeading)

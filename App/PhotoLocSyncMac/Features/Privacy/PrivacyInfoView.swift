@@ -47,7 +47,7 @@ struct PrivacyInfoView: View {
                 GroupBox("Optional network-backed features") {
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Photo Location Sync does not upload your imported timeline file or match results.")
-                        Text("If you enable rich place labels in Settings, Apple geocoding receives coordinates so it can return address and place names.")
+                        Text("If you enable rich place labels in Settings, Apple geocoding receives anonymized coordinates so it can return address and place names.")
                         Text("If you open the review map, Apple map tiles may load for the visible region.")
                         Text("If a requested photo preview is only stored in iCloud Photos, Apple Photos may download that asset so the app can display it.")
                         Text("If you press Apply and iCloud Photos is enabled for your library, Apple may separately sync those approved Photos changes.")

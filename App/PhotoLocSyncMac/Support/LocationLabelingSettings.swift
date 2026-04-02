@@ -19,9 +19,9 @@ enum LocationLabelingPreference: String, CaseIterable, Identifiable, Sendable {
     var summary: String {
         switch self {
         case .localCoordinatesOnly:
-            "Show coordinates only. Imported timeline coordinates stay local unless another feature independently needs network access."
+            "Show coordinates only. No Apple Maps label lookup."
         case .allowAppleGeocoding:
-            "Look up rich place labels like street, city, and country names. Apple receives coordinates for those label lookups."
+            "Show rich place names. Apple receives anonymized coordinates for those lookups."
         }
     }
 }

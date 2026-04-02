@@ -15,7 +15,8 @@ public actor CLGeocoderAdapter: ReverseGeocoding {
             return cached
         }
 
-        let location = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
+        let requestCoordinate = Self.anonymizedCoordinate(for: coordinate)
+        let location = CLLocation(latitude: requestCoordinate.latitude, longitude: requestCoordinate.longitude)
         let resolvedLocation: ResolvedLocation
         do {
             let placemarks = try await CLGeocoder().reverseGeocodeLocation(location)
@@ -30,6 +31,13 @@ public actor CLGeocoderAdapter: ReverseGeocoding {
 
         await cache.insert(resolvedLocation, for: coordinate)
         return resolvedLocation
+    }
+
+    static func anonymizedCoordinate(for coordinate: GeoCoordinate) -> GeoCoordinate {
+        GeoCoordinate(
+            latitude: round(coordinate.latitude * 100) / 100,
+            longitude: round(coordinate.longitude * 100) / 100
+        )
     }
 
     private func makeResolvedLocation(for coordinate: GeoCoordinate, placemark: CLPlacemark) -> ResolvedLocation {
