@@ -51,16 +51,15 @@ private struct ReviewPreviewSourceBridge: NSViewRepresentable {
     }
 }
 
-private struct ReviewLocationStatePanel: View {
+private struct ReviewLocationChangeBadge: View {
     let title: String
     let value: String
-    let note: String
     let systemImage: String
     let tint: Color
-    let extraLines: [String]
+    let detailLines: [String]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 5) {
             Label(title, systemImage: systemImage)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
@@ -72,7 +71,7 @@ private struct ReviewLocationStatePanel: View {
                 .truncationMode(.tail)
                 .fixedSize(horizontal: false, vertical: true)
 
-            ForEach(extraLines, id: \.self) { line in
+            ForEach(detailLines, id: \.self) { line in
                 Text(line)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -80,11 +79,6 @@ private struct ReviewLocationStatePanel: View {
                     .truncationMode(.tail)
                     .fixedSize(horizontal: false, vertical: true)
             }
-
-            Text(note)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
@@ -178,7 +172,7 @@ private struct ReviewListItemView: View {
         let canPasteCopiedLocation = canPasteLocation(contextMenuTargetIDs)
         let status = ReviewSuggestionStatusDescriptor(item: entry.item)
 
-        VStack(alignment: .leading, spacing: 12) {
+        HStack(alignment: .top, spacing: 16) {
             ZStack {
                 RoundedRectangle(cornerRadius: 12)
                     .fill(Color.secondary.opacity(0.08))
@@ -193,8 +187,6 @@ private struct ReviewListItemView: View {
                         .foregroundStyle(.secondary)
                 }
             }
-            .frame(maxWidth: .infinity)
-            .frame(height: 220)
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .task {
                 thumbnailLoader.loadIfNeeded()
@@ -209,38 +201,45 @@ private struct ReviewListItemView: View {
                 }
                 .allowsHitTesting(false)
             }
+            .frame(width: 168, height: 132)
 
             VStack(alignment: .leading, spacing: 10) {
                 Text("Location")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
 
-                ReviewLocationStatePanel(
-                    title: "Current in Apple Photos",
-                    value: entry.item.asset.hasLocation ? "Location already saved" : "Blank",
-                    note: entry.item.asset.hasLocation
-                        ? "This photo already has saved location metadata."
-                        : "This photo has no saved location metadata yet.",
-                    systemImage: "circle.dashed",
-                    tint: Color.secondary,
-                    extraLines: []
-                )
+                HStack(alignment: .center, spacing: 10) {
+                    ReviewLocationChangeBadge(
+                        title: "Now",
+                        value: currentLocationSummary,
+                        systemImage: "circle.dashed",
+                        tint: Color.secondary,
+                        detailLines: []
+                    )
 
-                HStack(spacing: 6) {
-                    Image(systemName: "arrow.down.circle.fill")
-                    Text("Apply saves coordinates for the selected place below.")
+                    Image(systemName: "arrow.right.circle.fill")
+                        .font(.title3)
+                        .foregroundStyle(Color.accentColor)
+
+                    ReviewLocationChangeBadge(
+                        title: "Apply",
+                        value: selectedLocationLabel,
+                        systemImage: "mappin.and.ellipse",
+                        tint: Color.accentColor,
+                        detailLines: selectedLocationDetailLines
+                    )
                 }
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(Color.accentColor)
+                .frame(maxWidth: .infinity, alignment: .leading)
 
-                ReviewLocationStatePanel(
-                    title: "Apply will save",
-                    value: selectedLocationLabel,
-                    note: locationSourceText,
-                    systemImage: "mappin.and.ellipse",
-                    tint: Color.accentColor,
-                    extraLines: selectedLocationDetailLines
-                )
+                Text(currentLocationDetailText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Text(locationSourceText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
 
                 Label(captureDateText(entry.item), systemImage: "calendar")
                     .foregroundStyle(.secondary)
@@ -279,74 +278,75 @@ private struct ReviewListItemView: View {
                         .font(.caption)
                         .foregroundStyle(.tertiary)
                 }
-            }
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Review action")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
 
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Review action")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                    Menu {
+                        ForEach(entry.item.availableLocationOptions) { option in
+                            Button {
+                                setLocationPrecision([entry.id], option.precision)
+                            } label: {
+                                if entry.item.selectedPrecision == option.precision {
+                                    Label(locationOptionMenuTitle(for: option), systemImage: "checkmark")
+                                } else {
+                                    Text(locationOptionMenuTitle(for: option))
+                                }
+                            }
+                        }
+                    } label: {
+                        HStack(alignment: .top, spacing: 8) {
+                            Image(systemName: "slider.horizontal.3")
+                                .foregroundStyle(.secondary)
+                                .padding(.top, 2)
 
-                Menu {
-                    ForEach(entry.item.availableLocationOptions) { option in
-                        Button {
-                            setLocationPrecision([entry.id], option.precision)
-                        } label: {
-                            if entry.item.selectedPrecision == option.precision {
-                                Label(locationOptionMenuTitle(for: option), systemImage: "checkmark")
-                            } else {
-                                Text(locationOptionMenuTitle(for: option))
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Save as")
+                                    .font(.subheadline.weight(.semibold))
+                                Text(selectedLocationMenuLabel)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(2)
+                                    .truncationMode(.tail)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+
+                            Spacer(minLength: 8)
+
+                            Image(systemName: "chevron.down")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                                .padding(.top, 4)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .buttonStyle(.bordered)
+
+                    Button("Apply") {
+                        Task {
+                            await applyChange(entry.id)
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(entry.item.suggestedDecision == nil)
+
+                    Menu("Leave Blank") {
+                        Button("This Time") {
+                            skipForNow(entry.id)
+                        }
+
+                        Button("Every Time") {
+                            Task {
+                                await dismissPermanently(entry.id)
                             }
                         }
                     }
-                } label: {
-                    HStack(alignment: .top, spacing: 8) {
-                        Image(systemName: "slider.horizontal.3")
-                            .foregroundStyle(.secondary)
-                            .padding(.top, 2)
-
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Save as")
-                                .font(.subheadline.weight(.semibold))
-                            Text(selectedLocationMenuLabel)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(2)
-                                .truncationMode(.tail)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-
-                        Spacer(minLength: 8)
-
-                        Image(systemName: "chevron.down")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                            .padding(.top, 4)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .buttonStyle(.bordered)
                 }
-                .buttonStyle(.bordered)
-
-                Button("Apply") {
-                    Task {
-                        await applyChange(entry.id)
-                    }
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(entry.item.suggestedDecision == nil)
-
-                Menu("Leave Blank") {
-                    Button("This Time") {
-                        skipForNow(entry.id)
-                    }
-
-                    Button("Every Time") {
-                        Task {
-                            await dismissPermanently(entry.id)
-                        }
-                    }
-                }
-                .buttonStyle(.bordered)
+                .padding(.top, 2)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -491,6 +491,16 @@ private struct ReviewListItemView: View {
 
     private var selectedLocationMenuLabel: String {
         truncatedLocationLabel(selectedLocationLabel, maxLength: 72)
+    }
+
+    private var currentLocationSummary: String {
+        entry.item.asset.hasLocation ? "Saved in Photos" : "Blank"
+    }
+
+    private var currentLocationDetailText: String {
+        entry.item.asset.hasLocation
+            ? "This photo already has saved location metadata."
+            : "This photo has no saved location metadata yet."
     }
 
     private var selectedLocationDetailLines: [String] {
