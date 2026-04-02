@@ -521,8 +521,7 @@ private struct ReviewListItemView: View {
     }
 
     private func locationOptionMenuTitle(for option: LocationOption) -> String {
-        let subtitle = option.precision.title
-        return "\(truncatedLocationLabel(option.label)) (\(subtitle))"
+        truncatedLocationLabel(option.label)
     }
 
     private func contextMenuPrecisionTitle(for precision: LocationPrecision) -> String {
