@@ -7,6 +7,15 @@ enum ImportWizardStep: Int, CaseIterable, Identifiable {
     case upload
 
     var id: Self { self }
+
+    var prompt: String {
+        switch self {
+        case .export:
+            return "Export Timeline data from Google Maps, then move `location-history.json` onto this Mac."
+        case .upload:
+            return "Choose `location-history.json` from Finder, or drag it onto this window."
+        }
+    }
 }
 
 @MainActor
@@ -30,7 +39,19 @@ final class ImportViewModel: ObservableObject {
         currentStep = .upload
     }
 
-    func skipCurrentStep() {
+    var canGoBack: Bool {
+        currentStep != .export
+    }
+
+    var stepCounterText: String {
+        "[\(currentStep.rawValue + 1)/\(ImportWizardStep.allCases.count)]"
+    }
+
+    func goBack() {
+        currentStep = .export
+    }
+
+    func handlePrimaryAction() {
         switch currentStep {
         case .export:
             advanceToUpload()

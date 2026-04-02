@@ -8,31 +8,34 @@ final class ImportViewModelTests: XCTestCase {
 
         XCTAssertEqual(viewModel.currentStep, .export)
         XCTAssertFalse(viewModel.isFileImporterPresented)
+        XCTAssertFalse(viewModel.canGoBack)
     }
 
-    func testAdvanceToUploadMovesWizardForwardWithoutOpeningImporter() {
+    func testPrimaryActionFromExportMovesWizardForwardWithoutOpeningImporter() {
         let viewModel = ImportViewModel()
 
-        viewModel.advanceToUpload()
+        viewModel.handlePrimaryAction()
 
         XCTAssertEqual(viewModel.currentStep, .upload)
         XCTAssertFalse(viewModel.isFileImporterPresented)
+        XCTAssertTrue(viewModel.canGoBack)
     }
 
-    func testSkipFromExportAdvancesToUploadStep() {
-        let viewModel = ImportViewModel()
-
-        viewModel.skipCurrentStep()
-
-        XCTAssertEqual(viewModel.currentStep, .upload)
-        XCTAssertFalse(viewModel.isFileImporterPresented)
-    }
-
-    func testSkipFromUploadPresentsImporter() {
+    func testBackFromUploadReturnsToExportStep() {
         let viewModel = ImportViewModel()
         viewModel.advanceToUpload()
 
-        viewModel.skipCurrentStep()
+        viewModel.goBack()
+
+        XCTAssertEqual(viewModel.currentStep, .export)
+        XCTAssertFalse(viewModel.isFileImporterPresented)
+    }
+
+    func testPrimaryActionFromUploadPresentsImporter() {
+        let viewModel = ImportViewModel()
+        viewModel.advanceToUpload()
+
+        viewModel.handlePrimaryAction()
 
         XCTAssertEqual(viewModel.currentStep, .upload)
         XCTAssertTrue(viewModel.isFileImporterPresented)
