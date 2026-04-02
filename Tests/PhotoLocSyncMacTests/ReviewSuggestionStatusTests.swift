@@ -5,10 +5,10 @@ import PhotoLocSyncCore
 final class ReviewSuggestionStatusTests: XCTestCase {
     func testExcellentAutoSuggestedStatusUsesPlainLanguage() {
         let descriptor = ReviewSuggestionStatusDescriptor(
-            item: makeReviewItem(confidence: .excellent, disposition: .autoSuggested)
+            item: makeReviewItem(confidence: .excellent, disposition: .autoSuggested, timeDelta: 8 * 60)
         )
 
-        XCTAssertEqual(descriptor.title, "Auto-suggested")
+        XCTAssertEqual(descriptor.title, "8 min")
         XCTAssertEqual(descriptor.symbolName, "checkmark.seal.fill")
         XCTAssertEqual(
             descriptor.shortDescription,
@@ -18,14 +18,27 @@ final class ReviewSuggestionStatusTests: XCTestCase {
 
     func testAmbiguousStatusExplainsManualVerification() {
         let descriptor = ReviewSuggestionStatusDescriptor(
-            item: makeReviewItem(confidence: .maybe, disposition: .ambiguous)
+            item: makeReviewItem(confidence: .maybe, disposition: .ambiguous, timeDelta: 42 * 60)
         )
 
-        XCTAssertEqual(descriptor.title, "Needs review")
+        XCTAssertEqual(descriptor.title, "42 min")
         XCTAssertEqual(descriptor.symbolName, "questionmark.circle")
         XCTAssertEqual(
             descriptor.shortDescription,
             "A nearby timeline match was found, but it was loose enough that you should verify it before writing."
+        )
+    }
+
+    func testUnmatchedStatusFallsBackToNoMatchWithoutTimeDelta() {
+        let descriptor = ReviewSuggestionStatusDescriptor(
+            item: makeReviewItem(confidence: .rejected, disposition: .unmatched, timeDelta: nil)
+        )
+
+        XCTAssertEqual(descriptor.title, "No match")
+        XCTAssertEqual(descriptor.symbolName, "xmark.circle")
+        XCTAssertEqual(
+            descriptor.shortDescription,
+            "The timeline did not have a usable match for this photo."
         )
     }
 
@@ -44,7 +57,11 @@ final class ReviewSuggestionStatusTests: XCTestCase {
         )
     }
 
-    private func makeReviewItem(confidence: MatchConfidence, disposition: MatchDisposition) -> ReviewItem {
+    private func makeReviewItem(
+        confidence: MatchConfidence,
+        disposition: MatchDisposition,
+        timeDelta: TimeInterval?
+    ) -> ReviewItem {
         let asset = PhotoAsset(
             id: "asset-1",
             creationDate: Date(timeIntervalSince1970: 1_700_000_000),
@@ -57,7 +74,7 @@ final class ReviewSuggestionStatusTests: XCTestCase {
             proposedCoordinate: coordinate,
             locationLabel: "Shibuya, Tokyo",
             confidence: confidence,
-            timeDelta: 8 * 60,
+            timeDelta: timeDelta,
             disposition: disposition,
             suggestedDecision: MatchDecision(
                 assetID: asset.id,

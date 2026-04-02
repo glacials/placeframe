@@ -260,7 +260,7 @@ private struct ReviewListItemView: View {
                             .font(.subheadline)
                     }
                     .buttonStyle(.plain)
-                    .help("Explain this status")
+                    .help("Explain this color")
 
                     Spacer()
                 }

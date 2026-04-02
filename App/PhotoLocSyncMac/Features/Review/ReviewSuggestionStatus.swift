@@ -63,7 +63,7 @@ struct ReviewSuggestionStatusDescriptor {
     let shortDescription: String
 
     init(item: ReviewItem) {
-        title = item.disposition.reviewStatusTitle
+        title = Self.title(for: item)
         tone = item.disposition.reviewStatusTone
 
         switch item.disposition {
@@ -87,6 +87,15 @@ struct ReviewSuggestionStatusDescriptor {
             shortDescription = "The timeline did not have a usable match for this photo."
         }
     }
+
+    private static func title(for item: ReviewItem) -> String {
+        guard let timeDelta = item.timeDelta else {
+            return item.disposition.reviewStatusTitle
+        }
+
+        let minuteOffset = Int((abs(timeDelta) / 60).rounded())
+        return "\(minuteOffset) min"
+    }
 }
 
 struct ReviewSuggestionStatusHelpView: View {
@@ -94,10 +103,10 @@ struct ReviewSuggestionStatusHelpView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Why this status?")
+            Text("Why this color?")
                 .font(.headline)
 
-            Text("This label explains why the app suggested the location. It is based on the timeline timing, not whether the place is definitely correct.")
+            Text("The badge shows how many minutes the Google Timeline suggestion differs from the camera timestamp. Its color explains whether that timing was strong enough to prefill the location or loose enough that you should double-check it.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
