@@ -50,6 +50,16 @@ public final class SyncCoordinator: Sendable {
         )
     }
 
+    public func clearLocations(for assetIDs: [String]) async throws -> ApplySummary {
+        let results = try await writer.clearLocations(for: assetIDs)
+        return ApplySummary(
+            updated: results.filter { $0.outcome == .updated }.count,
+            skipped: results.filter { $0.outcome == .skipped }.count,
+            failed: results.filter { $0.outcome == .failed }.count,
+            failures: results.filter { $0.outcome == .failed }
+        )
+    }
+
     public func deleteAsset(withID assetID: String) async throws {
         try await writer.deleteAsset(withID: assetID)
     }

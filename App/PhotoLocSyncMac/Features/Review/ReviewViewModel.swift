@@ -37,6 +37,46 @@ private struct CopiedLocation {
     let confidence: MatchConfidence
 }
 
+private struct ReviewStateSnapshot {
+    let summary: ReviewSummary
+    let selections: [ReviewSelection]
+    let currentDayIndex: Int
+    let selectedPhotoIDs: Set<String>
+    let copiedLocation: CopiedLocation?
+    let selectionAnchorID: String?
+    let excludedAssetIDs: Set<String>
+}
+
+private enum ReviewHistoryAction {
+    case apply(decisions: [MatchDecision])
+    case leaveBlankThisTime(assetIDs: [String])
+    case leaveBlankEveryTime(items: [ReviewItem])
+
+    var undoTitle: String {
+        switch self {
+        case .apply:
+            return "Undo Apply"
+        case .leaveBlankThisTime, .leaveBlankEveryTime:
+            return "Undo Leave Blank"
+        }
+    }
+
+    var redoTitle: String {
+        switch self {
+        case .apply:
+            return "Redo Apply"
+        case .leaveBlankThisTime, .leaveBlankEveryTime:
+            return "Redo Leave Blank"
+        }
+    }
+}
+
+private struct ReviewHistoryEntry {
+    let action: ReviewHistoryAction
+    let before: ReviewStateSnapshot
+    let after: ReviewStateSnapshot
+}
+
 @MainActor
 final class ReviewViewModel: ObservableObject {
     @Published var currentDayIndex: Int = 0
@@ -47,6 +87,7 @@ final class ReviewViewModel: ObservableObject {
     @Published private(set) var selectedPhotoIDs: Set<String> = []
     @Published private(set) var isApplyingCurrentDay = false
     @Published private(set) var isApplyingCaptureTimeOffset = false
+    @Published private(set) var isReplayingHistory = false
     @Published private(set) var selectedCaptureTimeOffset: TimeInterval = 0
     @Published private var copiedLocation: CopiedLocation?
 
@@ -55,6 +96,8 @@ final class ReviewViewModel: ObservableObject {
     private let captureTimeOffsetAnalysesByDay: [Date: CaptureTimeOffsetAnalysis]
     private let onApplyDecision: @Sendable (MatchDecision) async throws -> Void
     private let onDismissPermanently: @Sendable (ReviewItem) async -> Void
+    private let onUndoAppliedDecisions: @Sendable ([MatchDecision]) async throws -> Void
+    private let onUndoDismissPermanently: @Sendable ([String]) async -> Void
     private let onDeletePhoto: @Sendable (String) async throws -> Void
     private let onApplyCaptureTimeOffset: @Sendable (Date, TimeInterval, Set<String>) async -> Void
     private let onCancel: @Sendable () -> Void
@@ -66,6 +109,8 @@ final class ReviewViewModel: ObservableObject {
     private var deletingAssetIDs: Set<String> = []
     private var selectionAnchorID: String?
     private var excludedAssetIDs: Set<String> = []
+    private var undoHistory: [ReviewHistoryEntry] = []
+    private var redoHistory: [ReviewHistoryEntry] = []
 
     init(
         summary: ReviewSummary,
@@ -74,7 +119,9 @@ final class ReviewViewModel: ObservableObject {
         captureTimeOffsetAnalysesByDay: [Date: CaptureTimeOffsetAnalysis],
         thumbnailProvider: PhotoThumbnailProvider,
         onApplyDecision: @escaping @Sendable (MatchDecision) async throws -> Void,
+        onUndoAppliedDecisions: @escaping @Sendable ([MatchDecision]) async throws -> Void,
         onDismissPermanently: @escaping @Sendable (ReviewItem) async -> Void,
+        onUndoDismissPermanently: @escaping @Sendable ([String]) async -> Void,
         onDeletePhoto: @escaping @Sendable (String) async throws -> Void,
         onApplyCaptureTimeOffset: @escaping @Sendable (Date, TimeInterval, Set<String>) async -> Void,
         onCancel: @escaping @Sendable () -> Void
@@ -91,7 +138,9 @@ final class ReviewViewModel: ObservableObject {
         self.captureTimeOffsetAnalysesByDay = captureTimeOffsetAnalysesByDay
         self.thumbnailProvider = thumbnailProvider
         self.onApplyDecision = onApplyDecision
+        self.onUndoAppliedDecisions = onUndoAppliedDecisions
         self.onDismissPermanently = onDismissPermanently
+        self.onUndoDismissPermanently = onUndoDismissPermanently
         self.onDeletePhoto = onDeletePhoto
         self.onApplyCaptureTimeOffset = onApplyCaptureTimeOffset
         self.onCancel = onCancel
@@ -160,13 +209,17 @@ final class ReviewViewModel: ObservableObject {
     var canGoToPreviousDay: Bool { currentDayIndex > 0 }
     var canGoToNextDay: Bool { currentDayIndex + 1 < daySections.count }
     var canAdjustCaptureTimeOffset: Bool { currentDayCaptureTimeOffsetAnalysis?.options.isEmpty == false }
+    var canUndo: Bool { !hasInFlightReviewMutation && !undoHistory.isEmpty }
+    var canRedo: Bool { !hasInFlightReviewMutation && !redoHistory.isEmpty }
+    var undoTitle: String { undoHistory.last?.action.undoTitle ?? "Undo" }
+    var redoTitle: String { redoHistory.last?.action.redoTitle ?? "Redo" }
     var canApplyCurrentDay: Bool {
         guard let currentDayEntries = currentDaySection?.entries,
               !currentDayEntries.isEmpty else {
             return false
         }
 
-        return !isApplyingCurrentDay && currentDayEntries.allSatisfy { $0.item.suggestedDecision != nil }
+        return !hasInFlightReviewMutation && currentDayEntries.allSatisfy { $0.item.suggestedDecision != nil }
     }
 
     var mapSelectionTargets: [ReviewMapSelectionTarget] {
@@ -449,6 +502,7 @@ final class ReviewViewModel: ObservableObject {
     }
 
     func applySelectedCaptureTimeOffset() async {
+        guard hasInFlightReviewMutation == false else { return }
         guard let currentDayStart,
               let option = selectedCaptureTimeOffsetOption,
               option.offset != currentDayCaptureTimeOffset else {
@@ -493,11 +547,19 @@ final class ReviewViewModel: ObservableObject {
     }
 
     func applyChanges(for assetIDs: [String]) async {
+        guard isReplayingHistory == false,
+              isApplyingCaptureTimeOffset == false,
+              deletingAssetIDs.isEmpty else {
+            return
+        }
+
         let applicableSelections = orderedSelections(for: assetIDs).filter { $0.item.suggestedDecision != nil }
         let applicableAssetIDs = reserveActionAssetIDs(applicableSelections.map(\.id))
         guard !applicableAssetIDs.isEmpty else { return }
 
+        let stateBeforeChange = snapshot()
         let nextAssetIDAfterAllApplies = nextAssetIDAfterApplying(applicableAssetIDs)
+        var appliedDecisions: [MatchDecision] = []
 
         defer {
             applicableAssetIDs.forEach { actionAssetIDs.remove($0) }
@@ -510,33 +572,55 @@ final class ReviewViewModel: ObservableObject {
 
             do {
                 try await onApplyDecision(decision)
+                appliedDecisions.append(decision)
                 removeSelection(withID: assetID)
             } catch {
                 presentedError = errorPresenter.userPresentableError(for: error)
                 focusPhoto(withID: assetID)
+                if !appliedDecisions.isEmpty {
+                    recordHistory(action: .apply(decisions: appliedDecisions), before: stateBeforeChange)
+                }
                 return
             }
         }
 
         focusPhoto(withID: nextAssetIDAfterAllApplies)
+        if !appliedDecisions.isEmpty {
+            recordHistory(action: .apply(decisions: appliedDecisions), before: stateBeforeChange)
+        }
     }
 
     func skipPhotosForNow(_ assetIDs: [String]) {
+        guard isReplayingHistory == false,
+              isApplyingCaptureTimeOffset == false,
+              isApplyingCurrentDay == false else {
+            return
+        }
+
         let orderedAssetIDs = orderedSelections(for: assetIDs).map(\.id)
         guard !orderedAssetIDs.isEmpty else { return }
 
+        let stateBeforeChange = snapshot()
         let nextAssetID = nextAssetID(afterRemoving: Set(orderedAssetIDs))
         removeSelections(withIDs: orderedAssetIDs)
         focusPhoto(withID: nextAssetID)
+        recordHistory(action: .leaveBlankThisTime(assetIDs: orderedAssetIDs), before: stateBeforeChange)
     }
 
     func dismissPhotosPermanently(_ assetIDs: [String]) async {
-        let orderedSelections = orderedSelections(for: assetIDs)
-        let orderedAssetIDs = reserveActionAssetIDs(orderedSelections.map(\.id))
+        guard isReplayingHistory == false,
+              isApplyingCaptureTimeOffset == false,
+              isApplyingCurrentDay == false else {
+            return
+        }
+
+        let selectionsToDismiss = orderedSelections(for: assetIDs)
+        let orderedAssetIDs = reserveActionAssetIDs(selectionsToDismiss.map(\.id))
         guard !orderedAssetIDs.isEmpty else { return }
 
+        let stateBeforeChange = snapshot()
         let nextAssetID = nextAssetID(afterRemoving: Set(orderedAssetIDs))
-        let itemsByAssetID = Dictionary(uniqueKeysWithValues: orderedSelections.map { ($0.id, $0.item) })
+        let itemsByAssetID = Dictionary(uniqueKeysWithValues: selectionsToDismiss.map { ($0.id, $0.item) })
 
         defer {
             orderedAssetIDs.forEach { actionAssetIDs.remove($0) }
@@ -549,9 +633,15 @@ final class ReviewViewModel: ObservableObject {
 
         removeSelections(withIDs: orderedAssetIDs)
         focusPhoto(withID: nextAssetID)
+        recordHistory(action: .leaveBlankEveryTime(items: selectionsToDismiss.map(\.item)), before: stateBeforeChange)
     }
 
     func deletePhoto(_ assetID: String) async {
+        guard isReplayingHistory == false,
+              isApplyingCaptureTimeOffset == false,
+              isApplyingCurrentDay == false else {
+            return
+        }
         guard selections.contains(where: { $0.id == assetID }),
               deletingAssetIDs.insert(assetID).inserted else {
             return
@@ -571,6 +661,48 @@ final class ReviewViewModel: ObservableObject {
 
     func cancel() {
         onCancel()
+    }
+
+    func undoLastAction() async {
+        guard canUndo,
+              let entry = undoHistory.last else {
+            return
+        }
+
+        isReplayingHistory = true
+        defer {
+            isReplayingHistory = false
+        }
+
+        do {
+            try await performUndo(for: entry.action)
+            undoHistory.removeLast()
+            redoHistory.append(entry)
+            restore(entry.before)
+        } catch {
+            presentedError = errorPresenter.userPresentableError(for: error)
+        }
+    }
+
+    func redoLastAction() async {
+        guard canRedo,
+              let entry = redoHistory.last else {
+            return
+        }
+
+        isReplayingHistory = true
+        defer {
+            isReplayingHistory = false
+        }
+
+        do {
+            try await performRedo(for: entry.action)
+            redoHistory.removeLast()
+            undoHistory.append(entry)
+            restore(entry.after)
+        } catch {
+            presentedError = errorPresenter.userPresentableError(for: error)
+        }
     }
 
     private func copiedLocationPayload(for selection: ReviewSelection) -> CopiedLocation? {
@@ -735,6 +867,80 @@ final class ReviewViewModel: ObservableObject {
         }
 
         return dayEntryIDs.first(where: { $0 != assetID })
+    }
+
+    private var hasInFlightReviewMutation: Bool {
+        isApplyingCurrentDay || isApplyingCaptureTimeOffset || isReplayingHistory || !actionAssetIDs.isEmpty || !deletingAssetIDs.isEmpty
+    }
+
+    private func snapshot() -> ReviewStateSnapshot {
+        ReviewStateSnapshot(
+            summary: summary,
+            selections: selections,
+            currentDayIndex: currentDayIndex,
+            selectedPhotoIDs: selectedPhotoIDs,
+            copiedLocation: copiedLocation,
+            selectionAnchorID: selectionAnchorID,
+            excludedAssetIDs: excludedAssetIDs
+        )
+    }
+
+    private func restore(_ snapshot: ReviewStateSnapshot) {
+        summary = snapshot.summary
+        selections = snapshot.selections
+        excludedAssetIDs = snapshot.excludedAssetIDs
+
+        let availableAssetIDs = Set(selections.map(\.id))
+        copiedLocation = snapshot.copiedLocation.flatMap { copiedLocation in
+            availableAssetIDs.contains(copiedLocation.sourceAssetID) ? copiedLocation : nil
+        }
+        currentDayIndex = snapshot.currentDayIndex
+        clampCurrentDayIndex()
+        selectedPhotoIDs = snapshot.selectedPhotoIDs.intersection(availableAssetIDs)
+        if let selectionAnchorID = snapshot.selectionAnchorID,
+           availableAssetIDs.contains(selectionAnchorID) {
+            self.selectionAnchorID = selectionAnchorID
+        } else {
+            self.selectionAnchorID = nil
+        }
+        presentedError = nil
+    }
+
+    private func recordHistory(action: ReviewHistoryAction, before stateBeforeChange: ReviewStateSnapshot) {
+        undoHistory.append(
+            ReviewHistoryEntry(
+                action: action,
+                before: stateBeforeChange,
+                after: snapshot()
+            )
+        )
+        redoHistory.removeAll()
+    }
+
+    private func performUndo(for action: ReviewHistoryAction) async throws {
+        switch action {
+        case .apply(let decisions):
+            try await onUndoAppliedDecisions(decisions)
+        case .leaveBlankThisTime:
+            return
+        case .leaveBlankEveryTime(let items):
+            await onUndoDismissPermanently(items.map(\.id))
+        }
+    }
+
+    private func performRedo(for action: ReviewHistoryAction) async throws {
+        switch action {
+        case .apply(let decisions):
+            for decision in decisions {
+                try await onApplyDecision(decision)
+            }
+        case .leaveBlankThisTime:
+            return
+        case .leaveBlankEveryTime(let items):
+            for item in items {
+                await onDismissPermanently(item)
+            }
+        }
     }
 
     private func focusPhoto(withID assetID: String?) {

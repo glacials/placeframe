@@ -43,6 +43,7 @@ struct LeftBlankPhotoRecord: Identifiable, Hashable, Codable, Sendable {
 protocol ReviewSuppressionStoring: Sendable {
     func filterVisibleItems(_ items: [ReviewItem]) async -> [ReviewItem]
     func suppress(_ item: ReviewItem) async
+    func unsuppress(_ assetIDs: [String]) async
     func suppressedRecords() async -> [LeftBlankPhotoRecord]
 }
 
@@ -95,6 +96,18 @@ actor ReviewSuppressionStore: ReviewSuppressionStoring {
         }
 
         return sortedRecords(Array(recordsByAssetID.values))
+    }
+
+    func unsuppress(_ assetIDs: [String]) async {
+        guard !assetIDs.isEmpty else { return }
+
+        let assetIDSet = Set(assetIDs)
+        let remainingRecords = persistedRecords().filter { assetIDSet.contains($0.assetID) == false }
+        persist(remainingRecords)
+
+        var legacySuppressedAssetIDs = legacySuppressedIDs()
+        legacySuppressedAssetIDs.subtract(assetIDSet)
+        defaults.set(Array(legacySuppressedAssetIDs).sorted(), forKey: legacyKey)
     }
 
     private func suppressedIDs() -> Set<String> {
