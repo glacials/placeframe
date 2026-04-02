@@ -3,17 +3,20 @@ import Foundation
 public struct CaptureTimeOffsetAnalyzer: Sendable {
     private let matcher: TimelineMatcher
     private let candidateOffsets: [TimeInterval]
+    private let selectableOffsets: [TimeInterval]
     private let minimumAssetCount: Int
     private let displayedOptionCount: Int
 
     public init(
         matcher: TimelineMatcher = TimelineMatcher(),
         candidateOffsets: [TimeInterval] = Array(-14...14).map { Double($0) * 60 * 60 },
+        selectableOffsets: [TimeInterval] = stride(from: -14 * 60 * 60, through: 14 * 60 * 60, by: 15 * 60).map(Double.init),
         minimumAssetCount: Int = 1,
         displayedOptionCount: Int = 3
     ) {
         self.matcher = matcher
         self.candidateOffsets = candidateOffsets
+        self.selectableOffsets = selectableOffsets
         self.minimumAssetCount = minimumAssetCount
         self.displayedOptionCount = displayedOptionCount
     }
@@ -25,7 +28,7 @@ public struct CaptureTimeOffsetAnalyzer: Sendable {
     ) -> CaptureTimeOffsetAnalysis? {
         guard assets.count >= minimumAssetCount else { return nil }
 
-        let offsets = Set(candidateOffsets + [currentOffset]).sorted()
+        let offsets = Set(selectableOffsets + [currentOffset]).sorted()
         let visitSegments = timeline.segments.filter { $0.kind == .visit }
         let evaluated = offsets.map { offset in
             let matches = matcher.match(assets: assets, timeline: timeline, captureTimeOffset: offset)
@@ -36,14 +39,18 @@ public struct CaptureTimeOffsetAnalyzer: Sendable {
             return nil
         }
 
-        let ranked = evaluated.sorted(by: isBetter)
+        let ranked = Set(candidateOffsets + [currentOffset]).sorted().compactMap { offset in
+            evaluated.first { $0.offset == offset }
+        }
+        .sorted(by: isBetter)
         let recommendedOffset = recommendedOffset(from: ranked, currentOption: currentOption, totalAssets: assets.count)
         let options = displayedOptions(from: ranked, currentOption: currentOption, recommendedOffset: recommendedOffset)
 
         return CaptureTimeOffsetAnalysis(
             currentOffset: currentOffset,
             recommendedOffset: recommendedOffset,
-            options: options
+            options: options,
+            allOptions: evaluated
         )
     }
 

@@ -418,6 +418,13 @@ private struct ReviewCaptureTimeOffsetSheet: View {
         selectedOption?.offset != currentOption?.offset && viewModel.isApplyingCaptureTimeOffset == false
     }
 
+    private var customOffsetBinding: Binding<TimeInterval> {
+        Binding(
+            get: { viewModel.selectedCaptureTimeOffset },
+            set: { viewModel.selectCaptureTimeOffset($0) }
+        )
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             HStack(alignment: .top, spacing: 16) {
@@ -448,7 +455,50 @@ private struct ReviewCaptureTimeOffsetSheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("Try a Different Assumption")
+                        Text("Choose a Time Zone Offset")
+                            .font(.headline)
+
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                                Text(viewModel.captureTimeOffsetSelectedAssumptionLabel)
+                                    .font(.title3.weight(.semibold))
+                                    .monospacedDigit()
+
+                                if viewModel.selectedCaptureTimeOffsetMatchesSuggestedOption == false {
+                                    ReviewCaptureTimeOffsetTag(title: "Custom")
+                                }
+                            }
+
+                            if let minimumOffset = viewModel.minimumSelectableCaptureTimeOffset,
+                               let maximumOffset = viewModel.maximumSelectableCaptureTimeOffset {
+                                Slider(
+                                    value: customOffsetBinding,
+                                    in: minimumOffset...maximumOffset,
+                                    step: 15 * 60
+                                )
+
+                                HStack {
+                                    Text(viewModel.captureTimeOffsetSelectionLabel(for: minimumOffset))
+                                    Spacer()
+                                    Text(viewModel.captureTimeOffsetSelectionLabel(for: maximumOffset))
+                                }
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .monospacedDigit()
+                            }
+
+                            Text("Drag the handle to any quarter-hour UTC offset, even if it is not one of the suggested comparisons below.")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(14)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(
+                            RoundedRectangle(cornerRadius: 14)
+                                .fill(Color.secondary.opacity(0.06))
+                        )
+
+                        Text("Suggested Comparisons")
                             .font(.headline)
 
                         ForEach(viewModel.captureTimeOffsetOptions) { option in
@@ -566,13 +616,13 @@ private struct ReviewCaptureTimeOffsetSheet: View {
                 viewModel.moveSelectedCaptureTimeOffset(.next)
             }
             .keyboardShortcut("j", modifiers: [])
-            .disabled(sheetKeyboardShortcutsDisabled || viewModel.captureTimeOffsetOptions.isEmpty)
+            .disabled(sheetKeyboardShortcutsDisabled || viewModel.captureTimeOffsetSelectableOffsets.isEmpty)
 
             Button("Move Camera Time Selection Up") {
                 viewModel.moveSelectedCaptureTimeOffset(.previous)
             }
             .keyboardShortcut("k", modifiers: [])
-            .disabled(sheetKeyboardShortcutsDisabled || viewModel.captureTimeOffsetOptions.isEmpty)
+            .disabled(sheetKeyboardShortcutsDisabled || viewModel.captureTimeOffsetSelectableOffsets.isEmpty)
 
             Button("Apply Selected Camera Time Assumption") {
                 Task {

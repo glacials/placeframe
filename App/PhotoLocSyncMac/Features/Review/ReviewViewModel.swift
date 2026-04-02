@@ -292,6 +292,11 @@ final class ReviewViewModel: ObservableObject {
         currentDayCaptureTimeOffsetAnalysis?.options ?? []
     }
 
+    var captureTimeOffsetSelectableOffsets: [TimeInterval] {
+        let offsets = currentDayCaptureTimeOffsetAnalysis?.allOptions.map(\.offset) ?? captureTimeOffsetOptions.map(\.offset)
+        return Array(Set(offsets)).sorted()
+    }
+
     var currentCaptureTimeOffsetOption: CaptureTimeOffsetOption? {
         currentDayCaptureTimeOffsetAnalysis?.currentOption
     }
@@ -302,6 +307,10 @@ final class ReviewViewModel: ObservableObject {
 
     var selectedCaptureTimeOffsetOption: CaptureTimeOffsetOption? {
         currentDayCaptureTimeOffsetAnalysis?.option(for: selectedCaptureTimeOffset) ?? currentCaptureTimeOffsetOption
+    }
+
+    var selectedCaptureTimeOffsetMatchesSuggestedOption: Bool {
+        captureTimeOffsetOptions.contains { $0.offset == selectedCaptureTimeOffset }
     }
 
     var captureTimeOffsetNeedsAttention: Bool {
@@ -360,6 +369,18 @@ final class ReviewViewModel: ObservableObject {
         }
 
         return "Compare the strongest camera-time assumptions for this day before changing the matches below."
+    }
+
+    var captureTimeOffsetSelectedAssumptionLabel: String {
+        captureTimeOffsetAssumptionLabel(for: selectedCaptureTimeOffsetOption?.offset ?? selectedCaptureTimeOffset)
+    }
+
+    var minimumSelectableCaptureTimeOffset: TimeInterval? {
+        captureTimeOffsetSelectableOffsets.first
+    }
+
+    var maximumSelectableCaptureTimeOffset: TimeInterval? {
+        captureTimeOffsetSelectableOffsets.last
     }
 
     func selectPhoto(_ assetID: String, mode: ReviewPhotoSelectionMode) {
@@ -526,15 +547,22 @@ final class ReviewViewModel: ObservableObject {
     }
 
     func selectCaptureTimeOffset(_ offset: TimeInterval) {
-        selectedCaptureTimeOffset = offset
+        guard let snappedOffset = captureTimeOffsetSelectableOffsets.min(by: {
+            abs($0 - offset) < abs($1 - offset)
+        }) else {
+            selectedCaptureTimeOffset = offset
+            return
+        }
+
+        selectedCaptureTimeOffset = snappedOffset
     }
 
     func moveSelectedCaptureTimeOffset(_ direction: ReviewCaptureTimeOffsetSelectionDirection) {
-        let options = captureTimeOffsetOptions
-        guard !options.isEmpty else { return }
+        let offsets = captureTimeOffsetSelectableOffsets
+        guard !offsets.isEmpty else { return }
 
-        guard let currentIndex = options.firstIndex(where: { $0.offset == selectedCaptureTimeOffset }) else {
-            selectedCaptureTimeOffset = options[0].offset
+        guard let currentIndex = offsets.firstIndex(of: selectedCaptureTimeOffset) else {
+            selectedCaptureTimeOffset = offsets[0]
             return
         }
 
@@ -543,10 +571,10 @@ final class ReviewViewModel: ObservableObject {
         case .previous:
             targetIndex = max(currentIndex - 1, 0)
         case .next:
-            targetIndex = min(currentIndex + 1, options.count - 1)
+            targetIndex = min(currentIndex + 1, offsets.count - 1)
         }
 
-        selectedCaptureTimeOffset = options[targetIndex].offset
+        selectedCaptureTimeOffset = offsets[targetIndex]
     }
 
     func moveKeyboardSelection(_ direction: ReviewKeyboardSelectionDirection) {
@@ -612,6 +640,10 @@ final class ReviewViewModel: ObservableObject {
         }
 
         return "Use \(captureTimeOffsetActionLabel(for: option.offset))"
+    }
+
+    func captureTimeOffsetSelectionLabel(for offset: TimeInterval) -> String {
+        captureTimeOffsetAssumptionLabel(for: offset)
     }
 
     func captureTimeOffsetOptionSummary(for option: CaptureTimeOffsetOption) -> String {

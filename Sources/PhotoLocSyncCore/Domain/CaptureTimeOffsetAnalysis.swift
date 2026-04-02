@@ -49,15 +49,18 @@ public struct CaptureTimeOffsetAnalysis: Sendable {
     public let currentOffset: TimeInterval
     public let recommendedOffset: TimeInterval?
     public let options: [CaptureTimeOffsetOption]
+    public let allOptions: [CaptureTimeOffsetOption]
 
     public init(
         currentOffset: TimeInterval,
         recommendedOffset: TimeInterval?,
-        options: [CaptureTimeOffsetOption]
+        options: [CaptureTimeOffsetOption],
+        allOptions: [CaptureTimeOffsetOption]? = nil
     ) {
         self.currentOffset = currentOffset
         self.recommendedOffset = recommendedOffset
         self.options = options
+        self.allOptions = allOptions ?? options
     }
 
     public var currentOption: CaptureTimeOffsetOption? {
@@ -70,6 +73,6 @@ public struct CaptureTimeOffsetAnalysis: Sendable {
     }
 
     public func option(for offset: TimeInterval) -> CaptureTimeOffsetOption? {
-        options.first { $0.offset == offset }
+        allOptions.first { $0.offset == offset }
     }
 }
