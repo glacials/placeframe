@@ -136,6 +136,7 @@ final class AppState: ObservableObject {
         captureTimeOffsetsByDayStart.removeAll()
         reviewSessionSource = nil
         reviewViewModel = nil
+        importViewModel.reset()
         flowState = .idle
     }
 

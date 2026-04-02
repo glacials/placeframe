@@ -2,10 +2,18 @@ import Foundation
 import SwiftUI
 import UniformTypeIdentifiers
 
+enum ImportWizardStep: Int, CaseIterable, Identifiable {
+    case export
+    case upload
+
+    var id: Self { self }
+}
+
 @MainActor
 final class ImportViewModel: ObservableObject {
     @Published var isFileImporterPresented = false
     @Published var isDropTargeted = false
+    @Published private(set) var currentStep: ImportWizardStep = .export
 
     private weak var appState: AppState?
 
@@ -14,14 +22,36 @@ final class ImportViewModel: ObservableObject {
     }
 
     func presentImporter() {
+        currentStep = .upload
         isFileImporterPresented = true
+    }
+
+    func advanceToUpload() {
+        currentStep = .upload
+    }
+
+    func skipCurrentStep() {
+        switch currentStep {
+        case .export:
+            advanceToUpload()
+        case .upload:
+            presentImporter()
+        }
+    }
+
+    func reset() {
+        currentStep = .export
+        isFileImporterPresented = false
+        isDropTargeted = false
     }
 
     func handleImportResult(_ result: Result<URL, Error>) {
         switch result {
         case .success(let url):
+            currentStep = .upload
             Task { await appState?.importTimeline(from: url) }
         case .failure(let error):
+            guard isUserCancellation(error) == false else { return }
             appState?.flowState = .failed(UserPresentableError(title: "Import Failed", message: error.localizedDescription))
         }
     }
@@ -30,6 +60,8 @@ final class ImportViewModel: ObservableObject {
         guard let provider = providers.first(where: { $0.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) }) else {
             return false
         }
+
+        currentStep = .upload
 
         provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { [weak self] item, error in
             if let error {
@@ -61,5 +93,15 @@ final class ImportViewModel: ObservableObject {
             Task { await self?.appState?.importTimeline(from: url) }
         }
         return true
+    }
+
+    private func isUserCancellation(_ error: Error) -> Bool {
+        if error is CancellationError {
+            return true
+        }
+
+        let nsError = error as NSError
+        return nsError.domain == NSCocoaErrorDomain &&
+            nsError.code == CocoaError.userCancelled.rawValue
     }
 }
