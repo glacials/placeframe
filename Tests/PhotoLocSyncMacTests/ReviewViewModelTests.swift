@@ -1378,6 +1378,44 @@ final class ReviewViewModelTests: XCTestCase {
         XCTAssertEqual(snapshot.dayStart, secondDayStart)
     }
 
+    func testApplySelectedCaptureTimeOffsetUsesCustomQuarterHourOffset() async {
+        let recorder = CaptureTimeOffsetApplyRecorder()
+        let item = makeReviewItem(
+            assetID: "custom-offset-photo",
+            coordinate: GeoCoordinate(latitude: 35.6895, longitude: 139.6917),
+            label: "Tokyo",
+            confidence: .maybe,
+            disposition: .ambiguous
+        )
+        let dayStart = Calendar.autoupdatingCurrent.startOfDay(for: item.asset.creationDate)
+        let analysis = makeCaptureTimeOffsetAnalysis(
+            assetIDs: [item.id],
+            recommendedOffset: 9 * 60 * 60,
+            extraSelectableOffsets: [9.5 * 60 * 60]
+        )
+        let viewModel = makeViewModel(
+            items: [item],
+            captureTimeOffsetAnalysesByDay: [dayStart: analysis],
+            onApplyCaptureTimeOffset: { dayStart, offset, excludedAssetIDs in
+                await recorder.record(
+                    dayStart: dayStart,
+                    offset: offset,
+                    excludedAssetIDs: excludedAssetIDs
+                )
+            }
+        )
+
+        viewModel.presentCaptureTimeOffsetSheet()
+        viewModel.selectCaptureTimeOffset(9.5 * 60 * 60)
+        await viewModel.applySelectedCaptureTimeOffset()
+
+        let snapshot = await recorder.snapshot()
+        XCTAssertEqual(snapshot.dayStart, dayStart)
+        XCTAssertEqual(snapshot.offset, 9.5 * 60 * 60)
+        XCTAssertEqual(viewModel.captureTimeOffsetSelectedAssumptionLabel, "UTC+09:30")
+        XCTAssertFalse(viewModel.selectedCaptureTimeOffsetMatchesSuggestedOption)
+    }
+
     private func makeViewModel(
         items: [ReviewItem],
         dayCaptureTimeOffsets: [Date: TimeInterval] = [:],
@@ -1462,7 +1500,8 @@ final class ReviewViewModelTests: XCTestCase {
     private func makeCaptureTimeOffsetAnalysis(
         assetIDs: [String],
         currentOffset: TimeInterval = 0,
-        recommendedOffset: TimeInterval? = nil
+        recommendedOffset: TimeInterval? = nil,
+        extraSelectableOffsets: [TimeInterval] = []
     ) -> CaptureTimeOffsetAnalysis {
         let baseline = makeCaptureTimeOffsetOption(
             offset: currentOffset,
@@ -1494,11 +1533,30 @@ final class ReviewViewModelTests: XCTestCase {
                 medianAbsoluteTimeDelta: 10 * 60
             )
         )
+        let extraOptions = extraSelectableOffsets.map { offset in
+            makeCaptureTimeOffsetOption(
+                offset: offset,
+                assetIDs: assetIDs,
+                disposition: .autoSuggested,
+                confidence: .acceptable,
+                timeDelta: 5 * 60,
+                metrics: CaptureTimeOffsetMetrics(
+                    totalAssets: assetIDs.count,
+                    autoSuggested: assetIDs.count,
+                    ambiguous: 0,
+                    unmatched: 0,
+                    visitContained: assetIDs.count,
+                    medianAbsoluteTimeDelta: 5 * 60
+                )
+            )
+        }
+        let displayedOptions = recommendedOffset == nil ? [baseline, improved] : [improved, baseline]
 
         return CaptureTimeOffsetAnalysis(
             currentOffset: currentOffset,
             recommendedOffset: recommendedOffset,
-            options: recommendedOffset == nil ? [baseline, improved] : [improved, baseline]
+            options: displayedOptions,
+            allOptions: displayedOptions + extraOptions
         )
     }
 
