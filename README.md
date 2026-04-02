@@ -18,7 +18,7 @@ Photo Location Sync is a macOS SwiftUI app plus a reusable Swift package for mat
 1. Launch the macOS app from Xcode, `swift run PhotoLocSyncMac`, or a generated `.app` bundle.
 2. Import a Google Maps `location-history.json` export with the native file picker or drag-and-drop.
 3. Grant Photos access.
-4. Review proposed location matches in grid, list, or map mode.
+4. Review proposed location matches in list or map mode.
 5. Apply confirmed GPS metadata to Apple Photos.
 
 ## Running locally

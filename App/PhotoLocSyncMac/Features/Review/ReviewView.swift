@@ -12,7 +12,7 @@ struct ReviewView: View {
 
             if let currentDaySection = viewModel.currentDaySection {
                 HSplitView {
-                    ReviewGridView(
+                    ReviewListView(
                         entries: currentDaySection.entries,
                         selectedPhotoIDs: viewModel.selectedPhotoIDs,
                         thumbnailProvider: viewModel.thumbnailProvider,

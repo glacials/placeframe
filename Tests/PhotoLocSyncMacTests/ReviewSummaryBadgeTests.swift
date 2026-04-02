@@ -40,7 +40,7 @@ final class ReviewSummaryBadgeTests: XCTestCase {
                     value: 3,
                     helpText: """
                     Photos that had no usable timeline point near the capture time.
-                    They are counted here, but do not appear in the review grid.
+                    They are counted here, but do not appear in the review list.
                     """
                 )
             ]

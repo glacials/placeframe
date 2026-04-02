@@ -96,7 +96,7 @@ private struct ReviewLocationStatePanel: View {
     }
 }
 
-private struct ReviewGridItemView: View {
+private struct ReviewListItemView: View {
     let entry: ReviewSelection
     let isPhotoSelected: Bool
     let contextMenuTargetIDs: [String]
@@ -531,7 +531,7 @@ private struct ReviewGridItemView: View {
     }
 }
 
-struct ReviewGridView: View {
+struct ReviewListView: View {
     let entries: [ReviewSelection]
     let selectedPhotoIDs: Set<String>
     let thumbnailProvider: PhotoThumbnailProvider
@@ -552,10 +552,6 @@ struct ReviewGridView: View {
     let captureDateText: (ReviewItem) -> String
     let timeDeltaText: (ReviewItem) -> String
 
-    private var columns: [GridItem] {
-        [GridItem(.adaptive(minimum: 240), spacing: 16)]
-    }
-
     private var focusedPhotoID: String? {
         guard selectedPhotoIDs.count == 1 else { return nil }
         return selectedPhotoIDs.first
@@ -564,10 +560,10 @@ struct ReviewGridView: View {
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVGrid(columns: columns, alignment: .leading, spacing: 16) {
+                LazyVStack(alignment: .leading, spacing: 16) {
                     ForEach(entries) { entry in
                         let contextMenuTargetIDs = contextMenuTargetIDs(for: entry)
-                        ReviewGridItemView(
+                        ReviewListItemView(
                             entry: entry,
                             isPhotoSelected: selectedPhotoIDs.contains(entry.id),
                             contextMenuTargetIDs: contextMenuTargetIDs,
