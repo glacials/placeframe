@@ -34,8 +34,11 @@ final class AppState: ObservableObject {
     private let thumbnailProvider: PhotoThumbnailProvider
     private let reviewItemFilter: PhotoKitImportedReviewItemFilter
     private let reviewSuppressionStore: ReviewSuppressionStoring
+    private let captureTimeOffsetAnalyzer: CaptureTimeOffsetAnalyzer
     private let errorPresenter: ErrorPresenter
+    private let calendar = Calendar.autoupdatingCurrent
     private var reviewSessionSource: ReviewSessionSource?
+    private var captureTimeOffsetsByDayStart: [Date: TimeInterval] = [:]
 
     init(
         coordinator: SyncCoordinator,
@@ -43,6 +46,7 @@ final class AppState: ObservableObject {
         thumbnailProvider: PhotoThumbnailProvider,
         reviewItemFilter: PhotoKitImportedReviewItemFilter,
         reviewSuppressionStore: ReviewSuppressionStoring,
+        captureTimeOffsetAnalyzer: CaptureTimeOffsetAnalyzer = CaptureTimeOffsetAnalyzer(),
         errorPresenter: ErrorPresenter = ErrorPresenter()
     ) {
         self.coordinator = coordinator
@@ -50,6 +54,7 @@ final class AppState: ObservableObject {
         self.thumbnailProvider = thumbnailProvider
         self.reviewItemFilter = reviewItemFilter
         self.reviewSuppressionStore = reviewSuppressionStore
+        self.captureTimeOffsetAnalyzer = captureTimeOffsetAnalyzer
         self.errorPresenter = errorPresenter
         self.importViewModel = ImportViewModel()
         self.importViewModel.bind(appState: self)
@@ -84,6 +89,7 @@ final class AppState: ObservableObject {
                 self?.flowState = .processing(stage)
             }
         }
+        captureTimeOffsetsByDayStart.removeAll()
         reviewSessionSource = ReviewSessionSource(
             timeline: preparedReview.timeline,
             candidateAssets: preparedReview.candidateAssets
@@ -100,6 +106,7 @@ final class AppState: ObservableObject {
     }
 
     func reset() {
+        captureTimeOffsetsByDayStart.removeAll()
         reviewSessionSource = nil
         reviewViewModel = nil
         flowState = .idle
@@ -111,6 +118,8 @@ final class AppState: ObservableObject {
     ) async {
         let likelyCameraItems = await reviewItemFilter.filterToLikelyCameraItems(preparedReview.items)
         let filteredItems = await reviewSuppressionStore.filterVisibleItems(likelyCameraItems)
+        let captureTimeOffsetAnalysesByDay = makeCaptureTimeOffsetAnalyses(for: preparedReview.candidateAssets)
+        let visibleDayCaptureTimeOffsets = visibleDayCaptureTimeOffsets(for: preparedReview.candidateAssets)
         let filteredSummary = ReviewSummary(
             totalAssets: filteredItems.count,
             autoSuggested: filteredItems.filter { $0.disposition == .autoSuggested }.count,
@@ -121,9 +130,8 @@ final class AppState: ObservableObject {
         let reviewViewModel = ReviewViewModel(
             summary: filteredSummary,
             items: filteredItems,
-            sessionAssetIDs: Set(preparedReview.candidateAssets.map(\.id)),
-            captureTimeOffset: preparedReview.captureTimeOffset,
-            captureTimeOffsetAnalysis: preparedReview.captureTimeOffsetAnalysis,
+            dayCaptureTimeOffsets: visibleDayCaptureTimeOffsets,
+            captureTimeOffsetAnalysesByDay: captureTimeOffsetAnalysesByDay,
             thumbnailProvider: thumbnailProvider,
             onApplyDecision: { [weak self] decision in
                 guard let self else { return }
@@ -137,12 +145,13 @@ final class AppState: ObservableObject {
                 guard let self else { return }
                 try await self.deletePhoto(assetID: assetID)
             },
-            onApplyCaptureTimeOffset: { [weak self] offset, excludedAssetIDs, preferredDayStart in
+            onApplyCaptureTimeOffset: { [weak self] dayStart, offset, excludedAssetIDs in
                 guard let self else { return }
                 await self.applyCaptureTimeOffset(
-                    offset,
+                    for: dayStart,
+                    offset: offset,
                     excluding: excludedAssetIDs,
-                    preferredDayStart: preferredDayStart
+                    preferredDayStart: dayStart
                 )
             },
             onCancel: { [weak self] in
@@ -162,11 +171,18 @@ final class AppState: ObservableObject {
     }
 
     private func applyCaptureTimeOffset(
-        _ offset: TimeInterval,
+        for dayStart: Date,
+        offset: TimeInterval,
         excluding excludedAssetIDs: Set<String>,
         preferredDayStart: Date?
     ) async {
         guard let reviewSessionSource else { return }
+
+        if offset == 0 {
+            captureTimeOffsetsByDayStart.removeValue(forKey: dayStart)
+        } else {
+            captureTimeOffsetsByDayStart[dayStart] = offset
+        }
 
         let remainingAssets = reviewSessionSource.candidateAssets.filter { asset in
             excludedAssetIDs.contains(asset.id) == false
@@ -174,12 +190,44 @@ final class AppState: ObservableObject {
         let preparedReview = await coordinator.prepareReview(
             timeline: reviewSessionSource.timeline,
             assets: remainingAssets,
-            captureTimeOffset: offset
+            captureTimeOffsetsByDayStart: captureTimeOffsetsByDayStart
         )
         self.reviewSessionSource = ReviewSessionSource(
             timeline: reviewSessionSource.timeline,
             candidateAssets: remainingAssets
         )
         await displayPreparedReview(preparedReview, preferredDayStart: preferredDayStart)
+    }
+
+    private func makeCaptureTimeOffsetAnalyses(for assets: [PhotoAsset]) -> [Date: CaptureTimeOffsetAnalysis] {
+        guard let reviewSessionSource else { return [:] }
+
+        let groupedAssets = Dictionary(grouping: assets) { asset in
+            calendar.startOfDay(for: asset.creationDate)
+        }
+
+        var analysesByDay: [Date: CaptureTimeOffsetAnalysis] = [:]
+        analysesByDay.reserveCapacity(groupedAssets.count)
+
+        for (dayStart, dayAssets) in groupedAssets {
+            let currentOffset = captureTimeOffsetsByDayStart[dayStart] ?? 0
+            if let analysis = captureTimeOffsetAnalyzer.analyze(
+                timeline: reviewSessionSource.timeline,
+                assets: dayAssets,
+                currentOffset: currentOffset
+            ) {
+                analysesByDay[dayStart] = analysis
+            }
+        }
+
+        return analysesByDay
+    }
+
+    private func visibleDayCaptureTimeOffsets(for assets: [PhotoAsset]) -> [Date: TimeInterval] {
+        let visibleDayStarts = Set(assets.map { asset in
+            calendar.startOfDay(for: asset.creationDate)
+        })
+
+        return captureTimeOffsetsByDayStart.filter { visibleDayStarts.contains($0.key) }
     }
 }

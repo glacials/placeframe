@@ -59,6 +59,19 @@ public final class ProcessingPipeline: Sendable {
         )
     }
 
+    public func prepareReview(
+        timeline: ImportedTimeline,
+        assets: [PhotoAsset],
+        captureTimeOffsetsByDayStart: [Date: TimeInterval]
+    ) async -> PreparedReview {
+        await prepareReview(
+            timeline: timeline,
+            assets: assets,
+            captureTimeOffsetsByDayStart: captureTimeOffsetsByDayStart,
+            onStageChange: nil
+        )
+    }
+
     private func prepareReview(
         timeline: ImportedTimeline,
         assets: [PhotoAsset],
@@ -91,6 +104,45 @@ public final class ProcessingPipeline: Sendable {
             summary: summary,
             captureTimeOffset: captureTimeOffset,
             captureTimeOffsetAnalysis: captureTimeOffsetAnalysis
+        )
+    }
+
+    private func prepareReview(
+        timeline: ImportedTimeline,
+        assets: [PhotoAsset],
+        captureTimeOffsetsByDayStart: [Date: TimeInterval],
+        onStageChange: (@Sendable (ProcessingStage) -> Void)?
+    ) async -> PreparedReview {
+        onStageChange?(.matchingLocations)
+
+        let calendar = Calendar.autoupdatingCurrent
+        let groupedAssets = Dictionary(grouping: assets) { asset in
+            captureTimeOffsetsByDayStart[calendar.startOfDay(for: asset.creationDate)] ?? 0
+        }
+        let matches = groupedAssets
+            .flatMap { offset, groupedAssets in
+                matcher.match(assets: groupedAssets, timeline: timeline, captureTimeOffset: offset)
+            }
+            .sorted { $0.asset.creationDate < $1.asset.creationDate }
+
+        onStageChange?(.reverseGeocodingPlaces)
+        let items = await buildReviewItems(from: matches)
+
+        onStageChange?(.preparingReview)
+        let summary = ReviewSummary(
+            totalAssets: items.count,
+            autoSuggested: matches.filter { $0.disposition == .autoSuggested }.count,
+            ambiguous: matches.filter { $0.disposition == .ambiguous }.count,
+            unmatched: matches.filter { $0.disposition == .unmatched }.count
+        )
+
+        return PreparedReview(
+            timeline: timeline,
+            candidateAssets: assets,
+            items: items,
+            summary: summary,
+            captureTimeOffset: 0,
+            captureTimeOffsetAnalysis: nil
         )
     }
 

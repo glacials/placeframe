@@ -51,13 +51,12 @@ final class ReviewViewModel: ObservableObject {
     @Published private var copiedLocation: CopiedLocation?
 
     let thumbnailProvider: PhotoThumbnailProvider
-    private let sessionAssetIDs: Set<String>
-    private let currentCaptureTimeOffset: TimeInterval
-    private let captureTimeOffsetAnalysis: CaptureTimeOffsetAnalysis?
+    private let dayCaptureTimeOffsets: [Date: TimeInterval]
+    private let captureTimeOffsetAnalysesByDay: [Date: CaptureTimeOffsetAnalysis]
     private let onApplyDecision: @Sendable (MatchDecision) async throws -> Void
     private let onDismissPermanently: @Sendable (String) async -> Void
     private let onDeletePhoto: @Sendable (String) async throws -> Void
-    private let onApplyCaptureTimeOffset: @Sendable (TimeInterval, Set<String>, Date?) async -> Void
+    private let onApplyCaptureTimeOffset: @Sendable (Date, TimeInterval, Set<String>) async -> Void
     private let onCancel: @Sendable () -> Void
     private let timeFormatter: DateComponentsFormatter
     private let dayTitleFormatter: DateFormatter
@@ -71,14 +70,13 @@ final class ReviewViewModel: ObservableObject {
     init(
         summary: ReviewSummary,
         items: [ReviewItem],
-        sessionAssetIDs: Set<String>,
-        captureTimeOffset: TimeInterval,
-        captureTimeOffsetAnalysis: CaptureTimeOffsetAnalysis?,
+        dayCaptureTimeOffsets: [Date: TimeInterval],
+        captureTimeOffsetAnalysesByDay: [Date: CaptureTimeOffsetAnalysis],
         thumbnailProvider: PhotoThumbnailProvider,
         onApplyDecision: @escaping @Sendable (MatchDecision) async throws -> Void,
         onDismissPermanently: @escaping @Sendable (String) async -> Void,
         onDeletePhoto: @escaping @Sendable (String) async throws -> Void,
-        onApplyCaptureTimeOffset: @escaping @Sendable (TimeInterval, Set<String>, Date?) async -> Void,
+        onApplyCaptureTimeOffset: @escaping @Sendable (Date, TimeInterval, Set<String>) async -> Void,
         onCancel: @escaping @Sendable () -> Void
     ) {
         self.summary = summary
@@ -89,9 +87,8 @@ final class ReviewViewModel: ObservableObject {
                 copiedFromAssetID: nil
             )
         }
-        self.sessionAssetIDs = sessionAssetIDs
-        self.currentCaptureTimeOffset = captureTimeOffset
-        self.captureTimeOffsetAnalysis = captureTimeOffsetAnalysis
+        self.dayCaptureTimeOffsets = dayCaptureTimeOffsets
+        self.captureTimeOffsetAnalysesByDay = captureTimeOffsetAnalysesByDay
         self.thumbnailProvider = thumbnailProvider
         self.onApplyDecision = onApplyDecision
         self.onDismissPermanently = onDismissPermanently
@@ -109,7 +106,10 @@ final class ReviewViewModel: ObservableObject {
         titleFormatter.dateStyle = .full
         titleFormatter.timeStyle = .none
         self.dayTitleFormatter = titleFormatter
-        self.selectedCaptureTimeOffset = captureTimeOffsetAnalysis?.recommendedOffset ?? captureTimeOffset
+        if let firstDayStart = items.first.map({ calendar.startOfDay(for: $0.asset.creationDate) }),
+           let analysis = captureTimeOffsetAnalysesByDay[firstDayStart] {
+            self.selectedCaptureTimeOffset = analysis.recommendedOffset ?? dayCaptureTimeOffsets[firstDayStart] ?? 0
+        }
     }
 
     var emptyStateDescription: String {
@@ -143,9 +143,23 @@ final class ReviewViewModel: ObservableObject {
         return daySections[currentDayIndex]
     }
 
+    private var currentDayStart: Date? {
+        currentDaySection?.dayStart
+    }
+
+    private var currentDayCaptureTimeOffset: TimeInterval {
+        guard let currentDayStart else { return 0 }
+        return dayCaptureTimeOffsets[currentDayStart] ?? 0
+    }
+
+    private var currentDayCaptureTimeOffsetAnalysis: CaptureTimeOffsetAnalysis? {
+        guard let currentDayStart else { return nil }
+        return captureTimeOffsetAnalysesByDay[currentDayStart]
+    }
+
     var canGoToPreviousDay: Bool { currentDayIndex > 0 }
     var canGoToNextDay: Bool { currentDayIndex + 1 < daySections.count }
-    var canAdjustCaptureTimeOffset: Bool { captureTimeOffsetAnalysis?.options.isEmpty == false }
+    var canAdjustCaptureTimeOffset: Bool { currentDayCaptureTimeOffsetAnalysis?.options.isEmpty == false }
     var canApplyCurrentDay: Bool {
         guard let currentDayEntries = currentDaySection?.entries,
               !currentDayEntries.isEmpty else {
@@ -171,34 +185,35 @@ final class ReviewViewModel: ObservableObject {
     }
 
     var captureTimeOffsetOptions: [CaptureTimeOffsetOption] {
-        captureTimeOffsetAnalysis?.options ?? []
+        currentDayCaptureTimeOffsetAnalysis?.options ?? []
     }
 
     var currentCaptureTimeOffsetOption: CaptureTimeOffsetOption? {
-        captureTimeOffsetAnalysis?.currentOption
+        currentDayCaptureTimeOffsetAnalysis?.currentOption
     }
 
     var recommendedCaptureTimeOffsetOption: CaptureTimeOffsetOption? {
-        captureTimeOffsetAnalysis?.recommendedOption
+        currentDayCaptureTimeOffsetAnalysis?.recommendedOption
     }
 
     var selectedCaptureTimeOffsetOption: CaptureTimeOffsetOption? {
-        captureTimeOffsetAnalysis?.option(for: selectedCaptureTimeOffset) ?? currentCaptureTimeOffsetOption
+        currentDayCaptureTimeOffsetAnalysis?.option(for: selectedCaptureTimeOffset) ?? currentCaptureTimeOffsetOption
     }
 
     var captureTimeOffsetButtonTitle: String {
-        currentCaptureTimeOffset == 0
-            ? "Fix Camera Time"
-            : "Camera Time \(formattedOffset(currentCaptureTimeOffset))"
+        currentDayCaptureTimeOffset == 0
+            ? "Fix Camera Time for Day"
+            : "Camera Time \(formattedOffset(currentDayCaptureTimeOffset))"
     }
 
     var captureTimeOffsetStatusText: String? {
-        if currentCaptureTimeOffset != 0 {
-            return "Using a \(formattedOffset(currentCaptureTimeOffset)) camera-time adjustment for \(activeSessionAssetCount) photos in this review."
+        if currentDayCaptureTimeOffset != 0,
+           let totalAssets = currentCaptureTimeOffsetOption?.metrics.totalAssets {
+            return "Using a \(formattedOffset(currentDayCaptureTimeOffset)) camera-time adjustment for \(totalAssets) photos on this day."
         }
 
         guard let recommendedCaptureTimeOffsetOption else { return nil }
-        return "A \(formattedOffset(recommendedCaptureTimeOffsetOption.offset)) adjustment looks likely for this review."
+        return "A \(formattedOffset(recommendedCaptureTimeOffsetOption.offset)) adjustment looks likely for this day."
     }
 
     func selectPhoto(_ assetID: String, mode: ReviewPhotoSelectionMode) {
@@ -338,8 +353,12 @@ final class ReviewViewModel: ObservableObject {
 
     func presentCaptureTimeOffsetSheet() {
         guard canAdjustCaptureTimeOffset else { return }
-        selectedCaptureTimeOffset = recommendedCaptureTimeOffsetOption?.offset ?? currentCaptureTimeOffset
+        selectedCaptureTimeOffset = recommendedCaptureTimeOffsetOption?.offset ?? currentDayCaptureTimeOffset
         isShowingCaptureTimeOffsetSheet = true
+    }
+
+    func dismissCaptureTimeOffsetSheet() {
+        isShowingCaptureTimeOffsetSheet = false
     }
 
     func selectCaptureTimeOffset(_ offset: TimeInterval) {
@@ -430,9 +449,10 @@ final class ReviewViewModel: ObservableObject {
     }
 
     func applySelectedCaptureTimeOffset() async {
-        guard let option = selectedCaptureTimeOffsetOption,
-              option.offset != currentCaptureTimeOffset else {
-            isShowingCaptureTimeOffsetSheet = false
+        guard let currentDayStart,
+              let option = selectedCaptureTimeOffsetOption,
+              option.offset != currentDayCaptureTimeOffset else {
+            dismissCaptureTimeOffsetSheet()
             return
         }
 
@@ -441,8 +461,8 @@ final class ReviewViewModel: ObservableObject {
             isApplyingCaptureTimeOffset = false
         }
 
-        await onApplyCaptureTimeOffset(option.offset, excludedAssetIDs, currentDaySection?.dayStart)
-        isShowingCaptureTimeOffsetSheet = false
+        await onApplyCaptureTimeOffset(currentDayStart, option.offset, excludedAssetIDs)
+        dismissCaptureTimeOffsetSheet()
     }
 
     func applyChange(for assetID: String) async {
@@ -770,10 +790,6 @@ final class ReviewViewModel: ObservableObject {
     private func clampCurrentDayIndex() {
         let lastIndex = max(daySections.count - 1, 0)
         currentDayIndex = min(currentDayIndex, lastIndex)
-    }
-
-    private var activeSessionAssetCount: Int {
-        sessionAssetIDs.subtracting(excludedAssetIDs).count
     }
 
     private func formattedTimeInterval(_ interval: TimeInterval) -> String {

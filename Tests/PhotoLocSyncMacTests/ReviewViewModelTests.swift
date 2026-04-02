@@ -855,20 +855,21 @@ final class ReviewViewModelTests: XCTestCase {
             confidence: .maybe,
             disposition: .ambiguous
         )
+        let dayStart = Calendar.autoupdatingCurrent.startOfDay(for: item.asset.creationDate)
         let analysis = makeCaptureTimeOffsetAnalysis(assetIDs: [item.id], recommendedOffset: 9 * 60 * 60)
         let viewModel = makeViewModel(
             items: [item],
-            captureTimeOffsetAnalysis: analysis
+            captureTimeOffsetAnalysesByDay: [dayStart: analysis]
         )
 
         viewModel.presentCaptureTimeOffsetSheet()
 
         XCTAssertTrue(viewModel.isShowingCaptureTimeOffsetSheet)
         XCTAssertEqual(viewModel.selectedCaptureTimeOffset, 9 * 60 * 60)
-        XCTAssertEqual(viewModel.captureTimeOffsetButtonTitle, "Fix Camera Time")
+        XCTAssertEqual(viewModel.captureTimeOffsetButtonTitle, "Fix Camera Time for Day")
     }
 
-    func testApplySelectedCaptureTimeOffsetPassesExcludedAssetIDsAndPreferredDay() async {
+    func testApplySelectedCaptureTimeOffsetPassesExcludedAssetIDsAndCurrentDay() async {
         let recorder = CaptureTimeOffsetApplyRecorder()
         let firstDayItem = makeReviewItem(
             assetID: "first-day-photo",
@@ -887,17 +888,18 @@ final class ReviewViewModelTests: XCTestCase {
             creationDate: Date(timeIntervalSince1970: 1_700_386_400)
         )
         let analysis = makeCaptureTimeOffsetAnalysis(
-            assetIDs: [firstDayItem.id, secondDayItem.id],
+            assetIDs: [secondDayItem.id],
             recommendedOffset: 9 * 60 * 60
         )
+        let secondDayStart = Calendar.autoupdatingCurrent.startOfDay(for: secondDayItem.asset.creationDate)
         let viewModel = makeViewModel(
             items: [firstDayItem, secondDayItem],
-            captureTimeOffsetAnalysis: analysis,
-            onApplyCaptureTimeOffset: { offset, excludedAssetIDs, preferredDayStart in
+            captureTimeOffsetAnalysesByDay: [secondDayStart: analysis],
+            onApplyCaptureTimeOffset: { dayStart, offset, excludedAssetIDs in
                 await recorder.record(
+                    dayStart: dayStart,
                     offset: offset,
-                    excludedAssetIDs: excludedAssetIDs,
-                    preferredDayStart: preferredDayStart
+                    excludedAssetIDs: excludedAssetIDs
                 )
             }
         )
@@ -910,20 +912,17 @@ final class ReviewViewModelTests: XCTestCase {
         let snapshot = await recorder.snapshot()
         XCTAssertEqual(snapshot.offset, 9 * 60 * 60)
         XCTAssertEqual(snapshot.excludedAssetIDs, Set([firstDayItem.id]))
-        XCTAssertEqual(
-            snapshot.preferredDayStart,
-            Calendar.autoupdatingCurrent.startOfDay(for: secondDayItem.asset.creationDate)
-        )
+        XCTAssertEqual(snapshot.dayStart, secondDayStart)
     }
 
     private func makeViewModel(
         items: [ReviewItem],
-        captureTimeOffset: TimeInterval = 0,
-        captureTimeOffsetAnalysis: CaptureTimeOffsetAnalysis? = nil,
+        dayCaptureTimeOffsets: [Date: TimeInterval] = [:],
+        captureTimeOffsetAnalysesByDay: [Date: CaptureTimeOffsetAnalysis] = [:],
         onApplyDecision: @escaping @Sendable (MatchDecision) async throws -> Void = { _ in },
         onDismissPermanently: @escaping @Sendable (String) async -> Void = { _ in },
         onDeletePhoto: @escaping @Sendable (String) async throws -> Void = { _ in },
-        onApplyCaptureTimeOffset: @escaping @Sendable (TimeInterval, Set<String>, Date?) async -> Void = { _, _, _ in },
+        onApplyCaptureTimeOffset: @escaping @Sendable (Date, TimeInterval, Set<String>) async -> Void = { _, _, _ in },
         onCancel: @escaping @Sendable () -> Void = {}
     ) -> ReviewViewModel {
         ReviewViewModel(
@@ -934,9 +933,8 @@ final class ReviewViewModelTests: XCTestCase {
                 unmatched: 0
             ),
             items: items,
-            sessionAssetIDs: Set(items.map(\.id)),
-            captureTimeOffset: captureTimeOffset,
-            captureTimeOffsetAnalysis: captureTimeOffsetAnalysis,
+            dayCaptureTimeOffsets: dayCaptureTimeOffsets,
+            captureTimeOffsetAnalysesByDay: captureTimeOffsetAnalysesByDay,
             thumbnailProvider: PhotoThumbnailProvider(),
             onApplyDecision: { decision in
                 try await onApplyDecision(decision)
@@ -1110,17 +1108,17 @@ private actor SuppressionRecorder {
 }
 
 private actor CaptureTimeOffsetApplyRecorder {
+    private var dayStart: Date?
     private var offset: TimeInterval?
     private var excludedAssetIDs: Set<String> = []
-    private var preferredDayStart: Date?
 
-    func record(offset: TimeInterval, excludedAssetIDs: Set<String>, preferredDayStart: Date?) {
+    func record(dayStart: Date, offset: TimeInterval, excludedAssetIDs: Set<String>) {
+        self.dayStart = dayStart
         self.offset = offset
         self.excludedAssetIDs = excludedAssetIDs
-        self.preferredDayStart = preferredDayStart
     }
 
-    func snapshot() -> (offset: TimeInterval?, excludedAssetIDs: Set<String>, preferredDayStart: Date?) {
-        (offset, excludedAssetIDs, preferredDayStart)
+    func snapshot() -> (dayStart: Date?, offset: TimeInterval?, excludedAssetIDs: Set<String>) {
+        (dayStart, offset, excludedAssetIDs)
     }
 }

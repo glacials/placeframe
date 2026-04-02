@@ -28,6 +28,18 @@ public final class SyncCoordinator: Sendable {
         )
     }
 
+    public func prepareReview(
+        timeline: ImportedTimeline,
+        assets: [PhotoAsset],
+        captureTimeOffsetsByDayStart: [Date: TimeInterval]
+    ) async -> PreparedReview {
+        await pipeline.prepareReview(
+            timeline: timeline,
+            assets: assets,
+            captureTimeOffsetsByDayStart: captureTimeOffsetsByDayStart
+        )
+    }
+
     public func apply(_ decisions: [MatchDecision]) async throws -> ApplySummary {
         let results = try await writer.apply(decisions)
         return ApplySummary(

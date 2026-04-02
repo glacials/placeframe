@@ -235,102 +235,127 @@ private struct ReviewCaptureTimeOffsetSheet: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Fix Camera Time")
-                    .font(.largeTitle.bold())
+        VStack(spacing: 0) {
+            HStack(alignment: .top, spacing: 16) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Fix Camera Time for This Day")
+                        .font(.largeTitle.bold())
 
-                if let recommendedOption = viewModel.recommendedCaptureTimeOffsetOption {
-                    Text("A \(viewModel.formattedOffset(recommendedOption.offset)) capture-time adjustment looks like the best fit for this review. Pick an option below to preview how the route and match quality change.")
-                        .foregroundStyle(.secondary)
-                } else {
-                    Text("No single adjustment stands out yet, but you can still compare the strongest candidates against the current matching result.")
-                        .foregroundStyle(.secondary)
+                    if let recommendedOption = viewModel.recommendedCaptureTimeOffsetOption {
+                        Text("A \(viewModel.formattedOffset(recommendedOption.offset)) capture-time adjustment looks like the best fit for the day you are reviewing. Pick an option below to preview how this day’s route and match quality change.")
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Text("No single adjustment stands out yet, but you can still compare the strongest candidates against the current matching result for this day.")
+                            .foregroundStyle(.secondary)
+                    }
                 }
+
+                Spacer(minLength: 0)
+
+                Button {
+                    viewModel.dismissCaptureTimeOffsetSheet()
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.title2)
+                        .foregroundStyle(.tertiary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Close camera time preview")
             }
+            .padding(24)
 
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Offset Options")
-                    .font(.headline)
+            Divider()
 
-                ForEach(viewModel.captureTimeOffsetOptions) { option in
-                    Button {
-                        viewModel.selectCaptureTimeOffset(option.offset)
-                    } label: {
-                        VStack(alignment: .leading, spacing: 8) {
-                            HStack(spacing: 8) {
-                                Text(option.offset == 0 ? "No adjustment" : viewModel.formattedOffset(option.offset))
-                                    .font(.headline)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Offset Options")
+                            .font(.headline)
 
-                                if option.offset == currentOption?.offset {
-                                    ReviewCaptureTimeOffsetTag(title: "Current")
+                        ForEach(viewModel.captureTimeOffsetOptions) { option in
+                            Button {
+                                viewModel.selectCaptureTimeOffset(option.offset)
+                            } label: {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    HStack(spacing: 8) {
+                                        Text(option.offset == 0 ? "No adjustment" : viewModel.formattedOffset(option.offset))
+                                            .font(.headline)
+
+                                        if option.offset == currentOption?.offset {
+                                            ReviewCaptureTimeOffsetTag(title: "Current")
+                                        }
+
+                                        if option.offset == viewModel.recommendedCaptureTimeOffsetOption?.offset {
+                                            ReviewCaptureTimeOffsetTag(title: "Recommended")
+                                        }
+                                    }
+
+                                    Text(viewModel.captureTimeOffsetOptionSummary(for: option))
+                                        .font(.subheadline)
+                                        .foregroundStyle(.primary)
+
+                                    Text(viewModel.captureTimeOffsetComparisonText(for: option))
+                                        .font(.subheadline)
+                                        .foregroundStyle(.secondary)
                                 }
-
-                                if option.offset == viewModel.recommendedCaptureTimeOffsetOption?.offset {
-                                    ReviewCaptureTimeOffsetTag(title: "Recommended")
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(14)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 14)
+                                        .fill(Color.secondary.opacity(0.06))
+                                )
+                                .overlay {
+                                    RoundedRectangle(cornerRadius: 14)
+                                        .stroke(
+                                            option.offset == selectedOption?.offset ? Color.accentColor : Color.secondary.opacity(0.16),
+                                            lineWidth: option.offset == selectedOption?.offset ? 2 : 1
+                                        )
                                 }
                             }
+                            .buttonStyle(.plain)
+                        }
+                    }
 
-                            Text(viewModel.captureTimeOffsetOptionSummary(for: option))
-                                .font(.subheadline)
-                                .foregroundStyle(.primary)
+                    if let selectedOption {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Preview")
+                                .font(.headline)
 
-                            Text(viewModel.captureTimeOffsetComparisonText(for: option))
+                            Text(viewModel.captureTimeOffsetComparisonText(for: selectedOption))
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(14)
-                        .background(
-                            RoundedRectangle(cornerRadius: 14)
-                                .fill(Color.secondary.opacity(0.06))
-                        )
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 14)
-                                .stroke(
-                                    option.offset == selectedOption?.offset ? Color.accentColor : Color.secondary.opacity(0.16),
-                                    lineWidth: option.offset == selectedOption?.offset ? 2 : 1
+
+                            HStack(alignment: .top, spacing: 16) {
+                                ReviewCaptureTimeOffsetPreviewPane(
+                                    title: "Current",
+                                    entries: currentPreviewEntries,
+                                    thumbnailProvider: viewModel.thumbnailProvider
                                 )
+
+                                ReviewCaptureTimeOffsetPreviewPane(
+                                    title: selectedOption.offset == 0 ? "With No Adjustment" : "With \(viewModel.formattedOffset(selectedOption.offset))",
+                                    entries: selectedPreviewEntries,
+                                    thumbnailProvider: viewModel.thumbnailProvider
+                                )
+                            }
                         }
                     }
-                    .buttonStyle(.plain)
                 }
+                .padding(24)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
-            if let selectedOption {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Preview")
-                        .font(.headline)
+            Divider()
 
-                    Text(viewModel.captureTimeOffsetComparisonText(for: selectedOption))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-
-                    HStack(alignment: .top, spacing: 16) {
-                        ReviewCaptureTimeOffsetPreviewPane(
-                            title: "Current",
-                            entries: currentPreviewEntries,
-                            thumbnailProvider: viewModel.thumbnailProvider
-                        )
-
-                        ReviewCaptureTimeOffsetPreviewPane(
-                            title: selectedOption.offset == 0 ? "With No Adjustment" : "With \(viewModel.formattedOffset(selectedOption.offset))",
-                            entries: selectedPreviewEntries,
-                            thumbnailProvider: viewModel.thumbnailProvider
-                        )
-                    }
-                }
-            }
-
-            HStack {
-                Button("Cancel") {
-                    viewModel.isShowingCaptureTimeOffsetSheet = false
+            HStack(spacing: 16) {
+                Button("Close") {
+                    viewModel.dismissCaptureTimeOffsetSheet()
                 }
                 .buttonStyle(.bordered)
 
                 Spacer()
 
-                Text("Applying a new offset re-runs location matching for the current review session.")
+                Text("Applying a new offset re-runs location matching only for the photos on this day.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
 
@@ -340,15 +365,16 @@ private struct ReviewCaptureTimeOffsetSheet: View {
                     }
                 } label: {
                     Label(
-                        viewModel.isApplyingCaptureTimeOffset ? "Applying..." : "Apply to Review",
+                        viewModel.isApplyingCaptureTimeOffset ? "Applying..." : "Apply to This Day",
                         systemImage: "arrow.triangle.2.circlepath"
                     )
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(!canApplySelectedOption)
             }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 18)
         }
-        .padding(24)
         .frame(minWidth: 980, minHeight: 720, alignment: .topLeading)
     }
 }

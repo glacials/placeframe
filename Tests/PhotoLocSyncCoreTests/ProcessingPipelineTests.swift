@@ -155,4 +155,50 @@ final class ProcessingPipelineTests: XCTestCase {
         XCTAssertEqual(adjusted.summary.autoSuggested, 6)
         XCTAssertEqual(adjusted.summary.unmatched, 0)
     }
+
+    func testProcessingPipelineCanApplyDifferentCaptureTimeOffsetsPerDay() async {
+        let hour = 60.0 * 60.0
+        let base = Date(timeIntervalSince1970: 1_700_500_000)
+        let nextDay = base.addingTimeInterval(24 * hour)
+        let timeline = ImportedTimeline(
+            range: base...nextDay.addingTimeInterval(10 * hour),
+            points: [
+                TimelinePoint(id: "day-1", timestamp: base.addingTimeInterval(10 * 60), coordinate: GeoCoordinate(latitude: 35.6895, longitude: 139.6917), source: .visit),
+                TimelinePoint(id: "day-2", timestamp: nextDay.addingTimeInterval(9 * hour + 10 * 60), coordinate: GeoCoordinate(latitude: 34.6937, longitude: 135.5023), source: .visit)
+            ],
+            segments: [
+                TimelineSegment(id: "segment-1", kind: .visit, startTime: base, endTime: base.addingTimeInterval(30 * 60), centerCoordinate: GeoCoordinate(latitude: 35.6895, longitude: 139.6917)),
+                TimelineSegment(id: "segment-2", kind: .visit, startTime: nextDay.addingTimeInterval(9 * hour), endTime: nextDay.addingTimeInterval(9 * hour + 30 * 60), centerCoordinate: GeoCoordinate(latitude: 34.6937, longitude: 135.5023))
+            ],
+            recordTypeCounts: ["visit": 2]
+        )
+        let dayOneAssets = [
+            PhotoAsset(id: "day-1-photo-1", creationDate: base.addingTimeInterval(5 * 60), hasLocation: false),
+            PhotoAsset(id: "day-1-photo-2", creationDate: base.addingTimeInterval(15 * 60), hasLocation: false)
+        ]
+        let dayTwoAssets = [
+            PhotoAsset(id: "day-2-photo-1", creationDate: nextDay.addingTimeInterval(5 * 60), hasLocation: false),
+            PhotoAsset(id: "day-2-photo-2", creationDate: nextDay.addingTimeInterval(15 * 60), hasLocation: false)
+        ]
+        let assets = dayOneAssets + dayTwoAssets
+        let pipeline = ProcessingPipeline(
+            importer: FakeImporter(timeline: timeline),
+            reader: FakeReader(assets: assets),
+            geocoder: FakeGeocoder()
+        )
+        let dayTwoStart = Calendar.autoupdatingCurrent.startOfDay(for: nextDay)
+
+        let baseline = await pipeline.prepareReview(timeline: timeline, assets: assets)
+        let adjusted = await pipeline.prepareReview(
+            timeline: timeline,
+            assets: assets,
+            captureTimeOffsetsByDayStart: [dayTwoStart: 9 * hour]
+        )
+
+        XCTAssertEqual(baseline.summary.totalAssets, 2)
+        XCTAssertEqual(baseline.summary.unmatched, 2)
+        XCTAssertEqual(adjusted.summary.totalAssets, 4)
+        XCTAssertEqual(adjusted.summary.autoSuggested, 4)
+        XCTAssertEqual(adjusted.summary.unmatched, 0)
+    }
 }
