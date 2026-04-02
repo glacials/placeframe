@@ -82,10 +82,9 @@ struct ReviewView: View {
                 .foregroundStyle(.secondary)
 
             HStack(spacing: 12) {
-                summaryBadge(title: "Photos", value: "\(viewModel.summary.totalAssets)")
-                summaryBadge(title: "Auto", value: "\(viewModel.summary.autoSuggested)")
-                summaryBadge(title: "Ambiguous", value: "\(viewModel.summary.ambiguous)")
-                summaryBadge(title: "No match", value: "\(viewModel.summary.unmatched)")
+                ForEach(ReviewSummaryBadge.badges(for: viewModel.summary), id: \.title) { badge in
+                    summaryBadge(badge)
+                }
             }
         }
     }
@@ -158,12 +157,19 @@ struct ReviewView: View {
         .accessibilityHidden(true)
     }
 
-    private func summaryBadge(title: String, value: String) -> some View {
+    private func summaryBadge(_ badge: ReviewSummaryBadge) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(title)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Text(value)
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text(badge.title)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Image(systemName: "info.circle")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                    .help(badge.helpText)
+                    .accessibilityLabel("\(badge.title) description")
+            }
+            Text("\(badge.value)")
                 .font(.title3.weight(.semibold))
         }
         .padding(.horizontal, 12)
