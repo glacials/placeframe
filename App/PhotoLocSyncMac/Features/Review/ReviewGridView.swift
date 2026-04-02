@@ -195,19 +195,11 @@ private struct ReviewListItemView: View {
                                 .foregroundStyle(.secondary)
                                 .padding(.top, 2)
 
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(selectedMenuTitle)
-                                    .font(.subheadline.weight(.semibold))
-                                    .lineLimit(2)
-                                    .truncationMode(.tail)
-                                    .fixedSize(horizontal: false, vertical: true)
-                                Text(selectedMenuSubtitle)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                    .lineLimit(2)
-                                    .truncationMode(.tail)
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
+                            Text(selectedMenuTitle)
+                                .font(.subheadline.weight(.semibold))
+                                .lineLimit(2)
+                                .truncationMode(.tail)
+                                .fixedSize(horizontal: false, vertical: true)
 
                             Spacer(minLength: 8)
 
@@ -458,14 +450,6 @@ private struct ReviewListItemView: View {
         }
 
         return truncatedLocationLabel(selectedLocationLabel, maxLength: 72)
-    }
-
-    private var selectedMenuSubtitle: String {
-        if entry.saveChoice == .leaveBlank {
-            return "Never ask about this photo again"
-        }
-
-        return selectedLocationOption?.precision.title ?? "Location match"
     }
 
     private var applyButtonTitle: String {
