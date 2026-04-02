@@ -23,6 +23,7 @@ final class ReviewMapViewTests: XCTestCase {
 
         XCTAssertEqual(clusters.count, 1)
         XCTAssertEqual(clusters[0].count, 2)
+        XCTAssertEqual(clusters[0].assetIDs, [firstEntry.id, secondEntry.id])
         XCTAssertEqual(clusters[0].sampleAsset.id, secondEntry.id)
         XCTAssertEqual(clusters[0].sampleLabel, secondEntry.item.locationLabel)
         XCTAssertTrue(clusters[0].isSelected)

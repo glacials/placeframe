@@ -8,6 +8,7 @@ import SwiftUI
 struct ReviewMapCluster: Identifiable, Equatable {
     let id: String
     let coordinate: CLLocationCoordinate2D
+    let assetIDs: [String]
     let count: Int
     let sampleLabel: String
     let sampleAsset: PhotoAsset
@@ -17,6 +18,7 @@ struct ReviewMapCluster: Identifiable, Equatable {
         lhs.id == rhs.id
             && lhs.coordinate.latitude == rhs.coordinate.latitude
             && lhs.coordinate.longitude == rhs.coordinate.longitude
+            && lhs.assetIDs == rhs.assetIDs
             && lhs.count == rhs.count
             && lhs.sampleLabel == rhs.sampleLabel
             && lhs.sampleAsset == rhs.sampleAsset
@@ -60,6 +62,7 @@ struct ReviewMapView: View {
     let selectedPhotoIDs: Set<String>
     let selectionTargets: [ReviewMapSelectionTarget]
     let thumbnailProvider: PhotoThumbnailProvider
+    let selectCluster: ([String]) -> Void
 
     private var clusters: [ReviewMapCluster] {
         Self.makeClusters(entries: entries, selectedPhotoIDs: selectedPhotoIDs)
@@ -95,6 +98,7 @@ struct ReviewMapView: View {
                 return ReviewMapCluster(
                     id: key,
                     coordinate: value.coordinate,
+                    assetIDs: value.entries.map(\.id),
                     count: value.entries.count,
                     sampleLabel: representative.item.locationLabel,
                     sampleAsset: representative.item.asset,
@@ -121,7 +125,8 @@ struct ReviewMapView: View {
             ReviewMapNativeView(
                 clusters: clusters,
                 selectionTargets: selectionTargets,
-                thumbnailProvider: thumbnailProvider
+                thumbnailProvider: thumbnailProvider,
+                selectCluster: selectCluster
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
@@ -132,9 +137,10 @@ private struct ReviewMapNativeView: NSViewRepresentable {
     let clusters: [ReviewMapCluster]
     let selectionTargets: [ReviewMapSelectionTarget]
     let thumbnailProvider: PhotoThumbnailProvider
+    let selectCluster: ([String]) -> Void
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(thumbnailProvider: thumbnailProvider)
+        Coordinator(thumbnailProvider: thumbnailProvider, selectCluster: selectCluster)
     }
 
     func makeNSView(context: Context) -> MKMapView {
@@ -152,6 +158,7 @@ private struct ReviewMapNativeView: NSViewRepresentable {
     }
 
     func updateNSView(_ nsView: MKMapView, context: Context) {
+        context.coordinator.selectCluster = selectCluster
         context.coordinator.update(mapView: nsView, clusters: clusters, selectionTargets: selectionTargets)
     }
 
@@ -159,6 +166,7 @@ private struct ReviewMapNativeView: NSViewRepresentable {
         static let clusterReuseIdentifier = "ReviewClusterAnnotation"
 
         private let thumbnailProvider: PhotoThumbnailProvider
+        var selectCluster: ([String]) -> Void
         private var annotationSignature = ""
         private var cameraSignature = ""
         private var currentClusters: [ReviewMapCluster] = []
@@ -169,8 +177,9 @@ private struct ReviewMapNativeView: NSViewRepresentable {
         private weak var mapView: MKMapView?
         private weak var recenterButton: NSButton?
 
-        init(thumbnailProvider: PhotoThumbnailProvider) {
+        init(thumbnailProvider: PhotoThumbnailProvider, selectCluster: @escaping ([String]) -> Void) {
             self.thumbnailProvider = thumbnailProvider
+            self.selectCluster = selectCluster
         }
 
         func update(mapView: MKMapView, clusters: [ReviewMapCluster], selectionTargets: [ReviewMapSelectionTarget]) {
@@ -253,13 +262,19 @@ private struct ReviewMapNativeView: NSViewRepresentable {
             setRecenterButtonHidden(!snapshot.isMeaningfullyDifferent(from: expectedViewport))
         }
 
+        func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
+            guard let clusterAnnotation = view.annotation as? ReviewClusterAnnotation else { return }
+            selectCluster(clusterAnnotation.assetIDs)
+            mapView.deselectAnnotation(clusterAnnotation, animated: false)
+        }
+
         private static func makeAnnotations(clusters: [ReviewMapCluster]) -> [MKAnnotation] {
             clusters.map(ReviewClusterAnnotation.init(cluster:))
         }
 
         private static func makeAnnotationSignature(for clusters: [ReviewMapCluster]) -> String {
             clusters
-                .map { "\($0.id):\($0.count):\($0.sampleLabel):\($0.sampleAsset.id):\($0.isSelected)" }
+                .map { "\($0.id):\($0.assetIDs.joined(separator: ",")):\($0.count):\($0.sampleLabel):\($0.sampleAsset.id):\($0.isSelected)" }
                 .joined(separator: "|")
         }
 
@@ -349,6 +364,7 @@ private struct ReviewMapNativeView: NSViewRepresentable {
 private final class ReviewClusterAnnotation: NSObject, MKAnnotation {
     let coordinate: CLLocationCoordinate2D
     let title: String?
+    let assetIDs: [String]
     let count: Int
     let asset: PhotoAsset
     let isSelected: Bool
@@ -356,6 +372,7 @@ private final class ReviewClusterAnnotation: NSObject, MKAnnotation {
     init(cluster: ReviewMapCluster) {
         self.coordinate = cluster.coordinate
         self.title = cluster.sampleLabel
+        self.assetIDs = cluster.assetIDs
         self.count = cluster.count
         self.asset = cluster.sampleAsset
         self.isSelected = cluster.isSelected

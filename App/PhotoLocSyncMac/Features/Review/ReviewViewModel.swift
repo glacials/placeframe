@@ -479,8 +479,21 @@ final class ReviewViewModel: ObservableObject {
 
     func showOnMap(_ item: ReviewItem) {
         guard item.proposedCoordinate != nil else { return }
-        selectedPhotoIDs = [item.id]
-        selectionAnchorID = item.id
+        showOnMap(assetIDs: [item.id])
+    }
+
+    func showOnMap(assetIDs: [String]) {
+        let orderedAssetIDs = orderedSelections(for: assetIDs).map(\.id)
+        guard let anchorID = orderedAssetIDs.first else { return }
+
+        if let dayIndex = daySections.firstIndex(where: { section in
+            section.entries.contains(where: { $0.id == anchorID })
+        }) {
+            currentDayIndex = dayIndex
+        }
+
+        selectedPhotoIDs = Set(orderedAssetIDs)
+        selectionAnchorID = anchorID
     }
 
     func selectAllPhotosOnCurrentDay() {

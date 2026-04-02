@@ -319,6 +319,40 @@ final class ReviewViewModelTests: XCTestCase {
         )
     }
 
+    func testShowOnMapClusterSelectsEveryPhotoAtThatLocation() {
+        let firstItem = makeReviewItem(
+            assetID: "first-photo",
+            coordinate: GeoCoordinate(latitude: 35.68951, longitude: 139.69171),
+            label: "Tokyo",
+            confidence: .excellent,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_000)
+        )
+        let secondItem = makeReviewItem(
+            assetID: "second-photo",
+            coordinate: GeoCoordinate(latitude: 35.68954, longitude: 139.69174),
+            label: "Tokyo",
+            confidence: .acceptable,
+            disposition: .autoSuggested,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_060)
+        )
+        let thirdItem = makeReviewItem(
+            assetID: "third-photo",
+            coordinate: GeoCoordinate(latitude: 34.6937, longitude: 135.5023),
+            label: "Osaka",
+            confidence: .maybe,
+            disposition: .ambiguous,
+            creationDate: Date(timeIntervalSince1970: 1_700_300_120)
+        )
+        let viewModel = makeViewModel(items: [thirdItem, secondItem, firstItem])
+
+        viewModel.showOnMap(assetIDs: [secondItem.id, firstItem.id])
+
+        XCTAssertEqual(viewModel.selectedPhotoIDs, Set([firstItem.id, secondItem.id]))
+        XCTAssertEqual(viewModel.focusedPhotoID, firstItem.id)
+        XCTAssertEqual(Set(viewModel.mapSelectionTargets.map(\.id)), Set([firstItem.id, secondItem.id]))
+    }
+
     func testShiftSelectingPhotosSelectsFullRangeBetweenAnchorAndClickedPhoto() {
         let firstItem = makeReviewItem(
             assetID: "first-photo",

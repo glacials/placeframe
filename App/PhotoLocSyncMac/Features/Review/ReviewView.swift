@@ -55,7 +55,8 @@ struct ReviewView: View {
                         entries: currentDaySection.entries,
                         selectedPhotoIDs: viewModel.selectedPhotoIDs,
                         selectionTargets: viewModel.mapSelectionTargets,
-                        thumbnailProvider: viewModel.thumbnailProvider
+                        thumbnailProvider: viewModel.thumbnailProvider,
+                        selectCluster: viewModel.showOnMap(assetIDs:)
                     )
                         .padding(.leading, mapPaneLeadingInset)
                         .frame(minWidth: 320, idealWidth: 420, maxHeight: .infinity, alignment: .topLeading)
@@ -612,7 +613,8 @@ private struct ReviewCaptureTimeOffsetPreviewPane: View {
                 entries: entries,
                 selectedPhotoIDs: [],
                 selectionTargets: [],
-                thumbnailProvider: thumbnailProvider
+                thumbnailProvider: thumbnailProvider,
+                selectCluster: { _ in }
             )
                 .frame(maxWidth: .infinity, minHeight: 280, maxHeight: 280)
                 .background(Color.secondary.opacity(0.05), in: RoundedRectangle(cornerRadius: 14))
