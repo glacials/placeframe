@@ -710,8 +710,8 @@ final class ReviewViewModelTests: XCTestCase {
         )
         let viewModel = makeViewModel(
             items: [firstItem, secondItem],
-            onDismissPermanently: { assetID in
-                await recorder.record(assetID)
+            onDismissPermanently: { item in
+                await recorder.record(item.id)
             }
         )
 
@@ -751,8 +751,8 @@ final class ReviewViewModelTests: XCTestCase {
         )
         let viewModel = makeViewModel(
             items: [secondItem, thirdItem, firstItem],
-            onDismissPermanently: { assetID in
-                await recorder.record(assetID)
+            onDismissPermanently: { item in
+                await recorder.record(item.id)
             }
         )
 
@@ -920,7 +920,7 @@ final class ReviewViewModelTests: XCTestCase {
         dayCaptureTimeOffsets: [Date: TimeInterval] = [:],
         captureTimeOffsetAnalysesByDay: [Date: CaptureTimeOffsetAnalysis] = [:],
         onApplyDecision: @escaping @Sendable (MatchDecision) async throws -> Void = { _ in },
-        onDismissPermanently: @escaping @Sendable (String) async -> Void = { _ in },
+        onDismissPermanently: @escaping @Sendable (ReviewItem) async -> Void = { _ in },
         onDeletePhoto: @escaping @Sendable (String) async throws -> Void = { _ in },
         onApplyCaptureTimeOffset: @escaping @Sendable (Date, TimeInterval, Set<String>) async -> Void = { _, _, _ in },
         onCancel: @escaping @Sendable () -> Void = {}
@@ -939,8 +939,8 @@ final class ReviewViewModelTests: XCTestCase {
             onApplyDecision: { decision in
                 try await onApplyDecision(decision)
             },
-            onDismissPermanently: { assetID in
-                await onDismissPermanently(assetID)
+            onDismissPermanently: { item in
+                await onDismissPermanently(item)
             },
             onDeletePhoto: onDeletePhoto,
             onApplyCaptureTimeOffset: onApplyCaptureTimeOffset,

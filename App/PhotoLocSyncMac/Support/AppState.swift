@@ -28,6 +28,7 @@ final class AppState: ObservableObject {
     @Published var reviewViewModel: ReviewViewModel?
 
     let importViewModel: ImportViewModel
+    let leftBlankHistoryViewModel: LeftBlankHistoryViewModel
 
     private let coordinator: SyncCoordinator
     private let fileReader: ImportedFileReading
@@ -56,6 +57,10 @@ final class AppState: ObservableObject {
         self.reviewSuppressionStore = reviewSuppressionStore
         self.captureTimeOffsetAnalyzer = captureTimeOffsetAnalyzer
         self.errorPresenter = errorPresenter
+        self.leftBlankHistoryViewModel = LeftBlankHistoryViewModel(
+            reviewSuppressionStore: reviewSuppressionStore,
+            thumbnailProvider: thumbnailProvider
+        )
         self.importViewModel = ImportViewModel()
         self.importViewModel.bind(appState: self)
     }
@@ -137,9 +142,10 @@ final class AppState: ObservableObject {
                 guard let self else { return }
                 try await self.apply(decision: decision)
             },
-            onDismissPermanently: { [weak self] assetID in
+            onDismissPermanently: { [weak self] item in
                 guard let self else { return }
-                await self.reviewSuppressionStore.suppress(assetID)
+                await self.reviewSuppressionStore.suppress(item)
+                await self.leftBlankHistoryViewModel.refresh()
             },
             onDeletePhoto: { [weak self] assetID in
                 guard let self else { return }

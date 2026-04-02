@@ -54,7 +54,7 @@ final class ReviewViewModel: ObservableObject {
     private let dayCaptureTimeOffsets: [Date: TimeInterval]
     private let captureTimeOffsetAnalysesByDay: [Date: CaptureTimeOffsetAnalysis]
     private let onApplyDecision: @Sendable (MatchDecision) async throws -> Void
-    private let onDismissPermanently: @Sendable (String) async -> Void
+    private let onDismissPermanently: @Sendable (ReviewItem) async -> Void
     private let onDeletePhoto: @Sendable (String) async throws -> Void
     private let onApplyCaptureTimeOffset: @Sendable (Date, TimeInterval, Set<String>) async -> Void
     private let onCancel: @Sendable () -> Void
@@ -74,7 +74,7 @@ final class ReviewViewModel: ObservableObject {
         captureTimeOffsetAnalysesByDay: [Date: CaptureTimeOffsetAnalysis],
         thumbnailProvider: PhotoThumbnailProvider,
         onApplyDecision: @escaping @Sendable (MatchDecision) async throws -> Void,
-        onDismissPermanently: @escaping @Sendable (String) async -> Void,
+        onDismissPermanently: @escaping @Sendable (ReviewItem) async -> Void,
         onDeletePhoto: @escaping @Sendable (String) async throws -> Void,
         onApplyCaptureTimeOffset: @escaping @Sendable (Date, TimeInterval, Set<String>) async -> Void,
         onCancel: @escaping @Sendable () -> Void
@@ -531,17 +531,20 @@ final class ReviewViewModel: ObservableObject {
     }
 
     func dismissPhotosPermanently(_ assetIDs: [String]) async {
-        let orderedAssetIDs = reserveActionAssetIDs(orderedSelections(for: assetIDs).map(\.id))
+        let orderedSelections = orderedSelections(for: assetIDs)
+        let orderedAssetIDs = reserveActionAssetIDs(orderedSelections.map(\.id))
         guard !orderedAssetIDs.isEmpty else { return }
 
         let nextAssetID = nextAssetID(afterRemoving: Set(orderedAssetIDs))
+        let itemsByAssetID = Dictionary(uniqueKeysWithValues: orderedSelections.map { ($0.id, $0.item) })
 
         defer {
             orderedAssetIDs.forEach { actionAssetIDs.remove($0) }
         }
 
         for assetID in orderedAssetIDs {
-            await onDismissPermanently(assetID)
+            guard let item = itemsByAssetID[assetID] else { continue }
+            await onDismissPermanently(item)
         }
 
         removeSelections(withIDs: orderedAssetIDs)

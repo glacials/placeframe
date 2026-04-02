@@ -331,15 +331,9 @@ private struct ReviewListItemView: View {
                     .buttonStyle(.borderedProminent)
                     .disabled(entry.item.suggestedDecision == nil)
 
-                    Menu("Leave Blank") {
-                        Button("This Time") {
-                            skipForNow(entry.id)
-                        }
-
-                        Button("Every Time") {
-                            Task {
-                                await dismissPermanently(entry.id)
-                            }
+                    Button("Leave Blank") {
+                        Task {
+                            await dismissPermanently(entry.id)
                         }
                     }
                     .buttonStyle(.bordered)
@@ -389,15 +383,9 @@ private struct ReviewListItemView: View {
             }
             .disabled(!canApplyContextMenuTargets)
 
-            Menu(leaveBlankContextMenuTitle) {
-                Button(skipContextMenuTitle) {
-                    skipPhotosForNow(contextMenuTargetIDs)
-                }
-
-                Button(dismissContextMenuTitle) {
-                    Task {
-                        await dismissPhotosPermanently(contextMenuTargetIDs)
-                    }
+            Button(leaveBlankContextMenuTitle) {
+                Task {
+                    await dismissPhotosPermanently(contextMenuTargetIDs)
                 }
             }
 
@@ -443,14 +431,6 @@ private struct ReviewListItemView: View {
 
     private var leaveBlankContextMenuTitle: String {
         appliesToMultiplePhotos ? "Leave Selected Blank (\(contextMenuTargetIDs.count))" : "Leave Blank"
-    }
-
-    private var skipContextMenuTitle: String {
-        "This Time"
-    }
-
-    private var dismissContextMenuTitle: String {
-        "Every Time"
     }
 
     private var precisionContextMenuTitle: String {
