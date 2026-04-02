@@ -2,7 +2,6 @@ import SwiftUI
 
 struct ImportView: View {
     @EnvironmentObject private var appState: AppState
-    @Environment(\.openWindow) private var openWindow
     @ObservedObject var viewModel: ImportViewModel
 
     var body: some View {
@@ -27,9 +26,7 @@ struct ImportView: View {
                 .padding(.vertical, 4)
             }
 
-            PrivacySummaryBox {
-                openWindow(id: AppWindowID.privacy)
-            }
+            PrivacySummaryBox()
 
             VStack(alignment: .leading, spacing: 16) {
                 Button("Import location-history.json") {
@@ -41,7 +38,7 @@ struct ImportView: View {
                 Text("You can also drag a valid location-history.json file onto this window.")
                     .foregroundStyle(.secondary)
 
-                Text("Rich place labels are optional. On first launch, the app asks whether to keep labels local or allow Apple geocoding, and you can change that later in Settings.")
+                Text("Rich place labels are optional. On first launch, the app asks whether to keep labels local or allow Apple geocoding, and you can change that later in Settings or review the full privacy details from About PhotoLocSyncMac.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }

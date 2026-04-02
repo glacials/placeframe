@@ -2,16 +2,16 @@ import SwiftUI
 
 enum AppWindowID {
     static let leftBlankHistory = "left-blank-history"
-    static let privacy = "privacy"
+    static let about = "about"
 }
 
 private struct PhotoLocSyncWindowCommands: Commands {
     @Environment(\.openWindow) private var openWindow
 
     var body: some Commands {
-        CommandGroup(after: .appInfo) {
-            Button("Privacy & Data Handling") {
-                openWindow(id: AppWindowID.privacy)
+        CommandGroup(replacing: .appInfo) {
+            Button("About PhotoLocSyncMac") {
+                openWindow(id: AppWindowID.about)
             }
         }
 
@@ -42,10 +42,10 @@ struct PhotoLocSyncMacApp: App {
         }
         .defaultSize(width: 980, height: 720)
 
-        Window("Privacy & Data Handling", id: AppWindowID.privacy) {
-            PrivacyInfoView()
+        Window("About PhotoLocSyncMac", id: AppWindowID.about) {
+            AboutPhotoLocSyncView()
         }
-        .defaultSize(width: 760, height: 520)
+        .defaultSize(width: 540, height: 320)
 
         Settings {
             LocationLabelingSettingsView(settings: appState.locationLabelingSettings)

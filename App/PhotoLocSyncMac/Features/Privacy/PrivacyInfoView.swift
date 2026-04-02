@@ -1,8 +1,6 @@
 import SwiftUI
 
 struct PrivacySummaryBox: View {
-    let showDetails: () -> Void
-
     var body: some View {
         GroupBox("Privacy") {
             VStack(alignment: .leading, spacing: 12) {
@@ -14,11 +12,6 @@ struct PrivacySummaryBox: View {
 
                 Text("When you click Apply, the app writes the approved metadata into Apple Photos locally. If you use iCloud Photos, Apple may sync those approved library changes outside this app.")
                     .foregroundStyle(.secondary)
-
-                Button("View Privacy Details") {
-                    showDetails()
-                }
-                .buttonStyle(.link)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.vertical, 4)
@@ -73,6 +66,64 @@ struct PrivacyInfoView: View {
             }
             .padding(24)
             .frame(maxWidth: .infinity, alignment: .topLeading)
+        }
+    }
+}
+
+struct AboutPhotoLocSyncView: View {
+    @State private var isShowingPrivacyDetails = false
+
+    private var appName: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String ?? "PhotoLocSyncMac"
+    }
+
+    private var versionLine: String {
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
+        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"
+        return "Version \(version) (\(build))"
+    }
+
+    private var copyrightLine: String {
+        Bundle.main.object(forInfoDictionaryKey: "NSHumanReadableCopyright") as? String ?? ""
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(appName)
+                    .font(.largeTitle.bold())
+                Text(versionLine)
+                    .font(.headline)
+                    .foregroundStyle(.secondary)
+
+                if !copyrightLine.isEmpty {
+                    Text(copyrightLine)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Text("Photo Location Sync matches Timeline history to Apple Photos, keeps timeline matching local by default, and lets you choose whether rich place labels should use Apple geocoding.")
+                .foregroundStyle(.secondary)
+
+            HStack(spacing: 12) {
+                Button("Privacy & Data Handling") {
+                    isShowingPrivacyDetails = true
+                }
+                .buttonStyle(.borderedProminent)
+
+                Text("Open the full privacy details from here.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(24)
+        .frame(minWidth: 520, minHeight: 280, alignment: .topLeading)
+        .sheet(isPresented: $isShowingPrivacyDetails) {
+            PrivacyInfoView()
+                .frame(minWidth: 760, minHeight: 520)
         }
     }
 }
