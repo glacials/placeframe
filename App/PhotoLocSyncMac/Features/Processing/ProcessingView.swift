@@ -1,5 +1,29 @@
 import SwiftUI
 
+private enum ProcessingPalette {
+    static let ink = Color(red: 0.11, green: 0.16, blue: 0.22)
+    static let inkSecondary = Color(red: 0.3, green: 0.37, blue: 0.44)
+    static let inkTertiary = Color(red: 0.45, green: 0.51, blue: 0.58)
+    static let teal = Color(red: 0.07, green: 0.55, blue: 0.59)
+    static let tealSoft = Color(red: 0.42, green: 0.74, blue: 0.76)
+    static let warm = Color(red: 0.94, green: 0.56, blue: 0.28)
+    static let backgroundTop = Color(red: 0.84, green: 0.9, blue: 0.98)
+    static let backgroundCenter = Color(red: 0.82, green: 0.93, blue: 0.94)
+    static let backgroundBottom = Color(red: 0.95, green: 0.9, blue: 0.82)
+    static let glass = Color(red: 0.97, green: 0.98, blue: 1).opacity(0.84)
+    static let glassStrong = Color(red: 0.98, green: 0.99, blue: 1).opacity(0.94)
+    static let glassCool = Color(red: 0.91, green: 0.98, blue: 0.98).opacity(0.94)
+    static let glassWarm = Color(red: 1, green: 0.96, blue: 0.9).opacity(0.96)
+    static let heroTop = Color(red: 0.96, green: 0.98, blue: 1).opacity(0.9)
+    static let heroBottom = Color(red: 0.92, green: 0.96, blue: 0.95).opacity(0.94)
+    static let mapTop = Color(red: 0.87, green: 0.96, blue: 0.97)
+    static let mapBottom = Color(red: 0.83, green: 0.93, blue: 0.94)
+    static let tileShade = Color(red: 1, green: 1, blue: 1).opacity(0.32)
+    static let stroke = Color(red: 0.42, green: 0.59, blue: 0.66).opacity(0.26)
+    static let strongStroke = Color(red: 0.22, green: 0.52, blue: 0.59).opacity(0.32)
+    static let shadow = Color.black.opacity(0.1)
+}
+
 struct ProcessingView: View {
     let viewModel: ProcessingViewModel
 
@@ -29,19 +53,25 @@ struct ProcessingView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     Label(viewModel.eyebrow, systemImage: viewModel.symbolName)
                         .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(ProcessingPalette.inkSecondary)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 7)
                         .background(
                             Capsule(style: .continuous)
-                                .fill(Color.white.opacity(0.72))
+                                .fill(ProcessingPalette.glassWarm)
+                        )
+                        .overlay(
+                            Capsule(style: .continuous)
+                                .stroke(ProcessingPalette.stroke, lineWidth: 1)
                         )
 
                     Text(viewModel.title)
                         .font(.system(size: 34, weight: .bold, design: .rounded))
+                        .foregroundStyle(ProcessingPalette.ink)
 
                     Text(viewModel.subtitle)
                         .font(.title3)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(ProcessingPalette.inkSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
@@ -50,39 +80,45 @@ struct ProcessingView: View {
                 VStack(alignment: .trailing, spacing: 10) {
                     Text("\(Int((viewModel.progressValue * 100).rounded()))% to review")
                         .font(.headline.weight(.semibold))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(ProcessingPalette.inkSecondary)
                     ProgressView(value: viewModel.progressValue)
                         .frame(width: 220)
-                        .tint(Color(red: 0.07, green: 0.55, blue: 0.59))
+                        .tint(ProcessingPalette.teal)
                 }
                 .padding(.top, 4)
             }
 
             Text(viewModel.assurance)
                 .font(.headline)
+                .foregroundStyle(ProcessingPalette.ink)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 14)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(
                     RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .fill(Color.white.opacity(0.76))
+                        .fill(ProcessingPalette.glassStrong)
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .stroke(Color.white.opacity(0.7), lineWidth: 1)
+                        .stroke(ProcessingPalette.stroke, lineWidth: 1)
                 )
+                .shadow(color: ProcessingPalette.shadow.opacity(0.7), radius: 18, y: 10)
 
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 160), spacing: 10)], spacing: 10) {
                 ForEach(viewModel.detailPills, id: \.self) { pill in
                     Text(pill)
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Color(red: 0.11, green: 0.26, blue: 0.29))
+                        .foregroundStyle(ProcessingPalette.ink)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 10)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .background(
                             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .fill(Color.white.opacity(0.68))
+                                .fill(ProcessingPalette.glassStrong)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .stroke(ProcessingPalette.stroke, lineWidth: 1)
                         )
                 }
             }
@@ -123,28 +159,28 @@ private struct ProcessingBackdropView: View {
         ZStack {
             LinearGradient(
                 colors: [
-                    Color(red: 0.96, green: 0.97, blue: 0.99),
-                    Color(red: 0.9, green: 0.96, blue: 0.97),
-                    Color(red: 0.98, green: 0.95, blue: 0.9)
+                    ProcessingPalette.backgroundTop,
+                    ProcessingPalette.backgroundCenter,
+                    ProcessingPalette.backgroundBottom
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
 
             Circle()
-                .fill(Color(red: 0.98, green: 0.73, blue: 0.45).opacity(0.22))
+                .fill(ProcessingPalette.warm.opacity(0.24))
                 .frame(width: 380, height: 380)
                 .blur(radius: 36)
                 .offset(x: -280, y: -220)
 
             Circle()
-                .fill(Color(red: 0.11, green: 0.62, blue: 0.65).opacity(0.18))
+                .fill(ProcessingPalette.teal.opacity(0.2))
                 .frame(width: 420, height: 420)
                 .blur(radius: 42)
                 .offset(x: 300, y: 200)
 
             RoundedRectangle(cornerRadius: 120, style: .continuous)
-                .fill(Color.white.opacity(0.2))
+                .fill(ProcessingPalette.glass.opacity(0.6))
                 .frame(width: 520, height: 280)
                 .rotationEffect(.degrees(-12))
                 .offset(x: 240, y: -180)
@@ -164,10 +200,19 @@ private struct ProcessingHeroScene: View {
 
                 ZStack {
                     RoundedRectangle(cornerRadius: 32, style: .continuous)
-                        .fill(Color.white.opacity(0.58))
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    ProcessingPalette.heroTop,
+                                    ProcessingPalette.heroBottom
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
 
                     RoundedRectangle(cornerRadius: 32, style: .continuous)
-                        .stroke(Color.white.opacity(0.72), lineWidth: 1)
+                        .stroke(ProcessingPalette.stroke, lineWidth: 1)
 
                     ProcessingMapScene(viewModel: viewModel, time: time)
                         .frame(width: size.width * 0.36, height: size.height * 0.76)
@@ -201,7 +246,7 @@ private struct ProcessingHeroScene: View {
                     sceneLabels(size: size)
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
-                .shadow(color: Color.black.opacity(0.08), radius: 28, y: 18)
+                .shadow(color: ProcessingPalette.shadow, radius: 28, y: 18)
             }
         }
     }
@@ -210,23 +255,31 @@ private struct ProcessingHeroScene: View {
     private func sceneLabels(size: CGSize) -> some View {
         Text(viewModel.contactSheetHeadline)
             .font(.subheadline.weight(.semibold))
-            .foregroundStyle(Color(red: 0.29, green: 0.23, blue: 0.14))
+            .foregroundStyle(ProcessingPalette.ink)
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
             .background(
                 Capsule(style: .continuous)
-                    .fill(Color(red: 1, green: 0.97, blue: 0.91).opacity(0.98))
+                    .fill(ProcessingPalette.glassWarm)
+            )
+            .overlay(
+                Capsule(style: .continuous)
+                    .stroke(ProcessingPalette.stroke, lineWidth: 1)
             )
             .position(x: size.width * 0.18, y: size.height * 0.11)
 
         Text(viewModel.mapHeadline)
             .font(.subheadline.weight(.semibold))
-            .foregroundStyle(Color(red: 0.08, green: 0.29, blue: 0.32))
+            .foregroundStyle(ProcessingPalette.ink)
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
             .background(
                 Capsule(style: .continuous)
-                    .fill(Color(red: 0.91, green: 0.98, blue: 0.98).opacity(0.98))
+                    .fill(ProcessingPalette.glassCool)
+            )
+            .overlay(
+                Capsule(style: .continuous)
+                    .stroke(ProcessingPalette.stroke, lineWidth: 1)
             )
             .position(x: size.width * 0.73, y: size.height * 0.11)
     }
@@ -245,16 +298,20 @@ private struct ProcessingMapScene: View {
                     .fill(
                         LinearGradient(
                             colors: [
-                                Color(red: 0.92, green: 0.98, blue: 0.98),
-                                Color(red: 0.89, green: 0.95, blue: 0.95)
+                                ProcessingPalette.mapTop,
+                                ProcessingPalette.mapBottom
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
                     )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 28, style: .continuous)
+                            .stroke(ProcessingPalette.stroke, lineWidth: 1)
+                    )
 
                 ProcessingMapGrid()
-                    .stroke(Color(red: 0.11, green: 0.62, blue: 0.65).opacity(0.16), lineWidth: 1)
+                    .stroke(ProcessingPalette.teal.opacity(0.22), lineWidth: 1)
                     .padding(18)
 
                 ProcessingRouteShape()
@@ -262,8 +319,8 @@ private struct ProcessingMapScene: View {
                     .stroke(
                         LinearGradient(
                             colors: [
-                                Color(red: 0.98, green: 0.73, blue: 0.45),
-                                Color(red: 0.11, green: 0.62, blue: 0.65)
+                                ProcessingPalette.warm,
+                                ProcessingPalette.teal
                             ],
                             startPoint: .leading,
                             endPoint: .trailing
@@ -278,15 +335,15 @@ private struct ProcessingMapScene: View {
 
                     ZStack {
                         Circle()
-                            .stroke(Color(red: 0.11, green: 0.62, blue: 0.65).opacity(0.18), lineWidth: 2)
+                            .stroke(ProcessingPalette.teal.opacity(0.22), lineWidth: 2)
                             .frame(width: 22 + (phase * 24), height: 22 + (phase * 24))
                         Image(systemName: "mappin.circle.fill")
                             .font(.system(size: 23, weight: .semibold))
                             .foregroundStyle(
-                                Color(red: 0.98, green: 0.52, blue: 0.28),
+                                ProcessingPalette.warm,
                                 Color.white
                             )
-                            .shadow(color: Color.black.opacity(0.14), radius: 6, y: 3)
+                            .shadow(color: ProcessingPalette.shadow.opacity(0.8), radius: 6, y: 3)
                     }
                     .opacity(isVisible ? 1 : 0)
                     .scaleEffect(isVisible ? 1 : 0.65)
@@ -294,23 +351,28 @@ private struct ProcessingMapScene: View {
                 }
 
                 RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .fill(Color.white.opacity(0.84))
+                    .fill(ProcessingPalette.glassStrong)
                     .frame(width: size.width * 0.62, height: 48)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                            .stroke(ProcessingPalette.stroke, lineWidth: 1)
+                    )
                     .overlay(
                         HStack(spacing: 8) {
                             Image(systemName: viewModel.symbolName)
-                                .foregroundStyle(Color(red: 0.08, green: 0.29, blue: 0.32))
+                                .foregroundStyle(ProcessingPalette.teal)
                             Text(viewModel.mapHeadline)
                                 .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(ProcessingPalette.ink)
                             Spacer(minLength: 0)
                         }
                         .padding(.horizontal, 14)
                     )
                     .position(x: size.width * 0.5, y: size.height * 0.12)
             }
-            .opacity(0.2 + (viewModel.mapRevealProgress * 0.8))
+            .opacity(0.3 + (viewModel.mapRevealProgress * 0.7))
             .scaleEffect(0.9 + (viewModel.mapRevealProgress * 0.1))
-            .shadow(color: Color.black.opacity(0.08), radius: 18, y: 12)
+            .shadow(color: ProcessingPalette.shadow, radius: 18, y: 12)
         }
     }
 
@@ -343,7 +405,7 @@ private struct ProcessingPhotoTile: View {
                 LinearGradient(
                     colors: [
                         tile.color.opacity(0.98),
-                        Color.white.opacity(0.76)
+                        ProcessingPalette.tileShade
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
@@ -354,14 +416,14 @@ private struct ProcessingPhotoTile: View {
             .scaleEffect(0.8 + (visibility * 0.2))
             .rotationEffect(.degrees(mix(tile.rotation, tile.rotation * 0.2, migration)))
             .opacity(max(0.06, visibility))
-            .shadow(color: Color.black.opacity(0.1), radius: 12, y: 8)
+            .shadow(color: ProcessingPalette.shadow.opacity(0.9), radius: 12, y: 8)
             .position(position)
     }
 
     @ViewBuilder
     private func tileOverlay(migration: CGFloat) -> some View {
         RoundedRectangle(cornerRadius: 24, style: .continuous)
-            .stroke(Color.white.opacity(0.72), lineWidth: 1)
+            .stroke(Color.white.opacity(0.56), lineWidth: 1)
             .overlay(
                 VStack(alignment: .leading, spacing: 10) {
                     HStack {
@@ -369,21 +431,21 @@ private struct ProcessingPhotoTile: View {
                             .font(.headline.weight(.semibold))
                         Spacer(minLength: 0)
                         Circle()
-                            .fill(Color.white.opacity(0.78))
+                            .fill(Color.white.opacity(0.6))
                             .frame(width: 16, height: 16)
                     }
 
                     Spacer(minLength: 0)
 
                     RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .fill(Color.white.opacity(0.78))
+                        .fill(Color.white.opacity(0.72))
                         .frame(height: 12)
 
                     RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .fill(Color.white.opacity(0.52))
+                        .fill(Color.white.opacity(0.46))
                         .frame(width: 46, height: 8)
                 }
-                .foregroundStyle(Color(red: 0.13, green: 0.18, blue: 0.24).opacity(0.7))
+                .foregroundStyle(ProcessingPalette.ink.opacity(0.78))
                 .padding(14)
             )
     }
@@ -416,9 +478,10 @@ private struct ProcessingStageCard: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text(step.title)
                     .font(.headline)
+                    .foregroundStyle(ProcessingPalette.ink)
                 Text(step.phase.eyebrow)
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(ProcessingPalette.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
@@ -438,40 +501,40 @@ private struct ProcessingStageCard: View {
         case .complete:
             Color(red: 0.08, green: 0.52, blue: 0.35)
         case .current:
-            Color(red: 0.11, green: 0.62, blue: 0.65)
+            ProcessingPalette.teal
         case .upcoming:
-            Color.secondary
+            ProcessingPalette.inkTertiary
         }
     }
 
     private var cardBackground: AnyShapeStyle {
         switch step.state {
         case .complete:
-            AnyShapeStyle(Color.white.opacity(0.78))
+            AnyShapeStyle(ProcessingPalette.glassStrong)
         case .current:
             AnyShapeStyle(
                 LinearGradient(
                     colors: [
-                        Color(red: 0.91, green: 0.98, blue: 0.98),
-                        Color.white.opacity(0.9)
+                        ProcessingPalette.glassCool,
+                        ProcessingPalette.glassStrong
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
             )
         case .upcoming:
-            AnyShapeStyle(Color.white.opacity(0.52))
+            AnyShapeStyle(ProcessingPalette.glass.opacity(0.78))
         }
     }
 
     private var cardStroke: Color {
         switch step.state {
         case .complete:
-            Color.white.opacity(0.72)
+            ProcessingPalette.stroke
         case .current:
-            Color(red: 0.11, green: 0.62, blue: 0.65).opacity(0.34)
+            ProcessingPalette.strongStroke
         case .upcoming:
-            Color.white.opacity(0.62)
+            ProcessingPalette.stroke.opacity(0.8)
         }
     }
 }
@@ -485,15 +548,16 @@ private struct ProcessingTrustCard: View {
         HStack(alignment: .top, spacing: 14) {
             Image(systemName: systemImage)
                 .font(.title3.weight(.semibold))
-                .foregroundStyle(Color(red: 0.98, green: 0.52, blue: 0.28))
+                .foregroundStyle(ProcessingPalette.warm)
                 .frame(width: 26)
 
             VStack(alignment: .leading, spacing: 6) {
                 Text(title)
                     .font(.headline)
+                    .foregroundStyle(ProcessingPalette.ink)
                 Text(subtitle)
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(ProcessingPalette.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -501,12 +565,13 @@ private struct ProcessingTrustCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(Color.white.opacity(0.58))
+                .fill(ProcessingPalette.glassStrong)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(Color.white.opacity(0.68), lineWidth: 1)
+                .stroke(ProcessingPalette.stroke, lineWidth: 1)
         )
+        .shadow(color: ProcessingPalette.shadow.opacity(0.55), radius: 14, y: 8)
     }
 }
 

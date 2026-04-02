@@ -171,9 +171,9 @@ private struct ReviewListItemView: View {
                             selectLeaveBlank([entry.id])
                         } label: {
                             if entry.saveChoice == .leaveBlank {
-                                Label("Leave Blank Forever", systemImage: "checkmark")
+                                Label("Leave Blank", systemImage: "checkmark")
                             } else {
-                                Text("Leave Blank Forever")
+                                Text("Leave Blank")
                             }
                         }
 
@@ -234,13 +234,6 @@ private struct ReviewListItemView: View {
                 }
 
                 HStack(alignment: .center, spacing: 10) {
-                    Label(currentPhotoStateTitle, systemImage: currentPhotoStateSystemImage)
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(currentPhotoStateColor)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(currentPhotoStateColor.opacity(0.12), in: Capsule())
-
                     Label(captureDateText(entry.item), systemImage: "calendar")
                         .foregroundStyle(.secondary)
                 }
@@ -411,7 +404,7 @@ private struct ReviewListItemView: View {
 
     private var selectedMenuTitle: String {
         if entry.saveChoice == .leaveBlank {
-            return "Leave Blank Forever"
+            return "Leave Blank"
         }
 
         return truncatedLocationLabel(selectedLocationLabel, maxLength: 72)
@@ -427,18 +420,6 @@ private struct ReviewListItemView: View {
 
     private var applyButtonTitle: String {
         entry.saveChoice == .leaveBlank ? "Leave Blank" : "Apply"
-    }
-
-    private var currentPhotoStateTitle: String {
-        entry.item.asset.hasLocation ? "Saved in Photos" : "Blank in Photos"
-    }
-
-    private var currentPhotoStateSystemImage: String {
-        entry.item.asset.hasLocation ? "checkmark.circle" : "circle.dashed"
-    }
-
-    private var currentPhotoStateColor: Color {
-        entry.item.asset.hasLocation ? .accentColor : .secondary
     }
 
     private func locationOptionMenuTitle(for option: LocationOption) -> String {
