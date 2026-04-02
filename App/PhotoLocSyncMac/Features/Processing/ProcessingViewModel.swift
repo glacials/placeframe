@@ -94,7 +94,7 @@ enum ProcessingProgressPhase: String, CaseIterable {
         case .reverseGeocodingPlaces:
             "Formatting readable on-device coordinate labels without contacting any external service."
         case .preparingReview:
-            "Assembling thumbnails, local plot context, and review cards before you approve anything."
+            "Assembling thumbnails, map context, and review cards before you approve anything."
         }
     }
 
@@ -167,7 +167,7 @@ enum ProcessingProgressPhase: String, CaseIterable {
         case .preparingReview:
             [
                 "Thumbnail handoff",
-                "Plot and list ready",
+                "Map and list ready",
                 "Awaiting your approval"
             ]
         }
@@ -203,7 +203,7 @@ enum ProcessingProgressPhase: String, CaseIterable {
         case .reverseGeocodingPlaces:
             "Local labels"
         case .preparingReview:
-            "Review plot"
+            "Review map"
         }
     }
 

@@ -5,7 +5,7 @@ import PhotoLocSyncCore
 struct ReviewView: View {
     @ObservedObject var viewModel: ReviewViewModel
     @StateObject private var quickLookController = ReviewQuickLookController()
-    private let plotPaneLeadingInset: CGFloat = 16
+    private let mapPaneLeadingInset: CGFloat = 16
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -47,9 +47,10 @@ struct ReviewView: View {
                     ReviewMapView(
                         entries: currentDaySection.entries,
                         selectedPhotoIDs: viewModel.selectedPhotoIDs,
-                        selectionTargets: viewModel.mapSelectionTargets
+                        selectionTargets: viewModel.mapSelectionTargets,
+                        thumbnailProvider: viewModel.thumbnailProvider
                     )
-                        .padding(.leading, plotPaneLeadingInset)
+                        .padding(.leading, mapPaneLeadingInset)
                         .frame(minWidth: 320, idealWidth: 420, maxHeight: .infinity, alignment: .topLeading)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -87,7 +88,7 @@ struct ReviewView: View {
             Text("Choose the place you want to save for each photo, or mark it to stay blank forever. Review one day at a time, then apply the choices you want to keep.")
                 .foregroundStyle(.secondary)
 
-            Label("All plotting and coordinate labeling stay on-device. No map tiles or online geocoding are used.", systemImage: "lock.shield")
+            Label("Coordinates stay local, but Apple map tiles may load while reviewing locations on the map.", systemImage: "lock.shield")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
@@ -427,11 +428,13 @@ private struct ReviewCaptureTimeOffsetSheet: View {
                                 ReviewCaptureTimeOffsetPreviewPane(
                                     title: viewModel.captureTimeOffsetPreviewTitle(for: currentOption ?? selectedOption),
                                     entries: currentPreviewEntries,
+                                    thumbnailProvider: viewModel.thumbnailProvider
                                 )
 
                                 ReviewCaptureTimeOffsetPreviewPane(
                                     title: viewModel.captureTimeOffsetPreviewTitle(for: selectedOption),
                                     entries: selectedPreviewEntries,
+                                    thumbnailProvider: viewModel.thumbnailProvider
                                 )
                             }
                         }
@@ -478,6 +481,7 @@ private struct ReviewCaptureTimeOffsetSheet: View {
 private struct ReviewCaptureTimeOffsetPreviewPane: View {
     let title: String
     let entries: [ReviewSelection]
+    let thumbnailProvider: PhotoThumbnailProvider
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -487,7 +491,8 @@ private struct ReviewCaptureTimeOffsetPreviewPane: View {
             ReviewMapView(
                 entries: entries,
                 selectedPhotoIDs: [],
-                selectionTargets: []
+                selectionTargets: [],
+                thumbnailProvider: thumbnailProvider
             )
                 .frame(maxWidth: .infinity, minHeight: 280, maxHeight: 280)
                 .background(Color.secondary.opacity(0.05), in: RoundedRectangle(cornerRadius: 14))

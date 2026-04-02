@@ -9,7 +9,7 @@ struct PrivacySummaryBox: View {
                 Text("Photo Location Sync keeps your imported timeline data, coordinates, and match decisions on your Mac. The app does not send that location data to external servers.")
                     .font(.headline)
 
-                Text("Matching, coordinate labeling, and the review plot all run on this Mac. If a photo is only available from iCloud Photos, Apple Photos may download it so the app can display a preview.")
+                Text("Matching and coordinate labeling run on this Mac. If you open the review map, Apple map tiles may load, and if a photo is only available from iCloud Photos, Apple Photos may download it so the app can display a preview.")
                     .foregroundStyle(.secondary)
 
                 Text("When you click Apply, the app writes the approved metadata into Apple Photos locally. If you use iCloud Photos, Apple may sync those approved library changes outside this app.")
@@ -42,8 +42,8 @@ struct PrivacyInfoView: View {
                 GroupBox("What stays on this Mac") {
                     VStack(alignment: .leading, spacing: 10) {
                         Text("- Your Google Maps Timeline import is parsed locally.")
-                        Text("- Timeline matching, coordinate formatting, and review plotting run locally.")
-                        Text("- The app does not use online geocoding, map tiles, analytics, crash reporting, or other telemetry services.")
+                        Text("- Timeline matching and coordinate formatting run locally.")
+                        Text("- The app does not use online geocoding, analytics, crash reporting, or other telemetry services.")
                         Text("- Approved location writes happen in your local Photos library first.")
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -53,6 +53,7 @@ struct PrivacyInfoView: View {
                 GroupBox("When network access can happen") {
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Photo Location Sync itself does not upload your timeline data or coordinates.")
+                        Text("If you open the review map, Apple map tiles may load for the visible region.")
                         Text("If a requested photo preview is only stored in iCloud Photos, Apple Photos may download that asset so the app can display it.")
                         Text("If you press Apply and iCloud Photos is enabled for your library, Apple may separately sync those approved Photos changes.")
                     }
@@ -62,7 +63,7 @@ struct PrivacyInfoView: View {
 
                 GroupBox("What the app still avoids") {
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("- The app does not use online geocoding, map tiles, analytics, crash reporting, or other telemetry services.")
+                        Text("- The app does not use online geocoding, analytics, crash reporting, or other telemetry services.")
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.vertical, 4)
