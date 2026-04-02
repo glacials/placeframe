@@ -1,4 +1,5 @@
 import SwiftUI
+import PhotoLocSyncAdapters
 import PhotoLocSyncCore
 
 struct ReviewView: View {
@@ -308,12 +309,14 @@ private struct ReviewCaptureTimeOffsetSheet: View {
                     HStack(alignment: .top, spacing: 16) {
                         ReviewCaptureTimeOffsetPreviewPane(
                             title: "Current",
-                            entries: currentPreviewEntries
+                            entries: currentPreviewEntries,
+                            thumbnailProvider: viewModel.thumbnailProvider
                         )
 
                         ReviewCaptureTimeOffsetPreviewPane(
                             title: selectedOption.offset == 0 ? "With No Adjustment" : "With \(viewModel.formattedOffset(selectedOption.offset))",
-                            entries: selectedPreviewEntries
+                            entries: selectedPreviewEntries,
+                            thumbnailProvider: viewModel.thumbnailProvider
                         )
                     }
                 }
@@ -353,13 +356,19 @@ private struct ReviewCaptureTimeOffsetSheet: View {
 private struct ReviewCaptureTimeOffsetPreviewPane: View {
     let title: String
     let entries: [ReviewSelection]
+    let thumbnailProvider: PhotoThumbnailProvider
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(title)
                 .font(.headline)
 
-            ReviewMapView(entries: entries, selectionTargets: [])
+            ReviewMapView(
+                entries: entries,
+                selectedPhotoIDs: [],
+                selectionTargets: [],
+                thumbnailProvider: thumbnailProvider
+            )
                 .frame(maxWidth: .infinity, minHeight: 280, maxHeight: 280)
                 .background(Color.secondary.opacity(0.05), in: RoundedRectangle(cornerRadius: 14))
         }
