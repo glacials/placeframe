@@ -3,15 +3,15 @@ import XCTest
 @testable import PhotoLocSyncAdapters
 
 final class PhotoThumbnailProviderPrivacyTests: XCTestCase {
-    func testThumbnailRequestsDoNotAllowNetworkAccess() {
+    func testThumbnailRequestsAllowICloudBackedPreviewLoading() {
         let options = PhotoThumbnailProvider.makeThumbnailRequestOptions()
 
-        XCTAssertFalse(options.isNetworkAccessAllowed)
+        XCTAssertTrue(options.isNetworkAccessAllowed)
     }
 
-    func testPreviewRequestsDoNotAllowNetworkAccess() {
+    func testPreviewRequestsAllowICloudBackedPreviewLoading() {
         let options = PhotoThumbnailProvider.makePreviewRequestOptions()
 
-        XCTAssertFalse(options.isNetworkAccessAllowed)
+        XCTAssertTrue(options.isNetworkAccessAllowed)
     }
 }

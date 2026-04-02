@@ -142,13 +142,13 @@ public final class PhotoThumbnailProvider: ThumbnailProviding, @unchecked Sendab
         options.deliveryMode = .highQualityFormat
         options.resizeMode = .fast
         options.isSynchronous = false
-        options.isNetworkAccessAllowed = false
+        options.isNetworkAccessAllowed = true
         return options
     }
 
     static func makePreviewRequestOptions() -> PHAssetResourceRequestOptions {
         let options = PHAssetResourceRequestOptions()
-        options.isNetworkAccessAllowed = false
+        options.isNetworkAccessAllowed = true
         return options
     }
 }
