@@ -22,8 +22,81 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Validate website artifact
+        run: |
+          python3 <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+          import sys
+
+          website = Path("website")
+          required = [
+              website / "index.html",
+              website / "privacy.html",
+              website / "terms.html",
+              website / "site.css",
+              website / "site.js",
+              website / "robots.txt",
+              website / "sitemap.xml",
+              website / "CNAME",
+              website / ".nojekyll",
+              website / "assets" / "favicon.svg",
+              website / "assets" / "interface-import.svg",
+              website / "assets" / "interface-review.svg",
+              website / "assets" / "interface-precision.svg",
+              website / "assets" / "placeframe-social.png",
+          ]
+
+          missing = [str(path) for path in required if not path.exists()]
+          if missing:
+              print("Missing required files:")
+              for path in missing:
+                  print(f" - {path}")
+              sys.exit(1)
+
+          class LinkParser(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.targets = []
+
+              def handle_starttag(self, tag, attrs):
+                  attrs = dict(attrs)
+                  for key in ("href", "src"):
+                      value = attrs.get(key)
+                      if value:
+                          self.targets.append(value)
+
+          broken = []
+          for html_file in sorted(website.glob("*.html")):
+              parser = LinkParser()
+              parser.feed(html_file.read_text(encoding="utf-8"))
+              for target in parser.targets:
+                  if target.startswith(("http://", "https://", "mailto:", "#", "data:")):
+                      continue
+                  local_target = target.split("?", 1)[0].split("#", 1)[0]
+                  if not local_target:
+                      continue
+                  resolved = (html_file.parent / local_target).resolve()
+                  if not resolved.exists():
+                      broken.append(f"{html_file}: {target}")
+
+          if broken:
+              print("Broken relative links/assets:")
+              for item in broken:
+                  print(f" - {item}")
+              sys.exit(1)
+
+          print("Website validation passed.")
+          PY
+
   # Single deploy job since we're just deploying
   deploy:
+    needs: validate
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -36,8 +109,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Upload entire repository
-          path: '.'
+          path: './website'
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5

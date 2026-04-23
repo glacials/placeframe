@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Placeframe | Restore place to every frame.</title>
+    <meta
+      name="description"
+      content="Placeframe helps photographers restore missing photo locations in Apple Photos by matching Google Timeline history on your Mac, with review before every write."
+    >
+    <meta name="theme-color" content="#edf4f4">
+    <meta property="og:title" content="Placeframe">
+    <meta
+      property="og:description"
+      content="A private, Mac-first way to restore missing photo locations in Apple Photos."
+    >
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://placefra.me/">
+    <meta property="og:image" content="https://placefra.me/assets/placeframe-social.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Placeframe">
+    <meta name="twitter:description" content="Restore missing photo locations in Apple Photos without giving up review or privacy.">
+    <meta name="twitter:image" content="https://placefra.me/assets/placeframe-social.png">
+    <link rel="canonical" href="https://placefra.me/">
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="site.css">
+    <script defer src="site.js"></script>
+  </head>
+  <body>
+    <div class="page-shell">
+      <div class="ambient ambient-a"></div>
+      <div class="ambient ambient-b"></div>
+      <div class="grid-wash"></div>
+
+      <header class="site-header">
+        <a class="brand" href="#top" aria-label="Placeframe home">
+          <img src="assets/favicon.svg" alt="" width="36" height="36">
+          <span>Placeframe</span>
+        </a>
+        <nav class="site-nav" aria-label="Primary">
+          <a href="#workflow">Workflow</a>
+          <a href="#trust">Privacy</a>
+          <a href="#faq">FAQ</a>
+          <a href="privacy.html">Policy</a>
+        </nav>
+      </header>
+
+      <main id="top">
+        <section class="hero" data-reveal>
+          <div class="hero-copy">
+            <p class="eyebrow">Built for photographers who care where the shot happened.</p>
+            <h1>Restore place to every frame.</h1>
+            <p class="lede">
+              Placeframe helps photographers bring missing location metadata back to Apple Photos
+              by matching Google Timeline history on-device, then letting you review every
+              suggestion before anything is written.
+            </p>
+
+            <div class="cta-row">
+              <a class="button button-primary" href="mailto:hello@placefra.me?subject=Notify%20me%20when%20Placeframe%20launches">Get launch updates</a>
+              <a class="button button-secondary" href="https://github.com/glacials/placeframe">View on GitHub</a>
+            </div>
+
+            <div class="availability-badge" aria-label="Mac App Store coming soon">
+              <span class="availability-kicker">MAC APP STORE</span>
+              <strong>Coming soon</strong>
+            </div>
+
+            <p class="micro-note">
+              Questions or early-access notes:
+              <a class="inline-link" href="mailto:hello@placefra.me?subject=Placeframe%20question">hello@placefra.me</a>
+              ·
+              <a class="inline-link" href="privacy.html">Privacy policy</a>
+            </p>
+
+            <ul class="hero-points">
+              <li>Runs locally on your Mac by default</li>
+              <li>Review-first workflow for every proposed location</li>
+              <li>Made for Apple Photos libraries, not generic cloud DAMs</li>
+            </ul>
+          </div>
+
+          <div class="hero-media">
+            <figure class="hero-shot hero-shot-main">
+              <img
+                src="assets/interface-review.svg"
+                alt="Placeframe review interface with photo cards, status badges, and a map panel."
+                width="1440"
+                height="980"
+              >
+            </figure>
+            <figure class="hero-shot hero-shot-small hero-shot-left">
+              <img
+                src="assets/interface-import.svg"
+                alt="Placeframe import workflow showing a guided timeline import card."
+                width="1280"
+                height="860"
+              >
+            </figure>
+            <figure class="hero-shot hero-shot-small hero-shot-right">
+              <img
+                src="assets/interface-precision.svg"
+                alt="Placeframe precision controls showing review choices before writing metadata."
+                width="1280"
+                height="860"
+              >
+            </figure>
+          </div>
+        </section>
+
+        <section class="proof-band" aria-label="Proof points" data-reveal>
+          <div class="proof-grid">
+            <article class="proof-card">
+              <span class="proof-overline">Local-first</span>
+              <h2>Matching stays on your Mac.</h2>
+              <p>Imported Timeline data and review decisions are meant to stay local unless you explicitly turn on Apple services for richer labels.</p>
+            </article>
+            <article class="proof-card">
+              <span class="proof-overline">Apple Photos focused</span>
+              <p>This is not a generic cloud DAM shell. Placeframe is built around Apple Photos review and write-back.</p>
+            </article>
+            <article class="proof-card">
+              <span class="proof-overline">Review-first</span>
+              <p>Suggestions are separated from confirmed writes so photographers can inspect, reject, or tune precision before applying anything.</p>
+            </article>
+            <article class="proof-card">
+              <span class="proof-overline">Open now</span>
+              <p>The project is already visible on GitHub, and launch updates can be requested at hello@placefra.me while the Mac App Store listing is prepared.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="insight-grid" data-reveal>
+          <article class="insight-card insight-card-primary">
+            <p class="eyebrow">Why photographers care</p>
+            <h2>A clean archive is easier to search, sort, pitch, publish, and trust.</h2>
+            <p>
+              When old imports lose GPS metadata, years of work start behaving like anonymous
+              files. Placeframe is built for photographers who want that context back without
+              surrendering their library to a cloud pipeline.
+            </p>
+          </article>
+          <article class="insight-card">
+            <span class="stat">01</span>
+            <h3>Recover locationless imports</h3>
+            <p>Backfill DSLR, mirrorless, or scanned work that landed in Apple Photos without place data.</p>
+          </article>
+          <article class="insight-card">
+            <span class="stat">02</span>
+            <h3>Keep your review deliberate</h3>
+            <p>Suggestions are separated from confirmed writes, so you always know what is proposed and what will change.</p>
+          </article>
+          <article class="insight-card">
+            <span class="stat">03</span>
+            <h3>Stay local by default</h3>
+            <p>Your imported Timeline history and matching decisions stay on your Mac unless you explicitly enable Apple services for richer labels.</p>
+          </article>
+        </section>
+
+        <section class="workflow-section" id="workflow" data-reveal>
+          <div class="section-heading">
+            <p class="eyebrow">Three deliberate steps</p>
+            <h2>Import, inspect, apply.</h2>
+            <p>
+              The workflow is intentionally calm: bring in a Timeline export, review proposed
+              matches day by day, then write only the locations you approve.
+            </p>
+          </div>
+
+          <div class="workflow-grid">
+            <article class="workflow-card">
+              <img
+                src="assets/interface-import.svg"
+                alt="Guided timeline import interface preview."
+                width="1280"
+                height="860"
+              >
+              <div class="workflow-copy">
+                <span class="workflow-step">Step 1</span>
+                <h3>Import the Timeline export you already have.</h3>
+                <p>Placeframe opens with a native, plain-language import flow instead of a setup maze.</p>
+              </div>
+            </article>
+
+            <article class="workflow-card">
+              <img
+                src="assets/interface-review.svg"
+                alt="Review interface preview with badges, photo thumbnails, and a map."
+                width="1440"
+                height="980"
+              >
+              <div class="workflow-copy">
+                <span class="workflow-step">Step 2</span>
+                <h3>Review proposed locations like an editor, not a batch script.</h3>
+                <p>Browse one day at a time, compare map context, and see exactly how strong each suggestion looks.</p>
+              </div>
+            </article>
+
+            <article class="workflow-card">
+              <img
+                src="assets/interface-precision.svg"
+                alt="Precision controls and final review choices preview."
+                width="1280"
+                height="860"
+              >
+              <div class="workflow-copy">
+                <span class="workflow-step">Step 3</span>
+                <h3>Choose the level of precision you want to keep.</h3>
+                <p>Apply single selections or a whole reviewed day once the choices read the way you want them to read.</p>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="audience-section" data-reveal>
+          <div class="section-heading">
+            <p class="eyebrow">Who it is for</p>
+            <h2>Photographers with long memory and low tolerance for metadata drama.</h2>
+          </div>
+
+          <div class="audience-grid">
+            <article class="audience-card">
+              <h3>Travel and documentary archives</h3>
+              <p>Recover the geography of years of shoots so places become searchable again.</p>
+            </article>
+            <article class="audience-card">
+              <h3>Client delivery cleanup</h3>
+              <p>Bring order to exports before handoff without bulk-writing unreviewed guesses.</p>
+            </article>
+            <article class="audience-card">
+              <h3>Photographers leaving cloud-first workflows</h3>
+              <p>Use a Mac-native tool that favors review, reversibility, and clear privacy boundaries.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="trust-section" id="trust" data-reveal>
+          <div class="section-heading">
+            <p class="eyebrow">Privacy and trust</p>
+            <h2>The point is to restore context without creating a second problem.</h2>
+          </div>
+
+          <div class="trust-grid">
+            <article class="trust-card">
+              <h3>Local by default</h3>
+              <p>Imported Timeline data and match decisions are processed on-device. There is no account system and no marketing analytics on the app workflow.</p>
+            </article>
+            <article class="trust-card">
+              <h3>Explicit Apple integrations</h3>
+              <p>Apple map tiles may load while you inspect the map, and rich place labels use Apple geocoding only if you choose to enable that option.</p>
+            </article>
+            <article class="trust-card">
+              <h3>Review before write</h3>
+              <p>Placeframe distinguishes between proposed matches and approved writes so photographers stay in control of their library.</p>
+            </article>
+            <article class="trust-card trust-card-wide">
+              <p class="quote">
+                “Suggestions are not truth.”
+              </p>
+              <p>
+                That product attitude shows up everywhere in the app: confidence badges, day-based review,
+                map inspection, optional place-label enrichment, and one final moment of judgment before
+                anything lands in Apple Photos.
+              </p>
+              <a class="inline-link" href="privacy.html">Read the full privacy policy</a>
+            </article>
+          </div>
+        </section>
+
+        <section class="faq-section" id="faq" data-reveal>
+          <div class="section-heading">
+            <p class="eyebrow">Before launch</p>
+            <h2>Questions photographers ask first.</h2>
+          </div>
+
+          <div class="faq-list">
+            <details open>
+              <summary>Does Placeframe upload my Google Timeline export?</summary>
+              <p>No. Timeline parsing and matching run locally on your Mac by default.</p>
+            </details>
+            <details>
+              <summary>Does it work with Apple Photos?</summary>
+              <p>Yes. Placeframe is built around Apple Photos libraries and writes approved metadata back into Apple Photos locally.</p>
+            </details>
+            <details>
+              <summary>Why mention Apple geocoding and map tiles?</summary>
+              <p>Because privacy language should stay next to the real behavior. Rich place labels are optional, and map inspection can load Apple map tiles for the visible region.</p>
+            </details>
+            <details>
+              <summary>Is the Mac App Store version available yet?</summary>
+              <p>Not yet. The marketing site is live now, and the Mac App Store listing is being prepared.</p>
+            </details>
+          </div>
+
+          <div class="closing-cta">
+            <div>
+              <p class="eyebrow">Stay in the loop</p>
+              <h3>Want the first note when Placeframe lands?</h3>
+              <p>The release path is simple: ship the Mac App Store build, keep the privacy posture legible, and let photographers try it without theater.</p>
+            </div>
+            <a class="button button-primary" href="mailto:hello@placefra.me?subject=Notify%20me%20when%20Placeframe%20launches">Email for launch updates</a>
+          </div>
+        </section>
+      </main>
+
+      <footer class="site-footer">
+        <div>
+          <a class="brand brand-footer" href="#top">
+            <img src="assets/favicon.svg" alt="" width="28" height="28">
+            <span>Placeframe</span>
+          </a>
+          <p class="footer-copy">Restore place to every frame. Open on GitHub now. Mac App Store listing in preparation.</p>
+        </div>
+        <div class="footer-links">
+          <a href="privacy.html">Privacy Policy</a>
+          <a href="terms.html">Terms of Service</a>
+          <a href="https://github.com/glacials/placeframe">GitHub</a>
+          <a href="mailto:hello@placefra.me?subject=Placeframe%20support">hello@placefra.me</a>
+        </div>
+      </footer>
+    </div>
+  </body>
+</html>

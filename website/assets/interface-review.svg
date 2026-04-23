@@ -1,0 +1,122 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 980" role="img" aria-labelledby="title desc">
+  <title id="title">Placeframe review interface preview</title>
+  <desc id="desc">A stylized screenshot showing photo cards on the left and a map review pane on the right.</desc>
+  <defs>
+    <linearGradient id="bg" x1="180" y1="90" x2="1290" y2="900" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#f4f8f8"/>
+      <stop offset="1" stop-color="#dce9e8"/>
+    </linearGradient>
+    <linearGradient id="toolbar" x1="0" y1="0" x2="0" y2="100" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#f7fbfb"/>
+    </linearGradient>
+    <linearGradient id="photoA" x1="0" y1="0" x2="168" y2="132" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#614b2d"/>
+      <stop offset=".55" stop-color="#1a3546"/>
+      <stop offset="1" stop-color="#f0b26e"/>
+    </linearGradient>
+    <linearGradient id="photoB" x1="0" y1="0" x2="168" y2="132" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#103e56"/>
+      <stop offset=".52" stop-color="#35566a"/>
+      <stop offset="1" stop-color="#cc8854"/>
+    </linearGradient>
+  </defs>
+  <rect width="1440" height="980" fill="url(#bg)"/>
+  <circle cx="1198" cy="158" r="170" fill="#45a9a51c"/>
+  <circle cx="230" cy="818" r="180" fill="#ff785b14"/>
+
+  <g opacity=".06" stroke="#10202b">
+    <path d="M0 126h1440"/>
+    <path d="M0 226h1440"/>
+    <path d="M0 326h1440"/>
+    <path d="M0 426h1440"/>
+    <path d="M0 526h1440"/>
+    <path d="M0 626h1440"/>
+    <path d="M0 726h1440"/>
+    <path d="M0 826h1440"/>
+  </g>
+
+  <g>
+    <rect x="88" y="74" width="1264" height="832" rx="34" fill="#f8fbfb" stroke="#ffffff" stroke-width="2"/>
+    <rect x="88" y="74" width="1264" height="832" rx="34" fill="none" stroke="#10202b14"/>
+    <rect x="88" y="74" width="1264" height="122" rx="34" fill="url(#toolbar)"/>
+    <text x="142" y="138" fill="#10202b" font-family="Avenir Next, Helvetica Neue, sans-serif" font-size="50" font-weight="700">
+      Review Proposed Locations
+    </text>
+    <text x="142" y="176" fill="#5f7178" font-family="Helvetica Neue, Arial, sans-serif" font-size="23">
+      Choose the place you want to save for each photo, or mark it to stay blank forever.
+    </text>
+
+    <g>
+      <rect x="978" y="120" width="116" height="44" rx="22" fill="#1f6f7812"/>
+      <text x="1036" y="149" text-anchor="middle" fill="#0e3d54" font-family="SFMono-Regular, SF Mono, monospace" font-size="16" font-weight="700">64 total</text>
+      <rect x="1106" y="120" width="116" height="44" rx="22" fill="#f2b84c22"/>
+      <text x="1164" y="149" text-anchor="middle" fill="#76520d" font-family="SFMono-Regular, SF Mono, monospace" font-size="16" font-weight="700">8 review</text>
+      <rect x="1234" y="120" width="88" height="44" rx="22" fill="#0e3d54"/>
+      <text x="1278" y="149" text-anchor="middle" fill="#ffffff" font-family="Avenir Next, Helvetica Neue, sans-serif" font-size="17" font-weight="700">Apply</text>
+    </g>
+
+    <rect x="128" y="230" width="732" height="624" rx="28" fill="#eef5f5"/>
+    <rect x="892" y="230" width="420" height="624" rx="28" fill="#eef5f5"/>
+
+    <rect x="156" y="258" width="676" height="194" rx="24" fill="#ffffff" stroke="#10202b12"/>
+    <rect x="180" y="289" width="168" height="132" rx="20" fill="url(#photoA)"/>
+    <path d="M180 378c40-28 82-24 126-54 17-12 28-20 42-35v132H180Z" fill="#f4d7a5" opacity=".72"/>
+    <circle cx="307" cy="319" r="14" fill="#fff4c4" opacity=".9"/>
+    <rect x="382" y="286" width="258" height="48" rx="24" fill="#f5f8f8" stroke="#10202b16"/>
+    <text x="412" y="317" fill="#10202b" font-family="Avenir Next, Helvetica Neue, sans-serif" font-size="21" font-weight="700">
+      134 Prince Street, New York
+    </text>
+    <rect x="656" y="286" width="144" height="48" rx="24" fill="#0e3d54"/>
+    <text x="728" y="317" text-anchor="middle" fill="#ffffff" font-family="Avenir Next, Helvetica Neue, sans-serif" font-size="20" font-weight="700">
+      Apply
+    </text>
+    <text x="382" y="362" fill="#5f7178" font-family="Helvetica Neue, Arial, sans-serif" font-size="20">
+      Jun 12, 2024 at 5:42 PM
+    </text>
+    <rect x="382" y="386" width="148" height="34" rx="17" fill="#1f6f7815"/>
+    <text x="456" y="408" text-anchor="middle" fill="#0e3d54" font-family="Avenir Next, Helvetica Neue, sans-serif" font-size="16" font-weight="700">
+      Specific match
+    </text>
+    <text x="548" y="408" fill="#8a9aa1" font-family="SFMono-Regular, SF Mono, monospace" font-size="16">4m delta</text>
+
+    <rect x="156" y="480" width="676" height="194" rx="24" fill="#ffffff" stroke="#10202b12"/>
+    <rect x="180" y="511" width="168" height="132" rx="20" fill="url(#photoB)"/>
+    <path d="M180 570c30 18 51 19 82 8 24-9 43-30 86-67v132H180Z" fill="#f0c4a0" opacity=".7"/>
+    <rect x="382" y="508" width="258" height="48" rx="24" fill="#f5f8f8" stroke="#10202b16"/>
+    <text x="412" y="539" fill="#10202b" font-family="Avenir Next, Helvetica Neue, sans-serif" font-size="21" font-weight="700">
+      DUMBO Waterfront, Brooklyn
+    </text>
+    <rect x="656" y="508" width="144" height="48" rx="24" fill="#ffffff" stroke="#10202b18"/>
+    <text x="728" y="539" text-anchor="middle" fill="#10202b" font-family="Avenir Next, Helvetica Neue, sans-serif" font-size="20" font-weight="700">
+      Review
+    </text>
+    <text x="382" y="584" fill="#5f7178" font-family="Helvetica Neue, Arial, sans-serif" font-size="20">
+      Jun 12, 2024 at 6:03 PM
+    </text>
+    <rect x="382" y="608" width="168" height="34" rx="17" fill="#f2b84c24"/>
+    <text x="466" y="630" text-anchor="middle" fill="#76520d" font-family="Avenir Next, Helvetica Neue, sans-serif" font-size="16" font-weight="700">
+      Needs attention
+    </text>
+    <text x="568" y="630" fill="#8a9aa1" font-family="SFMono-Regular, SF Mono, monospace" font-size="16">19m delta</text>
+
+    <rect x="928" y="266" width="348" height="552" rx="24" fill="#15212d"/>
+    <rect x="954" y="292" width="296" height="500" rx="20" fill="#d9ede8"/>
+    <path d="M954 680c58-30 92-58 136-54 48 5 95 58 160 39V292H954Z" fill="#c7e0d8"/>
+    <path d="M954 704c64-24 136-114 204-102 43 8 64 44 92 42V792H954Z" fill="#a6d0c5"/>
+    <path d="M954 754c70-56 125-36 180-90 50-50 68-70 116-86v214H954Z" fill="#87b8aa"/>
+
+    <g>
+      <circle cx="1080" cy="516" r="24" fill="#ffffff"/>
+      <circle cx="1080" cy="516" r="14" fill="#0e3d54"/>
+      <rect x="1116" y="494" width="88" height="46" rx="23" fill="#ffffff"/>
+      <text x="1160" y="523" text-anchor="middle" fill="#10202b" font-family="Avenir Next, Helvetica Neue, sans-serif" font-size="18" font-weight="700">
+        3 photos
+      </text>
+
+      <circle cx="1188" cy="390" r="20" fill="#ff785b"/>
+      <circle cx="1034" cy="666" r="20" fill="#45a9a5"/>
+      <circle cx="1152" cy="612" r="20" fill="#f2b84c"/>
+    </g>
+  </g>
+</svg>

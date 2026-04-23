@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Placeframe Privacy Policy</title>
+    <meta name="description" content="Privacy policy for the Placeframe marketing site and the Placeframe macOS app.">
+    <meta name="theme-color" content="#edf4f4">
+    <meta property="og:title" content="Placeframe Privacy Policy">
+    <meta property="og:description" content="How the Placeframe website and macOS app handle privacy-sensitive photo-location data.">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://placefra.me/privacy.html">
+    <meta property="og:image" content="https://placefra.me/assets/placeframe-social.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Placeframe Privacy Policy">
+    <meta name="twitter:description" content="How the Placeframe website and macOS app handle privacy-sensitive photo-location data.">
+    <meta name="twitter:image" content="https://placefra.me/assets/placeframe-social.png">
+    <link rel="canonical" href="https://placefra.me/privacy.html">
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="site.css">
+    <script defer src="site.js"></script>
+  </head>
+  <body>
+    <div class="page-shell legal-shell">
+      <div class="ambient ambient-a"></div>
+      <div class="ambient ambient-b"></div>
+      <div class="grid-wash"></div>
+
+      <header class="site-header">
+        <a class="brand" href="index.html" aria-label="Placeframe home">
+          <img src="assets/favicon.svg" alt="" width="36" height="36">
+          <span>Placeframe</span>
+        </a>
+        <nav class="site-nav" aria-label="Primary">
+          <a href="index.html#workflow">Workflow</a>
+          <a href="index.html#trust">Privacy</a>
+          <a href="terms.html">Terms</a>
+        </nav>
+      </header>
+
+      <main class="legal-main" data-reveal>
+        <section class="legal-hero">
+          <p class="eyebrow">Legal</p>
+          <h1>Privacy Policy</h1>
+          <p class="legal-meta">Last updated April 22, 2026</p>
+        </section>
+
+        <section class="legal-section">
+          <h2>Summary</h2>
+          <p>
+            Placeframe is an independent software project operated by Glacials and designed to keep
+            photo-location matching local by default. The marketing
+            site at <a class="inline-link" href="https://placefra.me/">placefra.me</a> is a static
+            website hosted on GitHub Pages. The macOS app is designed for photographers who want to
+            restore missing location metadata in Apple Photos without sending imported Timeline data
+            or match results to third-party servers.
+          </p>
+        </section>
+
+        <section class="legal-section">
+          <h2>Information the website handles</h2>
+          <p>
+            This website does not include a sign-up form, analytics dashboard, or advertising pixels.
+            If you visit the site, GitHub Pages and the surrounding internet infrastructure may
+            process standard technical request data such as IP address, user agent, and request logs
+            in order to serve the page and protect the service.
+          </p>
+        </section>
+
+        <section class="legal-section">
+          <h2>Information the app handles</h2>
+          <p>
+            Placeframe is built to process imported Google Timeline data, matching decisions, and
+            photo review state locally on your Mac. The app is intended to read from Apple Photos,
+            compare timestamps and locations, and write approved metadata changes back to Apple
+            Photos locally when you choose to apply them.
+          </p>
+          <ul class="legal-list">
+            <li>The imported Timeline file is parsed locally.</li>
+            <li>Location matching runs locally.</li>
+            <li>Approved metadata writes begin in your local Apple Photos library.</li>
+          </ul>
+        </section>
+
+        <section class="legal-section">
+          <h2>Apple services that may be involved</h2>
+          <p>
+            Some optional or adjacent behaviors rely on Apple services rather than Placeframe
+            servers:
+          </p>
+          <ul class="legal-list">
+            <li>Apple map tiles may load if you open the review map.</li>
+            <li>Rich place labels may use Apple geocoding if you explicitly enable that option.</li>
+            <li>Apple Photos may download iCloud-hosted photo previews when needed for display.</li>
+            <li>If you use iCloud Photos, Apple may sync approved metadata changes after the local write.</li>
+          </ul>
+        </section>
+
+        <section class="legal-section">
+          <h2>What Placeframe does not do by default</h2>
+          <ul class="legal-list">
+            <li>It does not upload imported Timeline files to a Placeframe server.</li>
+            <li>It does not upload match results to a Placeframe server.</li>
+            <li>It does not require an account to perform local matching.</li>
+            <li>It does not include third-party advertising or behavioral marketing trackers on the app workflow.</li>
+          </ul>
+        </section>
+
+        <section class="legal-section">
+          <h2>Retention</h2>
+          <p>
+            The website currently does not offer user accounts or hosted storage. App data retention
+            depends on your own Mac, your Apple Photos library, and any Apple services you enable.
+          </p>
+        </section>
+
+        <section class="legal-section">
+          <h2>Policy changes</h2>
+          <p>
+            This policy may be updated as the app approaches release. Material changes will be
+            reflected on this page with a new effective date.
+          </p>
+        </section>
+
+        <section class="legal-section">
+          <h2>Contact</h2>
+          <p>
+            Questions about this policy can be sent to
+            <a class="inline-link" href="mailto:hello@placefra.me?subject=Placeframe%20privacy">hello@placefra.me</a>
+            or through the project issue tracker at
+            <a class="inline-link" href="https://github.com/glacials/placeframe/issues">github.com/glacials/placeframe/issues</a>.
+          </p>
+        </section>
+      </main>
+
+      <footer class="site-footer">
+        <div>
+          <a class="brand brand-footer" href="index.html">
+            <img src="assets/favicon.svg" alt="" width="28" height="28">
+            <span>Placeframe</span>
+          </a>
+        </div>
+        <div class="footer-links">
+          <a href="index.html">Home</a>
+          <a href="terms.html">Terms of Service</a>
+          <a href="mailto:hello@placefra.me?subject=Placeframe%20privacy">hello@placefra.me</a>
+        </div>
+      </footer>
+    </div>
+  </body>
+</html>
