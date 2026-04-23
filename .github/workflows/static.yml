@@ -40,15 +40,11 @@ jobs:
               website / "privacy.html",
               website / "terms.html",
               website / "site.css",
-              website / "site.js",
               website / "robots.txt",
               website / "sitemap.xml",
               website / "CNAME",
               website / ".nojekyll",
               website / "assets" / "favicon.svg",
-              website / "assets" / "interface-import.svg",
-              website / "assets" / "interface-review.svg",
-              website / "assets" / "interface-precision.svg",
               website / "assets" / "placeframe-social.png",
           ]
 
